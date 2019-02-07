@@ -11,7 +11,7 @@ __author__ = "Minh Nguyen"
 __copyright__ = "Copyright 2018, HERE Europe B.V."
 
 __license__ = "MIT"
-__version__ = "1.5.3"
+__version__ = "1.5.4"
 __maintainer__ = "Minh Nguyen"
 __email__ = "huyminh.nguyen@here.com"
 __status__ = "Development"

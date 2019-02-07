@@ -39,6 +39,8 @@ from .modules.controller.manager import ControllerManager
 
 from .modules.common.error import format_traceback
 
+from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
+
 PLUGIN_NAME = config.PLUGIN_NAME
 
 TAG_PLUGIN = "XYZ Hub"
@@ -114,12 +116,12 @@ class XYZHubConnector(object):
 
         tool_btn.setDefaultAction(self.action_connect)
         tool_btn.setPopupMode(tool_btn.MenuButtonPopup)
-        # tool_btn.triggered.connect(print)
 
-        self.xyz_widget_action = QWidgetAction(self.toolbar)
-        self.xyz_widget_action.setDefaultWidget(tool_btn)
+        # self.xyz_widget_action = QWidgetAction(self.toolbar)
+        # self.xyz_widget_action.setDefaultWidget(tool_btn)
+        # self.toolbar.addAction(self.xyz_widget_action)
 
-        self.toolbar.addAction(self.xyz_widget_action)
+        self.xyz_widget_action = self.toolbar.addWidget(tool_btn)
 
 
         self.action_help = None
@@ -137,8 +139,20 @@ class XYZHubConnector(object):
         
         self.action_reload = QAction(icon_bbox, "Reload BBox", parent)
         self.action_reload.triggered.connect(self.layer_reload_bbox)
-        self.action_reload.setEnabled(False) # disable
+        self.action_reload.setVisible(False) # disable
         self.toolbar.addAction(self.action_reload)
+
+        progress = QProgressBar()
+        progress.setMinimum(0)
+        progress.setMaximum(0)
+        progress.reset()
+        progress.hide()
+        # progress = self.iface.statusBarIface().children()[2] # will be hidden by qgis
+        self.iface.statusBarIface().addPermanentWidget(progress)
+        self.pb = progress
+
+        
+
     def init_modules(self):
         # util.init_module()
 
@@ -167,6 +181,8 @@ class XYZHubConnector(object):
         # self.con_man.connect_ux( self.iface) # canvas ux
         # self.con_man.signal.canvas_span.connect( self.loader_reload_bbox)
         
+        self.con_man.ld_pool.signal.progress.connect( self.cb_progress_busy) #, Qt.QueuedConnection
+        self.con_man.ld_pool.signal.finished.connect( self.cb_progress_done)
         
         QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.layer_man.remove)
         QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.con_man.remove)
@@ -236,22 +252,55 @@ class XYZHubConnector(object):
         self.iface.messageBar().pushMessage(
             msg, info,  
             Qgis.Success, 1
-        )
+        )        
     def make_cb_success(self, msg, info=""):
         def _cb_success_msg():
             txt = info
-            return self.cb_success_msg(msg, txt)
+            self.cb_success_msg(msg, txt)
         return _cb_success_msg
-    def cb_error_msg(self,err):
-        e = parse_exception_obj(err)
+    def cb_handle_error_msg(self, e):
+        err = parse_exception_obj(e)
+        if isinstance(err, ChainInterrupt):
+            net_err, idx = err.args[0:2]
+            if isinstance(net_err, net_handler.NetworkError):
+                self.show_net_err_dialog(net_err)
+                return
+        self.show_err_msgbar(err)
+
+    def show_net_err_dialog(self, err):
+        assert isinstance(err, net_handler.NetworkError)
+        status, reason, body = err.args[1:4]
+        msg = "%s: %s\n"%(status,reason) + \
+        "There was a problem connecting to the server"
+        if status == 403:
+            msg += "\n\n" + "Please make sure that the token has WRITE permission"
+        ret = exec_warning_dialog("Network Error",msg, body)
+    def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
-            TAG_PLUGIN, repr(e),  
+            TAG_PLUGIN, repr(err),  
             Qgis.Warning, 5
         )
-        msg = format_traceback(e)
+        msg = format_traceback(err)
         QgsMessageLog.logMessage( msg, TAG_PLUGIN, Qgis.Warning)
 
-        
+
+    def cb_progress_busy(self, progress):
+        self.flag_pb_show=True
+        self.cb_progress_refresh()
+    def cb_progress_done(self):
+        self.flag_pb_show=False
+        self.cb_progress_refresh()
+    def cb_progress_refresh(self):
+        if not hasattr(self,"flag_pb_show"): return
+
+        pb = self.pb
+        if self.flag_pb_show:
+            pb.show()
+            print_qgis("show",pb)
+        else:
+            pb.hide()        
+            print_qgis("hide")
+            
     ############### 
     # Action (main function)
     ###############
@@ -270,13 +319,14 @@ class XYZHubConnector(object):
         self.con_man.add(con_bbox_reload)
         # con_bbox_reload.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
         con_bbox_reload.signal.finished.connect( self.make_cb_success("Bounding box loading finish") )
-        con_bbox_reload.signal.error.connect( self.cb_error_msg )
+        con_bbox_reload.signal.error.connect( self.cb_handle_error_msg )
 
         # TODO: set/get params from vlayer
         layer_id = self.iface.activeLayer().id()
         layer = self.layer_man.get(layer_id)
         self.load_bbox(con_bbox_reload, make_qt_args(layer))
         
+    # UNUSED
     def debug_reload(self):
         print("debug_reload")
     def refresh_canvas(self):
@@ -284,6 +334,7 @@ class XYZHubConnector(object):
         # assert False # debug unload module
     def previous_canvas_extent(self):
         self.iface.mapCanvas().zoomToPreviousExtent()
+    #
     def open_clear_cache_dialog(self):
         parent = self.iface.mainWindow()
         dialog = ConfirmDialog(parent, "Delete cache will make loaded layer unusable !!")
@@ -301,7 +352,7 @@ class XYZHubConnector(object):
         con = EditSpaceController(self.network)
         self.con_man.add(con)
         con.signal.finished.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
         dialog.signal_edit_space.connect( con.start_args)
 
         ############ delete btn        
@@ -309,7 +360,7 @@ class XYZHubConnector(object):
         con = DeleteSpaceController(self.network)
         self.con_man.add(con)
         con.signal.results.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
         dialog.signal_del_space.connect( con.start_args)
 
         ############ Use Token btn        
@@ -317,7 +368,7 @@ class XYZHubConnector(object):
         con = LoadSpaceController(self.network)
         self.con_man.add(con)
         con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
         dialog.signal_use_token.connect( con.start_args)
 
@@ -325,7 +376,7 @@ class XYZHubConnector(object):
         con = StatSpaceController(self.network)
         self.con_man.add(con)
         con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
         dialog.signal_space_count.connect( con.start_args)
         
         # ############ bbox btn        
@@ -348,7 +399,7 @@ class XYZHubConnector(object):
         self.con_man.add(con_load)
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
         con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
-        con_load.signal.error.connect( self.cb_error_msg )
+        con_load.signal.error.connect( self.cb_handle_error_msg )
 
 
         # con = LoadLayerController(self.network, n_parallel=1, max_feat=100000)
@@ -356,12 +407,13 @@ class XYZHubConnector(object):
         # con = InitLayerController(self.network)
         self.con_man.add(con)
         # con.signal.finished.connect( self.make_cb_success("Loading finish") )
+        
         dialog.signal_space_connect.connect( con.start_args)
 
         con.signal.results.connect( self.layer_man.add_args)
         # con.signal.results.connect( con_bbox_reload.set_params_args)
-        con.signal.results.connect( con_load.start_args)
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.results.connect( con_load.start_args, Qt.QueuedConnection)
+        con.signal.error.connect( self.cb_handle_error_msg )
 
         # con.signal.error.connect( print)
 
@@ -383,7 +435,7 @@ class XYZHubConnector(object):
         con = LoadSpaceController(self.network)
         self.con_man.add(con)
         con.signal.results.connect( make_fun_args(dialog.cb_set_valid_token) ) # finished signal !?
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
         dialog.signal_use_token.connect( con.start_args)
 
@@ -391,14 +443,14 @@ class XYZHubConnector(object):
         con_upload = UploadLayerController(self.network, n_parallel=2)
         self.con_man.add(con_upload)
         con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.error.connect( self.cb_error_msg )
+        con_upload.signal.error.connect( self.cb_handle_error_msg )
 
         con = InitUploadLayerController(self.network)
         self.con_man.add(con)
 
         dialog.signal_upload_new_space.connect( con.start_args)
         con.signal.results.connect( con_upload.start_args)
-        con.signal.error.connect( self.cb_error_msg )
+        con.signal.error.connect( self.cb_handle_error_msg )
 
         dialog.exec_()
     def open_magic_sync_dialog(self):

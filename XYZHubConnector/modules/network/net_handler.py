@@ -44,11 +44,11 @@ def check_status(reply):
         msg = "%s: %s: %s - %s. request: %s"%(reply_tag, status, err_str, token, url)
         # iface.messageBar().pushMessage("Network Error", msg, Qgis.Warning, 1)
         QgsMessageLog.logMessage( 
-            "Network Error! : %s"%msg, "Network", Qgis.Warning
+            "Network Error! : %s"%msg, "Network.Error", Qgis.Warning
         )
     else:
         QgsMessageLog.logMessage( 
-            "Network Ok! : %s: %s - %s. request: %s"%(reply_tag, token, space_id, url), "Messages", Qgis.Success
+            "Network Ok! : %s: %s - %s. request: %s"%(reply_tag, token, space_id, url), "Network", Qgis.Success
         )
     return err_str, status, reason
 
@@ -56,7 +56,9 @@ def on_received(reply):
     err_str, status, reason = check_status( reply)
     if status != 200:
         url = reply.request().url().toString()
-        raise NetworkError(err_str, status, reason, url, reply)
+        raw = reply.readAll()
+        byt, txt, obj = decode_byte( raw)
+        raise NetworkError(err_str, status, reason, txt, url, reply)
     return _onReceived( reply)
 
 def _onReceived(reply):

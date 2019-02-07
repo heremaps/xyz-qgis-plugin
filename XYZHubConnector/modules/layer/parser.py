@@ -91,7 +91,6 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
             v = props[k]
             if isinstance(v,str):
                 props[k] = json.loads(v)
-        # print(props)
         return props
     def _single_feature(feat, transformer):
         # existing feature json

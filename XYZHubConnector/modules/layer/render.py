@@ -8,6 +8,7 @@
 ###############################################################################
 
 from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsProject
+from qgis.utils import iface
 
 from . import parser
 from ..common.signal import make_print_qgis
@@ -76,19 +77,22 @@ def add_feature_render(vlayer, feat, new_fields):
     vlayer.updateFields()
 
     pr.addFeatures(feat)
-    vlayer.updateExtents()
+    vlayer.updateExtents() # will hide default progress bar
+    # post_render(vlayer) # disable in order to keep default progress bar running
 
-    vlayer.triggerRepaint()
-
-def post_render(iface, vlayer):
-    print_qgis("Feature count:", vlayer.featureCount())
+def post_render(vlayer):
+    # print_qgis("Feature count:", vlayer.featureCount())
 
     if iface.mapCanvas().isCachingEnabled():
         vlayer.triggerRepaint()
     else:
         iface.mapCanvas().refresh()
 
-    # # update cache in manager
-    # if not layer_id in self.qfeat_id:
-    #     self.qfeat_id[layer_id] = set()
-    # self.qfeat_id[layer_id] = self.qfeat_id[layer_id].union(ft.id() for ft in vlayer.getFeatures())
+    # # force showing progress bar after refresh has little effect 
+    # pb = iface.statusBarIface().children()[2]
+    # pb.show()
+    
+#     # update cache in manager
+#     if not layer_id in self.qfeat_id:
+#         self.qfeat_id[layer_id] = set()
+#     self.qfeat_id[layer_id] = self.qfeat_id[layer_id].union(ft.id() for ft in vlayer.getFeatures())

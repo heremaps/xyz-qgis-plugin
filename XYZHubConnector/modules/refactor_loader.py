@@ -15,6 +15,7 @@ from .controller import AsyncFun, ChainController, NetworkFun, LoopController, W
 from .controller import make_qt_args, parse_qt_args, parse_exception_obj, ChainInterrupt
 from .layer import XYZLayer, parser, render, queue, bbox_utils
 from .network import net_handler
+from ..gui.util_dialog import exec_warning_dialog
 
 
 class InitLayerController(ChainController):
@@ -84,6 +85,9 @@ class ParallelLoop(LoopController):
             d = delay*i  + delay_offset
             QTimer.singleShot(d, self._dispatch)
     def _dispatch(self):
+        if self.count_active() == 0:
+            self.signal.progress.emit( 0)
+        
         self._n_active += 1
         self._run_loop()
     def reset(self, **kw):
@@ -354,6 +358,7 @@ class InitUploadLayerController(ChainController):
         return self.conn_info
     def get_meta(self):
         return self.meta
+        
 class UploadLayerController(ParallelLoop):
     
     def __init__(self, network, n_parallel=1):
@@ -392,3 +397,7 @@ class UploadLayerController(ParallelLoop):
         LoopController.start(self, conn_info, feat)
     def get_conn_info(self):
         return self.conn_info
+
+
+    def _handle_error(self, err):
+        self.signal.error.emit(err)

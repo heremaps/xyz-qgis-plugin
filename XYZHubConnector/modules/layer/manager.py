@@ -7,12 +7,9 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal, QObject
-
 from ..controller import parse_qt_args, make_qt_args
 
-class TempSignal(QObject):
-    temp = pyqtSignal(object)
+
 class LayerManager(object):
     def __init__(self):
         self.layer_map = dict()
@@ -28,6 +25,7 @@ class LayerManager(object):
         if vlayer is None: return
         layer_id = layer.get_layer().id()
         self.layer_map[layer_id] = layer
+
     def remove(self, layer_ids):
         for i in layer_ids:
             layer = self.layer_map.pop(i, None)
@@ -35,3 +33,4 @@ class LayerManager(object):
             # this will not remove layer in controller
             # layer.unload()
             del layer
+

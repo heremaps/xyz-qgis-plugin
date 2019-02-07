@@ -42,8 +42,8 @@ class AsyncFun(object):
         else:
             output = output_to_qt_args(async_obj)
 
-            self.signal.results.emit(output)
             self.signal.finished.emit()
+            self.signal.results.emit(output)
         
 class WorkerFun(AsyncFun):
     """ wrapper for worker (without cache)
@@ -64,8 +64,8 @@ class WorkerFun(AsyncFun):
         
 class NetworkFun(AsyncFun):
     def _emit(self, output):
-        self.signal.results.emit(output)
         self.signal.finished.emit()
+        self.signal.results.emit(output)
     def _emitter(self, output):
         def _fn():
             self._emit(output)

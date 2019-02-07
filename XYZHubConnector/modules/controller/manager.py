@@ -7,13 +7,56 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal, QObject, Qt
+from qgis.PyQt.QtCore import pyqtSignal, QObject
+from qgis.PyQt.QtCore import Qt, QMutex, QMutexLocker
+from threading import Lock
+from ..controller import BasicSignal
+
+from ..common.signal import make_print_qgis, close_print_qgis
+print_qgis = make_print_qgis("controller_manager",debug=True)
 
 class CanvasSignal(QObject):
     canvas_zoom = pyqtSignal()
     canvas_span = pyqtSignal()
     scale = pyqtSignal("double")
     extent = pyqtSignal()
+
+    
+
+class LoaderPool(object):
+    def __init__(self):
+        self.signal = BasicSignal()
+        self._n_active = 0
+        # self.mutex = QMutex()
+        self.lock = Lock()
+    def count_active(self):
+        return self._n_active
+    def start_dispatch(self, progress):
+        # if progress > 0: return
+
+        self._dispatch()
+        self.signal.progress.emit( self.count_active())
+
+        print_qgis("dispatch", progress, self.count_active() )
+    def try_finish(self):
+        self._try_finish()
+        
+    def _dispatch(self):
+        # locker = QMutexLocker(self.mutex)
+        with self.lock:
+            self._n_active += 1
+    def _release(self):
+        with self.lock:
+            self._n_active = max(0, self._n_active - 1)
+    def _try_finish(self):
+        self._release()
+        
+        if self.count_active() == 0:
+            self.signal.finished.emit()
+        
+        print_qgis("try_finish", self.count_active())
+
+
 class ControllerManager(object):
     """ simply store a list of Controller object inside
     """
@@ -24,14 +67,22 @@ class ControllerManager(object):
         self._ptr = 0
         self._lst = dict()
         self._reload_ptr = list()
+
+        self.ld_pool = LoaderPool()
     def __del__(self):
         # del self._lst
         # del self.signal
         print("del",self)
     def add(self, con):
+        con.signal.progress.connect(self.ld_pool.start_dispatch, Qt.QueuedConnection)
+
         ptr = self._add(con)
         con.signal.finished.connect( self.make_deregister_cb(ptr))
-        return ptr        
+
+        con.signal.finished.connect( self.ld_pool.try_finish)
+        con.signal.error.connect(lambda e: self.ld_pool.try_finish())
+        
+        return ptr
     def _add(self, con):
         ptr = self._ptr
         self._lst[ptr] = con

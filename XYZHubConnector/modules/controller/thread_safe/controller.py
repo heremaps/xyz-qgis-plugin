@@ -24,15 +24,18 @@ class Controller(object):
     def __init__(self):
         self.signal = BasicSignal()
         self.lst_fun = list()
+        self._cnt = 0
     # def __del__(self):
     #     del self.signal
     #     print("del",self)
+    # DEPRECATED
     def split_input(self):
         pass
     def merge_output(self):
         pass
     def next_fun(self, args):
         pass
+    #
     def config_fun(self, lst_fun):
         pass
     def get_lst_fun(self):
@@ -77,7 +80,15 @@ class ChainController(Controller):
         return _chain_interrupt
     def _handle_error(self, e):
         self.signal.error.emit(e)
-
+        
+    def start_args(self, args):
+        # increase the count of function calls
+        self.signal.progress.emit(self._cnt)
+        self._cnt += 1
+        Controller.start_args( self, args)
+    def start(self, *a, **kw):
+        # use start_args define in current class
+        ChainController.start_args( self, make_qt_args(*a,**kw))
 class LoopController(ChainController):
     """ Loop of Chain async function
     """
@@ -106,3 +117,6 @@ class LoopController(ChainController):
     def stop_loop(self):
         raise NotImplementedError("stop_loop")
         
+    def start(self, *a, **kw):
+        # use start_args define in base class
+        Controller.start_args( self, make_qt_args(*a,**kw))
