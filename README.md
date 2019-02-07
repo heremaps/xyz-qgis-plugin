@@ -44,3 +44,19 @@ test all folder (package)
 "C:/DEV/QGIS 3.0/bin/python-qgis.bat" -m unittest -v
 
 ```
+
+
+### Contributing
+
+We encourage contributions. For fixes and improvements it's helpful to have an [issue](http://github.com/heremaps/xyz-qgis-plugin/issues) to reference to. So please file them for us to provide focus. Also read the notes in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+When you add a new sub-command (as `bin/here-commandname.js`) please make sure to also include the relevant documentation (as `docs/commandname.md`).
+
+If the command is interacting with a HERE service, please include a links to the relevant service documenation at [developer.here.com](https://developer.here.com/documentation). 
+
+## License
+
+Copyright (C) 2018 HERE Europe B.V.
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
