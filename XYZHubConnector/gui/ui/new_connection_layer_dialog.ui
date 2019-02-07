@@ -163,6 +163,54 @@
           <number>0</number>
          </property>
          <item>
+          <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Tags</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit_tags">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="maxLength">
+            <number>2000</number>
+           </property>
+           <property name="placeholderText">
+            <string>comma-separated tags</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
           <widget class="QLabel" name="label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -395,7 +443,18 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>comboBox_server</tabstop>
+  <tabstop>comboBox_token</tabstop>
+  <tabstop>btn_use</tabstop>
+  <tabstop>btn_clear_token</tabstop>
+  <tabstop>lineEdit_tags</tabstop>
+  <tabstop>lineEdit_limit</tabstop>
+  <tabstop>lineEdit_max_feat</tabstop>
   <tabstop>tableView_space</tabstop>
+  <tabstop>checkBox_manage</tabstop>
+  <tabstop>btn_edit</tabstop>
+  <tabstop>btn_delete</tabstop>
+  <tabstop>btn_bbox</tabstop>
  </tabstops>
  <resources/>
  <connections>

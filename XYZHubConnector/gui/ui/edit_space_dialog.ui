@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>361</width>
-    <height>321</height>
+    <height>394</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -212,15 +212,15 @@
         </property>
        </widget>
       </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="lineEdit_copyright"/>
+      </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>License</string>
         </property>
        </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="lineEdit_copyright"/>
       </item>
       <item row="5" column="1">
        <widget class="QComboBox" name="comboBox_license">
@@ -232,6 +232,28 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_tags">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Tags</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QLineEdit" name="lineEdit_tags">
+        <property name="placeholderText">
+         <string>comma-separated tags</string>
         </property>
        </widget>
       </item>
@@ -251,12 +273,17 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>comboBox_server</tabstop>
   <tabstop>comboBox_token</tabstop>
   <tabstop>btn_use</tabstop>
-  <tabstop>lineEdit_id</tabstop>
+  <tabstop>btn_clear_token</tabstop>
   <tabstop>lineEdit_title</tabstop>
   <tabstop>plainTextEdit_description</tabstop>
   <tabstop>checkBox_shared</tabstop>
+  <tabstop>lineEdit_copyright</tabstop>
+  <tabstop>comboBox_license</tabstop>
+  <tabstop>lineEdit_tags</tabstop>
+  <tabstop>lineEdit_id</tabstop>
  </tabstops>
  <resources/>
  <connections>

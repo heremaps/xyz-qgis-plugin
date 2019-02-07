@@ -113,7 +113,12 @@ class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
         
     # check lineEdit as well
     def ui_valid_input(self, flag=None):
-        ok = self.ui_valid_token(flag) and len(self.lineEdit_title.text()) and len(self.plainTextEdit_description.toPlainText())
+        ok = (
+            self.ui_valid_token(flag) and 
+            len(self.lineEdit_title.text()) and 
+            len(self.plainTextEdit_description.toPlainText())
+        )
+            
         self.ui_enable_ok_button( ok)
         
     def start_upload(self):
@@ -121,14 +126,16 @@ class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
         self.conn_info.set_(token=self.get_input_token())
         
         token = self.get_input_token()
-        self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer))
+        self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer, tags=self.get_tags()))
         # self.network.add_space(token, self.get_space_info())
-
+    def get_tags(self):
+        return self.lineEdit_tags.text()
 class EditSpaceDialog(SpaceInfoDialog):
     title = "Edit XYZ Geospace"
     def __init__(self, parent=None):
         SpaceInfoDialog.__init__(self, parent)
         
         self.groupBox_token.setVisible(False) # no groupBox_token
+        self.groupBox_tags.setVisible(False) # no groupBox_tags
 
         self.setWindowTitle(self.title)

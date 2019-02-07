@@ -263,18 +263,24 @@ class XYZHubConnector(object):
         if isinstance(err, ChainInterrupt):
             net_err, idx = err.args[0:2]
             if isinstance(net_err, net_handler.NetworkError):
-                self.show_net_err_dialog(net_err)
-                return
+                ok = self.show_net_err_dialog(net_err)
+                if ok: return
         self.show_err_msgbar(err)
 
     def show_net_err_dialog(self, err):
         assert isinstance(err, net_handler.NetworkError)
-        status, reason, body = err.args[1:4]
-        msg = "%s: %s\n"%(status,reason) + \
-        "There was a problem connecting to the server"
+        reply_tag, status, reason, body = err.args[:4]
+        if reply_tag in ["count"]: # too many error
+            return 0
+            
+        msg = (
+            "%s: %s\n"%(status,reason) + 
+            "There was a problem connecting to the server"
+        )
         if status == 403:
             msg += "\n\n" + "Please make sure that the token has WRITE permission"
         ret = exec_warning_dialog("Network Error",msg, body)
+        return 1
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
             TAG_PLUGIN, repr(err),  
@@ -284,7 +290,8 @@ class XYZHubConnector(object):
         QgsMessageLog.logMessage( msg, TAG_PLUGIN, Qgis.Warning)
 
 
-    def cb_progress_busy(self, progress):
+    def cb_progress_busy(self, n_active):
+        if n_active > 1: return
         self.flag_pb_show=True
         self.cb_progress_refresh()
     def cb_progress_done(self):
@@ -369,6 +376,7 @@ class XYZHubConnector(object):
         self.con_man.add(con)
         con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
         con.signal.error.connect( self.cb_handle_error_msg )
+        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
         dialog.signal_use_token.connect( con.start_args)
 

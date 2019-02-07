@@ -44,8 +44,8 @@ class NetManager(QObject):
         return self._get_space_(conn_info, "statistics")
     def get_count(self, conn_info):
         reply = self._get_space_(conn_info, "count")
-        timeout = 1000
-        QTimer.singleShot(timeout, reply.abort)
+        # timeout = 1000
+        # QTimer.singleShot(timeout, reply.abort)
         return reply
     def get_meta(self, conn_info):
         return self._get_space_(conn_info, "space_meta")

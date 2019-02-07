@@ -41,7 +41,7 @@ def check_status(reply):
     limit, handle, layer_id = get_qt_property(reply,["limit", "handle", "layer_id"])
     meta, = get_qt_property(reply,["meta"])
     if err > 0:
-        msg = "%s: %s: %s - %s. request: %s"%(reply_tag, status, err_str, token, url)
+        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, token, url)
         # iface.messageBar().pushMessage("Network Error", msg, Qgis.Warning, 1)
         QgsMessageLog.logMessage( 
             "Network Error! : %s"%msg, "Network.Error", Qgis.Warning
@@ -50,15 +50,19 @@ def check_status(reply):
         QgsMessageLog.logMessage( 
             "Network Ok! : %s: %s - %s. request: %s"%(reply_tag, token, space_id, url), "Network", Qgis.Success
         )
-    return err_str, status, reason
+    return reply_tag, status, reason, err, err_str
 
 def on_received(reply):
-    err_str, status, reason = check_status( reply)
-    if status != 200:
-        url = reply.request().url().toString()
+    reply_tag, status, reason, err, err_str = check_status( reply)
+    url = reply.request().url().toString()
+    if err == reply.OperationCanceledError: # operation canceled
+        reason = "Timeout"
+        body = ""
+        raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
+    elif status != 200:
         raw = reply.readAll()
-        byt, txt, obj = decode_byte( raw)
-        raise NetworkError(err_str, status, reason, txt, url, reply)
+        byt, body, obj = decode_byte( raw)
+        raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
     return _onReceived( reply)
 
 def _onReceived(reply):

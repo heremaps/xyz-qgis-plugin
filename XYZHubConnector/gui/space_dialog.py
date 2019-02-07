@@ -96,6 +96,7 @@ class SpaceDialog(QDialog, ConnDialogUI, TokenUX):
         token, space_id = conn_info.get_xyz_space()
         if token != self.get_input_token(): return
         # print(token, space_id, obj)
+        # if not "type" in obj or not "count" in obj: return # ignore invalid response
         if obj["type"] == "StatisticsResponse":
             cnt = str(obj["count"]["value"])
         else:
@@ -137,21 +138,27 @@ class ConnectSpaceDialog(SpaceDialog):
 
         self._set_mask_number(self.lineEdit_limit)
         self._set_mask_number(self.lineEdit_max_feat)
+        self._set_mask_tags(self.lineEdit_tags)
+
         self.lineEdit_limit.setText("100")
         self.lineEdit_max_feat.setText("1000000")
     def get_params(self):
-        txt = [
+        key = ["tags","limit","max_feat"]
+        val = [
+            self.lineEdit_tags.text(),
             self.lineEdit_limit.text(),
             self.lineEdit_max_feat.text()
         ]
-        return dict(zip(
-            ["limit","max_feat"],
-            map(lambda x: int(x) if len(x) > 0 else None, txt)
-        ))
+        fn = [str, int, int]
+        return dict( 
+            (k, f(v)) for k,v,f in zip(key,val,fn) if len(v) > 0
+            )
     def _set_mask_number(self, lineEdit):
         # msk = "0" * lineEdit.maxLength() 
         # lineEdit.setInputMask( msk) # mess alignment
         lineEdit.setValidator(QRegExpValidator(QRegExp("[0-9]*")))
+    def _set_mask_tags(self, lineEdit):
+        lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
         
     def start_connect(self):
         index = self._get_current_index()

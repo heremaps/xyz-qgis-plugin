@@ -28,7 +28,8 @@ class InitLayerController(ChainController):
         """
         self.layer = XYZLayer(conn_info, meta)
         self.kw = kw
-        ChainController.start(self, conn_info, limit=1, reply_tag="init_layer")
+        kw_req = dict( (k, kw[k]) for k in ["tags"] if k in kw)
+        ChainController.start(self, conn_info, limit=1, reply_tag="init_layer", **kw_req)
     def start_args(self, args):
         a, kw = parse_qt_args(args)
         self.start( *a, **kw)
@@ -153,6 +154,7 @@ class ReloadLayerController(BaseLoader):
         self.layer = layer
         self.kw = kw
         self.max_feat = kw.get("max_feat", None)
+        self.fixed_params = dict( (k,kw[k]) for k in ["tags"] if k in kw)
         # print(super(BaseLoader,self), super()) 
         # super(BaseLoader,self): super of BaseLoader 
 
@@ -213,8 +215,8 @@ class ReloadLayerController(BaseLoader):
         # if not self.params_queue.has_next():
         #     self.params_queue.gen_params()
         params = self.params_queue.get_params()
-    
-        LoopController.start(self, conn_info, **params)
+        
+        LoopController.start(self, conn_info, **params, **self.fixed_params)
 
     def _process_render(self,txt,*a,**kw):
         # check if all feat fetched
@@ -301,7 +303,7 @@ class ReloadLayerController_bbox(ReloadLayerController):
         conn_info = self.layer.conn_info
         params = self.params_queue.get_params()
             
-        LoopController.start(self, conn_info, **params)
+        LoopController.start(self, conn_info, **params, **self.fixed_params)
     def _get_params_reply(self, reply):
         keys = ["bbox","limit"]
         return dict(zip(
@@ -322,10 +324,11 @@ class InitUploadLayerController(ChainController):
         self.pool = QThreadPool() # .globalInstance() will crash afterward
         self._config(network)
         
-    def start(self, conn_info, meta, vlayer):
+    def start(self, conn_info, meta, vlayer, **kw):
         # assumed start() is called once
         self.conn_info = copy.deepcopy(conn_info) # upload
         self.meta = meta # upload
+        self.kw = kw        
         if vlayer is None:
             return
         super(InitUploadLayerController, self).start( vlayer)
@@ -353,7 +356,7 @@ class InitUploadLayerController(ChainController):
         token, _ = conn_info.get_xyz_space()
         space_id = obj.get("id")
         conn_info.set_(space_id=space_id)
-        return conn_info, self.lst_added_feat
+        return make_qt_args(conn_info, self.lst_added_feat, **self.kw)
     def get_conn_info(self):
         return self.conn_info
     def get_meta(self):
@@ -377,9 +380,11 @@ class UploadLayerController(ParallelLoop):
         self.feat_cnt += len(obj["features"])
     def get_feat_cnt(self):
         return self.feat_cnt
-    def start(self, conn_info, lst_added_feat):
+    def start(self, conn_info, lst_added_feat, **kw):
         self.conn_info = conn_info
         self.lst_added_feat = lst_added_feat
+
+        self.fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
 
         if self.count_active() == 0:
             super(UploadLayerController, self).reset()
@@ -394,7 +399,7 @@ class UploadLayerController(ParallelLoop):
             
         conn_info = self.get_conn_info()
         feat = self.lst_added_feat.get_params()
-        LoopController.start(self, conn_info, feat)
+        LoopController.start(self, conn_info, feat, **self.fixed_params)
     def get_conn_info(self):
         return self.conn_info
 

@@ -63,8 +63,8 @@ class Worker(QRunnable):
             self.signal.error.emit( obj) #worker2
             # self._cache["error"] = obj
         else:
-            self.signal.results.emit(output) #worker2 # Return the result of the processing
-            # self._cache["results"] = output
-        finally:
             self._finished=True
             self.signal.finished.emit()  # Done
+            self.signal.results.emit(output) #worker2 # Return the result of the processing
+            # self._cache["results"] = output
+            

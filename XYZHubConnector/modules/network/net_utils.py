@@ -30,7 +30,8 @@ def decode_byte(byt):
     if check_gzip(byt):
         byt = gzip.decompress(byt)
     txt = byt.decode("utf-8")
-    obj = json.loads(txt)
+    # txt = unicode(byt,"utf-8",errors="strict") # other byte decode approach
+    obj = json.loads(txt) if len(txt) else dict()
     return byt, txt, obj
 def _make_headers(token, **params):
     if token is None: token = TOKEN
