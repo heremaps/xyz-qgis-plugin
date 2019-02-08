@@ -23,6 +23,9 @@ API_PRD_URL = "https://xyz.api.here.com/hub"
 API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
 API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
 
+from ..common.signal import make_print_qgis, close_print_qgis
+print_qgis = make_print_qgis("net_utils")
+
 def check_gzip(byt):
     return byt[:2] == b"\037\213" # get from gzip.py
 def decode_byte(byt):
@@ -30,8 +33,13 @@ def decode_byte(byt):
     if check_gzip(byt):
         byt = gzip.decompress(byt)
     txt = byt.decode("utf-8")
+    # print_qgis(txt[:100])
     # txt = unicode(byt,"utf-8",errors="strict") # other byte decode approach
-    obj = json.loads(txt) if len(txt) else dict()
+    try:
+        obj = json.loads(txt) if len(txt) else dict()
+    except json.JSONDecodeError:
+        obj = dict()
+
     return byt, txt, obj
 def _make_headers(token, **params):
     if token is None: token = TOKEN

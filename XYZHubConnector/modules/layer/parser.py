@@ -90,7 +90,8 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
             if not k.startswith("@"): continue
             v = props[k]
             if isinstance(v,str):
-                props[k] = json.loads(v)
+                try: props[k] = json.loads(v)
+                except json.JSONDecodeError: pass # naively handle error
         return props
     def _single_feature(feat, transformer):
         # existing feature json
