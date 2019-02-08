@@ -145,9 +145,9 @@ class ConnectSpaceDialog(SpaceDialog):
     def get_params(self):
         key = ["tags","limit","max_feat"]
         val = [
-            self.lineEdit_tags.text(),
-            self.lineEdit_limit.text(),
-            self.lineEdit_max_feat.text()
+            self.lineEdit_tags.text().strip(),
+            self.lineEdit_limit.text().strip(),
+            self.lineEdit_max_feat.text().strip()
         ]
         fn = [str, int, int]
         return dict( 

@@ -126,10 +126,13 @@ class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
         self.conn_info.set_(token=self.get_input_token())
         
         token = self.get_input_token()
-        self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer, tags=self.get_tags()))
+
+        tags = self.lineEdit_tags.text().strip()
+        kw = dict(tags=tags) if len(tags) else dict()
+
+        self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer, **kw))
         # self.network.add_space(token, self.get_space_info())
-    def get_tags(self):
-        return self.lineEdit_tags.text()
+
 class EditSpaceDialog(SpaceInfoDialog):
     title = "Edit XYZ Geospace"
     def __init__(self, parent=None):
