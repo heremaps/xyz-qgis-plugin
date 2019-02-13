@@ -31,6 +31,7 @@ from .modules.space_loader import *
 # from .modules.bbox_loader import (InitLayerBboxController, InitLayerBboxOneController, 
 # InitLayerOneController,ReloadLayerBboxController)
 from .modules.refactor_loader import *
+from .modules import loader
 from .modules.layer.manager import LayerManager
 
 from .modules.network import NetManager
@@ -403,27 +404,15 @@ class XYZHubConnector(object):
 
 
         ############ connect btn        
-        con_load = ReloadLayerController(self.network, n_parallel=2)
+        con_load = loader.ReloadLayerController(self.network, n_parallel=2)
         self.con_man.add(con_load)
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
         con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         con_load.signal.error.connect( self.cb_handle_error_msg )
 
+        dialog.signal_space_connect.connect( con_load.start_args)
 
-        # con = LoadLayerController(self.network, n_parallel=1, max_feat=100000)
-        con = InitExtLayerController(self.network)
-        # con = InitLayerController(self.network)
-        self.con_man.add(con)
-        # con.signal.finished.connect( self.make_cb_success("Loading finish") )
-        
-        dialog.signal_space_connect.connect( con.start_args)
-
-        con.signal.results.connect( self.layer_man.add_args)
-        # con.signal.results.connect( con_bbox_reload.set_params_args)
-        con.signal.results.connect( con_load.start_args, Qt.QueuedConnection)
-        con.signal.error.connect( self.cb_handle_error_msg )
-
-        # con.signal.error.connect( print)
+        # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
 
 
         dialog.exec_()

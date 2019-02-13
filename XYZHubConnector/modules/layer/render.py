@@ -43,13 +43,17 @@ def get_vlayer(layer_id):
     return vlayer
     
 def merge_feature(txt, vlayer, fields, exist_feat_id):
+    raise NotImplementedError("parsed_feat")
     key = parser.QGS_XYZ_ID
     feat, new_fields = parser.xyz_json_to_feature(txt, fields)
     feat = [ft for ft in feat if ft.attribute(key) not in exist_feat_id]
     return vlayer, feat, new_fields
-def parse_feature(txt, vlayer, fields):
-    feat, new_fields = parser.xyz_json_to_feature(txt, fields)
-    return vlayer, feat, new_fields
+
+# mixed-geom
+def parse_feature(txt, map_fields):
+    map_feat, map_fields, crs = parser.xyz_json_to_feature(txt, map_fields)
+    return map_feat, map_fields, crs
+    
 def truncate_add_render(vlayer, feat, new_fields):
     pr = vlayer.dataProvider()
     if pr.truncate():

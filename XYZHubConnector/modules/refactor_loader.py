@@ -8,7 +8,7 @@
 ###############################################################################
 
 import json
-from qgis.PyQt.QtCore import QThreadPool, QTimer
+from qgis.PyQt.QtCore import QThreadPool
 from qgis.core import QgsProject
 
 from .controller import AsyncFun, ChainController, NetworkFun, LoopController, WorkerFun, BasicSignal
@@ -16,7 +16,7 @@ from .controller import make_qt_args, parse_qt_args, parse_exception_obj, ChainI
 from .layer import XYZLayer, parser, render, queue, bbox_utils
 from .network import net_handler
 from ..gui.util_dialog import exec_warning_dialog
-
+from .loop_loader import BaseLoader, ParallelLoop
 
 class InitLayerController(ChainController):
     def __init__(self, network):
@@ -62,78 +62,6 @@ class InitExtLayerController(InitLayerController):
 
 class InvalidLayerError(Exception):
     pass
-
-    
-########################
-# Base Load
-########################
-
-class ParallelLoop(LoopController):
-    def __init__(self, n_parallel=1):
-        super().__init__()
-        self.n_parallel = n_parallel
-        self._n_active = 0
-    def count_active(self):
-        return self._n_active
-    def _release(self):
-        self._n_active -= 1
-    def _try_finish(self):
-        self._release()
-        if self.count_active() == 0:
-            self.signal.finished.emit()
-    def dispatch_parallel(self, delay=0.1, delay_offset=0.001, n_parallel=1):
-        for i in range(n_parallel): 
-            d = delay*i  + delay_offset
-            QTimer.singleShot(d, self._dispatch)
-    def _dispatch(self):
-        if self.count_active() == 0:
-            self.signal.progress.emit( 0)
-        
-        self._n_active += 1
-        self._run_loop()
-    def reset(self, **kw):
-        self._n_active = 0
-
-
-class BaseLoader(ParallelLoop):
-    LOADING = "loading"
-    ALL_FEAT = "all_feature"
-    MAX_FEAT = "max_feat"
-    FINISHED = "finished"
-    STOPPED = "stopped"
-    
-    def __init__(self):
-        super().__init__()
-        self.status = self.LOADING
-    def _check_valid(self):
-        return True
-    def _check_status(self):
-        return True
-    def _run(self):
-        LoopController.start(self)
-    def _run_loop(self):
-        if not self._check_valid():
-            return
-        if not self._check_status():
-            return
-        self._run()
-    def _try_finish(self):
-        self._release()
-        if self.count_active() == 0:
-            self.status = self.FINISHED
-            self.signal.finished.emit()
-    def stop_loop(self):
-        self.status = self.STOPPED
-    def reset(self, **kw):
-        super(BaseLoader, self).reset(**kw)
-        self.status = self.LOADING
-        
-    def start(self, **kw):
-        if not self._check_valid():
-            return
-        if self.count_active() == 0:
-            self.reset( **kw)
-        self.dispatch_parallel(n_parallel=self.n_parallel)
 
 ########################
 # Load

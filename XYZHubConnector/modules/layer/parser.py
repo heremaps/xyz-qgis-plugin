@@ -173,7 +173,7 @@ def fix_json_geom_single(ft):
     ft["properties"].update(uom["properties"])
     return ft
 
-def xyz_json_to_feature(txt, fields=None):
+def xyz_json_to_feature(txt, map_fields=dict()):
     """ Convert xyz geojson to feature
     assume input geojson use crs = QgsCoordinateReferenceSystem('EPSG:4326')
     or geom.transform(transformer)
@@ -236,13 +236,27 @@ def xyz_json_to_feature(txt, fields=None):
         # print_qgis("id: %s"%feat.id())
         # print_qgis("names", names, type(names))
 
-        geom = feat_json.get("geometry")
-        if not geom is None:
-            s = json.dumps(geom)
-            geom_ = QgsGeometry.fromWkt(ogr.CreateGeometryFromJson(s).ExportToWkt())
-            feat.setGeometry(geom_)
         return feat
         
+    def _single_feature_map(feat_json, map_feat, map_fields):
+        geom = feat_json.get("geometry")
+        g = geom["type"] if geom is not None else None
+        if g not in map_fields:
+            map_fields[g] = QgsFields()
+        
+        fields = map_fields[g]
+        ft = _single_feature(feat_json, fields)
+
+        if g in map_feat:
+            map_feat[g].append(ft)
+        else:
+            map_feat[g] = [ft]
+
+        if g is None: return
+            
+        s = json.dumps(geom)
+        geom_ = QgsGeometry.fromWkt(ogr.CreateGeometryFromJson(s).ExportToWkt())
+        ft.setGeometry(geom_)
 
     # DEBUG  
     # fname = make_unique_full_path()
@@ -251,13 +265,15 @@ def xyz_json_to_feature(txt, fields=None):
 
 
     obj = json.loads(txt)
-    feature = obj.get("features")
+    feature = obj["features"]
+
     # print_qgis(feature)
-    if fields is None: 
-        fields = QgsFields()
-    else:
-        fields = QgsFields(fields)
-    if not feature is None:
+
+    map_feat = dict()
+
+    for ft in feature:
+        _single_feature_map(ft, map_feat, map_fields) 
+        
         # # try to fix bad geom (copy geom from uom)
         # if "geometry" not in feature[0]:
         #     feat = list( 
@@ -265,16 +281,11 @@ def xyz_json_to_feature(txt, fields=None):
         #         for ft in feature
         #     )
         # else:
-        feat = list( 
-            _single_feature(ft, fields) 
-            for ft in feature
-        )
-    else:
-        feat = list()
     # print_qgis(obj.get("features"))
     # print_qgis(list(feat[-1].attributes()) if len(feat) else "")
     # print_qgis("fields", fields.count(), "names", fields.names())
     # print_qgis([(f.name(),f.typeName()) for f in fields])
 
-    
-    return feat, fields
+    crs_str = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
+
+    return map_feat, map_fields, crs_str
