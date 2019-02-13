@@ -241,8 +241,9 @@ def xyz_json_to_feature(txt, map_fields=dict()):
     def _single_feature_map(feat_json, map_feat, map_fields):
         geom = feat_json.get("geometry")
         g = geom["type"] if geom is not None else None
-        if g not in map_fields:
-            map_fields[g] = QgsFields()
+
+        # promote to multi geom
+        if g is not None and not g.startswith("Multi"): g = "Multi" + g
         
         fields = map_fields[g]
         ft = _single_feature(feat_json, fields)
@@ -270,6 +271,7 @@ def xyz_json_to_feature(txt, map_fields=dict()):
     # print_qgis(feature)
 
     map_feat = dict()
+    crs = QgsCoordinateReferenceSystem('EPSG:4326')
 
     for ft in feature:
         _single_feature_map(ft, map_feat, map_fields) 
@@ -286,6 +288,5 @@ def xyz_json_to_feature(txt, map_fields=dict()):
     # print_qgis("fields", fields.count(), "names", fields.names())
     # print_qgis([(f.name(),f.typeName()) for f in fields])
 
-    crs_str = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
 
-    return map_feat, map_fields, crs_str
+    return map_feat, map_fields

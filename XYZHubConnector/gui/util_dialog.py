@@ -15,8 +15,9 @@ class ConfirmDialog(QMessageBox):
         self.setText(txt)
         self.setStandardButtons(self.Ok | self.Cancel)
 
-def exec_warning_dialog(title, msg, body):
+def exec_warning_dialog(title, msg, body=None):
     box = QMessageBox(QMessageBox.Warning, title, msg, QMessageBox.Close)
-    box.setDetailedText(body)
+    if not body is None:
+        box.setDetailedText(body)
 
     return box.exec_()

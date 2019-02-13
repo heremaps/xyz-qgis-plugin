@@ -262,10 +262,12 @@ class XYZHubConnector(object):
     def cb_handle_error_msg(self, e):
         err = parse_exception_obj(e)
         if isinstance(err, ChainInterrupt):
-            net_err, idx = err.args[0:2]
-            if isinstance(net_err, net_handler.NetworkError):
-                ok = self.show_net_err_dialog(net_err)
+            e0, idx = err.args[0:2]
+            if isinstance(e0, net_handler.NetworkError):
+                ok = self.show_net_err_dialog(e0)
                 if ok: return
+            elif isinstance(e0, loader.EmptyXYZSpaceError):
+                ret = exec_warning_dialog("Warning","Requested query returns no features")
         self.show_err_msgbar(err)
 
     def show_net_err_dialog(self, err):

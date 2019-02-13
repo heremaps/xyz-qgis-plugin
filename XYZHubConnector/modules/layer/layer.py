@@ -13,8 +13,10 @@ from . import parser
 
 #init_shp_layer
 from ...utils import make_unique_full_path 
-from qgis.core import  QgsVectorFileWriter
+from qgis.core import  QgsVectorFileWriter, QgsCoordinateReferenceSystem
 from qgis.PyQt.QtCore import pyqtSignal, QObject
+
+from ...models.space_model import parse_copyright
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
@@ -31,7 +33,13 @@ class XYZLayer(object):
         self.ext = ext
 
         self.map_vlayer = dict()
+        self._map_vlayer = dict()
         self.map_fields = dict()
+
+
+        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
+        for geom in ["MultiPoint","MultiLineString","MultiPolygon",None]:
+            self._init_ext_layer(geom, crs)
 
     def _save_meta(self, vlayer, space_info):
         vlayer.setCustomProperty("xyz-hub", space_info)
@@ -40,9 +48,9 @@ class XYZLayer(object):
         meta = vlayer.metadata()
         if lic is not None:
             meta.setLicenses([lic])
-        if cr is not None:
-            txt = cr[0]["label"]
-            meta.setRights([txt])
+        if isinstance(cr, list):
+            lst_txt = parse_copyright(cr)
+            meta.setRights(lst_txt)
         vlayer.setMetadata(meta)
 
     def is_valid(self, geom_str):
@@ -63,8 +71,13 @@ class XYZLayer(object):
         for vlayer in self.map_vlayer.values():
             cnt += vlayer.featureCount()
         return cnt
-        
-    def init_ext_layer(self, geom_str, crs):
+    def show_ext_layer(self, geom_str):
+        vlayer = self._map_vlayer[geom_str]
+        self.map_vlayer[geom_str] = vlayer
+
+        QgsProject.instance().addMapLayer(vlayer)
+        return vlayer
+    def _init_ext_layer(self, geom_str, crs):
         """ given non map of feat, init a qgis layer
         :map_feat: {geom_string: list_of_feat}
         """
@@ -83,10 +96,11 @@ class XYZLayer(object):
     
         
         vlayer = QgsVectorLayer(fname, layer_name, "ogr")
-        self.map_vlayer[geom_str] = vlayer
+        self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer, meta)
 
-        QgsProject.instance().addMapLayer(vlayer)
+        self.map_fields[geom_str] = vlayer.fields()
+        # QgsProject.instance().addMapLayer(vlayer)
         
         return vlayer
 #DEPRECATED

@@ -16,13 +16,15 @@ from .controller import make_qt_args, parse_qt_args, parse_exception_obj, ChainI
 from .layer import XYZLayer, parser, render, queue, bbox_utils
 from .network import net_handler
 from ..gui.util_dialog import exec_warning_dialog
-from .loop_loader import BaseLoader, ParallelLoop #, ParallelFun
+from .loop_loader import BaseLoader, ParallelLoop, ParallelFun
 
 ########################
 # Load
 ########################
 
-class InvalidLayerError(Exception):
+class EmptyXYZSpaceError(Exception):
+    pass
+class ManualInterrupt(Exception):
     pass
     
 class ReloadLayerController(BaseLoader):
@@ -63,7 +65,8 @@ class ReloadLayerController(BaseLoader):
             WorkerFun( net_handler.on_received, self.pool),
             AsyncFun( self._process_render), 
             WorkerFun( render.parse_feature, self.pool),
-            AsyncFun( self._render), 
+            AsyncFun( self._dispatch_render), 
+            ParallelFun( self._render_single), 
             # AsyncFun( render.add_feature_render), # may crash !? -> AsyncFun
         ])
         # error
@@ -73,6 +76,7 @@ class ReloadLayerController(BaseLoader):
         assert self.status != self.FINISHED
         # print(self.status)
         if self.status == self.STOPPED: 
+            self.signal.error.emit(ManualInterrupt())
             return False
         elif self.status == self.ALL_FEAT:
             if not self.params_queue.has_retry():
@@ -101,8 +105,11 @@ class ReloadLayerController(BaseLoader):
     def _process_render(self,txt,*a,**kw):
         # check if all feat fetched
         obj = json.loads(txt)
-        limit = kw["limit"]
-        # feat_cnt = len(obj["features"])
+        feat_cnt = len(obj["features"])
+        total_cnt = self.get_feat_cnt()
+        if feat_cnt + total_cnt == 0:
+            raise EmptyXYZSpaceError()
+        # limit = kw["limit"]
         # if feat_cnt == 0 or feat_cnt < limit:
         if "handle" in obj:
             handle = int(obj["handle"])
@@ -111,20 +118,21 @@ class ReloadLayerController(BaseLoader):
         else:
             if self.status == self.LOADING:
                 self.status = self.ALL_FEAT
-        # vlayer = self.layer.get_layer()
         map_fields = self.layer.get_map_fields()
         return make_qt_args(txt, map_fields)
-
+    
+    # non-threaded
     def _render(self, *parsed_feat):
-        map_feat, map_fields, crs = parsed_feat
+        map_feat, map_fields = parsed_feat
         for geom in map_feat.keys():
-            feat = map_feat[geom]
-            fields = map_fields[geom]
 
             if not self.layer.is_valid( geom):
-                vlayer=self.layer.init_ext_layer(geom, crs)
+                vlayer=self.layer.show_ext_layer(geom)
             else:
                 vlayer=self.layer.get_layer( geom)
+
+            feat = map_feat[geom]
+            fields = map_fields[geom]
 
             render.add_feature_render(vlayer, feat, fields)
 
@@ -151,7 +159,24 @@ class ReloadLayerController(BaseLoader):
         # otherwise emit error
         self.signal.error.emit(err)
 
+    #threaded (parallel)
+    def _dispatch_render(self, *parsed_feat):
+        map_feat, map_fields = parsed_feat
+        lst_args = [(
+            geom,
+            map_feat[geom],
+            map_fields[geom]
+            )
+            for geom in map_feat.keys()
+        ]
+        return lst_args
+    def _render_single(self, geom, feat, fields):
+        if not self.layer.is_valid( geom):
+            vlayer=self.layer.show_ext_layer(geom)
+        else:
+            vlayer=self.layer.get_layer( geom)
 
+        render.add_feature_render(vlayer, feat, fields)
 
     # def render_dispatch(self,parsed_feat,*a,**kw):
     #     map_feat, crs = parsed_feat
@@ -162,7 +187,7 @@ class ReloadLayerController(BaseLoader):
         
     # def _render_dispatch(self, geom, feat,crs,a, kw):
     #     if not self.layer.is_valid( geom):
-    #         vlayer=self.layer.init_ext_layer(geom, crs)
+    #         vlayer=self.layer.show_ext_layer(geom, crs)
     #     else:
     #         vlayer=self.layer.get_layer( geom)
 

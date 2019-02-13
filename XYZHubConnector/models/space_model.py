@@ -9,7 +9,14 @@
 
 
 from qgis.PyQt.QtCore import QAbstractTableModel, Qt, QVariant
-
+def parse_copyright(v):
+    if not isinstance(v, list): return v
+    lst = [
+        ". ".join(el[j] for j in ["label","alt"] if j in el)
+        for el in v
+    ]
+    return lst
+        
 class QJsonTableModel(QAbstractTableModel):
     _header = list()
     def __init__(self, parent):
@@ -26,8 +33,10 @@ class QJsonTableModel(QAbstractTableModel):
             return QVariant()
         k = self.header[index.column()]
         row = self.obj[index.row()]
-        v = row.get(k)
-        return QVariant("") if v is None else QVariant(str(v))
+        v = row.get(k, "")
+        if k == "copyright" and isinstance(v, list):
+            v = "\n".join( parse_copyright(v))
+        return QVariant(str(v))
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:
             return QVariant()
