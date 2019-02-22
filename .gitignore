@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+.rope*
+*.zip
+build/
+.vscode
+
+#.gitignore
+old/
+draft/
+#*.old*
+input/
+output/
+tmp*/
