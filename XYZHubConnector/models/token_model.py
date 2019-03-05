@@ -96,7 +96,8 @@ class GroupTokenModel(TokenModel):
         for s in self.SERVERS:
             if not token_groups.has_section(s):
                 token_groups.add_section(s)
-        with open(ini) as f:
+        with open(ini,"a+") as f:
+            f.seek(0)
             token_groups.read_file(f)
         
         self.token_groups = token_groups
