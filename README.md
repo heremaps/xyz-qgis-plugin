@@ -1,6 +1,9 @@
 # XYZ Hub Connector - QGIS plugin
 
+![preview](res/preview.png)
+
 XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to connect and to update data directly into [HERE XYZ Hub](https://www.here.xyz/). QGIS users can easily and quickly publish their work and analysis in vectorized format to the XYZ platform. Public and personal XYZ space data can be loaded into QGIS for further analysis and visualization.
+
 
 ## Installation
 
@@ -36,13 +39,16 @@ Enabled | x
 
 Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**
 
-To load data from an XYZ space into QGIS, select menu `New Connection` and provide a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
+![toolbar](res/toolbar.png)
 
-To upload current Vector Layer to a new XYZ Hub space, select menu `Upload to a new XYZ Space` and fill in the details. For this to work, make sure that your token also has write-level permissions.
+`New XYZ Hub Connection` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
 
-To empty the temporary cache folder, select Clear cache. Active layers will be invalid after clearing cache.
+`Upload to a new XYZ Space` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
 
-**Note**: The default token is a read-only token for demo only. Please use your own token with read/write access to enable all features.
+`Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
+
+
+![new connection](res/new-connection.png)
 
 ## Development
 
