@@ -1,9 +1,9 @@
 # XYZ Hub Connector - QGIS plugin
 
-![preview](res/preview.png)
 
 XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to connect and to update data directly into [HERE XYZ Hub](https://www.here.xyz/). QGIS users can easily and quickly publish their work and analysis in vectorized format to the XYZ platform. Public and personal XYZ space data can be loaded into QGIS for further analysis and visualization.
 
+![new connection](res/new-connection.png)
 
 ## Installation
 
@@ -47,8 +47,6 @@ Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can
 
 `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
 
-
-![new connection](res/new-connection.png)
 
 ## Development
 
