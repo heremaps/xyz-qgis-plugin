@@ -45,6 +45,8 @@ Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can
 
 `Upload to a new XYZ Space` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
 
+`Add HERE Map Tile` : create HERE Map Tile layer given valid app_id and app_code.
+
 `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
 
 
