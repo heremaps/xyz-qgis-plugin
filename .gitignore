@@ -1,14 +1,22 @@
+### ide
 __pycache__
 *.pyc
 .rope*
-*.zip
-build/
 .vscode
 
-#.gitignore
+### build files
+*.zip
+build/
+
+### env
+env.sh
+
+### draft
 old/
 draft/
 #*.old*
+tmp*/
+
+### test cases
 input/
 output/
-tmp*/

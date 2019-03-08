@@ -17,35 +17,41 @@ from qgis.core import Qgis, QgsMessageLog
 from qgis.PyQt.QtCore import QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QToolButton, QWidgetAction
+from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
+
+from . import config
+from . import utils
 
 from .gui.space_dialog import ConnectManageSpaceDialog, ManageSpaceDialog
 from .gui.space_info_dialog import EditSpaceDialog, UploadNewSpaceDialog
 from .gui.util_dialog import ConfirmDialog
+from .gui.basemap_dialog import BaseMapDialog
 
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
-from . import config
-from . import utils
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args
-from .modules.space_loader import *
+from .modules.controller.manager import ControllerManager
 
-from .modules.refactor_loader import *
 from .modules import loader
+from .modules.space_loader import *
+from .modules.refactor_loader import *
+
 from .modules.layer.manager import LayerManager
+from .modules.layer import bbox_utils
 
 from .modules.network import NetManager
-from .modules.layer import bbox_utils
-from .modules.controller.manager import ControllerManager
+
+from .modules import basemap
+from .modules.basemap.auth_manager import AuthManager
 
 from .modules.common.error import format_traceback
 
-from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 
 PLUGIN_NAME = config.PLUGIN_NAME
-
 TAG_PLUGIN = "XYZ Hub"
 
 DEBUG = 1
+
 from .modules.common.signal import make_print_qgis, close_print_qgis
 print_qgis = make_print_qgis(TAG_PLUGIN,debug=True)
 
@@ -80,6 +86,9 @@ class XYZHubConnector(object):
 
         self.action_clear_cache = QAction("Clear cache", parent)
         self.action_upload = QAction("Upload to New XYZ Geospace", parent)
+        self.action_basemap = QAction("Add a HERE basemap", parent)
+
+
         self.action_magic_sync = QAction("Magic Sync (EXPERIMENTAL)", parent)
         self.action_manage = QAction("Manage XYZ Geospace (EXPERIMENTAL)", parent)
         self.action_edit = QAction("Edit/Delete XYZ Geospace (EXPERIMENTAL)", parent)
@@ -99,6 +108,7 @@ class XYZHubConnector(object):
         self.action_upload.triggered.connect(self.open_upload_dialog)
         self.action_magic_sync.triggered.connect(self.open_magic_sync_dialog)
         self.action_clear_cache.triggered.connect(self.open_clear_cache_dialog)
+        self.action_basemap.triggered.connect(self.open_basemap_dialog)
 
         ######## Add the toolbar + button
         self.toolbar = self.iface.addToolBar(PLUGIN_NAME)
@@ -106,7 +116,7 @@ class XYZHubConnector(object):
 
         tool_btn = QToolButton(self.toolbar)
 
-        self.actions = [self.action_connect, self.action_upload, self.action_clear_cache] # , self.action_magic_sync, self.action_manage, self.action_edit
+        self.actions = [self.action_connect, self.action_upload, self.action_basemap, self.action_clear_cache] # , self.action_magic_sync, self.action_manage, self.action_edit
         for a in self.actions:
             tool_btn.addAction(a)
             self.iface.addPluginToWebMenu(self.web_menu, a)
@@ -137,7 +147,11 @@ class XYZHubConnector(object):
 
         # parent = self.iface.mainWindow()
         parent = QgsProject.instance()
+
         ######## Init xyz modules
+        self.map_basemap_meta = basemap.load_default_xml()
+        self.auth_manager = AuthManager(config.PLUGIN_DIR +"/auth.ini")
+        
         self.token_model = GroupTokenModel(parent)
         # self.layer = LayerManager(parent, self.iface)
 
@@ -408,3 +422,17 @@ class XYZHubConnector(object):
 
     def open_magic_sync_dialog(self):
         pass
+
+    def open_basemap_dialog(self):
+        parent = self.iface.mainWindow()
+        auth = self.auth_manager.get_auth()
+        dialog = BaseMapDialog(parent)
+        dialog.config(self.map_basemap_meta, auth)
+        dialog.signal_add_basemap.connect( self.add_basemap_layer)
+
+        dialog.exec_()
+    def add_basemap_layer(self, args):
+        a, kw = parse_qt_args(args)
+        meta, app_id, app_code = a
+        self.auth_manager.save(app_id, app_code)
+        basemap.add_basemap_layer( meta, app_id, app_code)
