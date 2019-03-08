@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=XYZ Hub Connector
-version=1.5.5
+version=1.5.6
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
