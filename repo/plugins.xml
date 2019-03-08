@@ -2,11 +2,12 @@
 <?xml-stylesheet type="text/xsl" href="style/plugins.xsl" ?>
 <plugins>
     <pyqgis_plugin name="XYZ Hub Connector" version="1.5.6" plugin_id="1">
-        <description><![CDATA[Connect QGIS to your personal HERE Space on XYZ Hub]]></description>
+        <description><![CDATA[Connect QGIS to your personal space on HERE XYZ Hub]]></description>
         <about>Integrates XYZ Hub API seamlessly into QGIS, allows users to connect and to update data directly into XYZ Hub. QGIS users can publish easily and quickly their work and analysis in vectorized format to XYZ Hub platform. Public and personal XYZ space can be loaded into QGIS for further analysis and visualization. The plugin is licensed under MIT License. </about>
         <version>1.5.6</version>
         <qgis_minimum_version>3.0.0</qgis_minimum_version>
         <qgis_maximum_version>3.99.0</qgis_maximum_version>
+        <icon>heremaps/xyz-qgis-plugin/master/repo/xyz.png</icon>
         <homepage><![CDATA[http://www.here.com/]]></homepage>
         <file_name>XYZHubConnector.zip</file_name>
         <tracker><![CDATA[http://www.here.com/]]></tracker>
