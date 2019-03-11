@@ -10,7 +10,7 @@
 [general]
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
-description=XYZ Hub Connector
+description=Connect QGIS to your personal space on HERE XYZ Hub
 version=1.5.6
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
@@ -29,11 +29,12 @@ repository=https://github.com/heremaps/xyz-qgis-plugin
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=HERE XYZ Hub, connector, python
+tags=HERE XYZ Hub, connector, api, upload, download
 
 homepage=https://github.com/heremaps/xyz-qgis-plugin
 category=Plugins
 icon=images/xyz.png
+
 # experimental flag
 experimental=False
 

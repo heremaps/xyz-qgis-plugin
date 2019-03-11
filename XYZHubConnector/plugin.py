@@ -303,11 +303,11 @@ class XYZHubConnector(object):
         layer_id = self.iface.activeLayer().id()
         layer = self.layer_man.get(layer_id)
         self.load_bbox(con_bbox_reload, make_qt_args(layer))
-
+        
     # UNUSED
     def refresh_canvas(self):
+        # self.iface.activeLayer().triggerRepaint()
         self.iface.mapCanvas().refresh()
-        # assert False # debug unload module
     def previous_canvas_extent(self):
         self.iface.mapCanvas().zoomToPreviousExtent()
     #
@@ -328,7 +328,7 @@ class XYZHubConnector(object):
         ############ edit btn   
 
         con = EditSpaceController(self.network)
-        self.con_man.add(con)
+        self.con_man.add_background(con)
         con.signal.finished.connect( dialog.btn_use.clicked.emit )
         con.signal.error.connect( self.cb_handle_error_msg )
         dialog.signal_edit_space.connect( con.start_args)
@@ -336,7 +336,7 @@ class XYZHubConnector(object):
         ############ delete btn        
 
         con = DeleteSpaceController(self.network)
-        self.con_man.add(con)
+        self.con_man.add_background(con)
         con.signal.results.connect( dialog.btn_use.clicked.emit )
         con.signal.error.connect( self.cb_handle_error_msg )
         dialog.signal_del_space.connect( con.start_args)
@@ -362,9 +362,9 @@ class XYZHubConnector(object):
 
         ############ connect btn        
         con_load = loader.ReloadLayerController(self.network, n_parallel=2)
-        self.con_man.add(con_load)
-        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
+        self.con_man.add_background(con_load)
         con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
+        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
         con_load.signal.error.connect( self.cb_handle_error_msg )
 
         dialog.signal_space_connect.connect( con_load.start_args)
@@ -373,6 +373,7 @@ class XYZHubConnector(object):
 
 
         dialog.exec_()
+        self.con_man.finish_fast()
         # self.startTime = time.time()
 
     def open_manage_dialog(self):
@@ -397,19 +398,19 @@ class XYZHubConnector(object):
 
 
         con_upload = UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add(con_upload)
+        self.con_man.add_background(con_upload)
         con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
         con_upload.signal.error.connect( self.cb_handle_error_msg )
 
         con = InitUploadLayerController(self.network)
-        self.con_man.add(con)
+        self.con_man.add_background(con)
 
         dialog.signal_upload_new_space.connect( con.start_args)
         con.signal.results.connect( con_upload.start_args)
         con.signal.error.connect( self.cb_handle_error_msg )
 
         dialog.exec_()
-
+        self.con_man.finish_fast()
     def open_magic_sync_dialog(self):
         pass
 
