@@ -29,6 +29,9 @@ class ManualInterrupt(Exception):
     pass
     
 class ReloadLayerController(BaseLoader):
+    """ Load XYZ space into several qgis layer separated by Geometry type.
+    If space is empty, no layer shall be created.
+    """
     def __init__(self, network, n_parallel=1):
         super(ReloadLayerController, self).__init__()
         self.pool = QThreadPool() # .globalInstance() will crash afterward
