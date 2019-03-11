@@ -150,7 +150,7 @@ class XYZHubConnector(object):
 
         ######## Init xyz modules
         self.map_basemap_meta = basemap.load_default_xml()
-        self.auth_manager = AuthManager(config.PLUGIN_DIR +"/auth.ini")
+        self.auth_manager = AuthManager(config.USER_PLUGIN_DIR +"/auth.ini")
         
         self.token_model = GroupTokenModel(parent)
         # self.layer = LayerManager(parent, self.iface)
@@ -164,13 +164,9 @@ class XYZHubConnector(object):
         self.conn_info = SpaceConnectionInfo()
         
         ######## token      
-        print(config.PLUGIN_DIR)
-        self.token_model.load_ini(config.PLUGIN_DIR +"/token.ini")
+        self.token_model.load_ini(config.USER_PLUGIN_DIR +"/token.ini")
 
         ######## CALLBACK
-        # self.iface.mapCanvas().extentsChanged.connect( self.debug_reload)
-        # self.con_man.connect_ux( self.iface) # canvas ux
-        # self.con_man.signal.canvas_span.connect( self.loader_reload_bbox)
         
         self.con_man.ld_pool.signal.progress.connect( self.cb_progress_busy) #, Qt.QueuedConnection
         self.con_man.ld_pool.signal.finished.connect( self.cb_progress_done)
@@ -189,9 +185,6 @@ class XYZHubConnector(object):
         QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.con_man.remove)
 
         # utils.disconnect_silent(self.iface.currentLayerChanged)
-
-        # self.con_man.unload()
-        # del self.con_man
 
         # self.iface.mapCanvas().extentsChanged.disconnect( self.debug_reload)
 
@@ -312,16 +305,13 @@ class XYZHubConnector(object):
         self.load_bbox(con_bbox_reload, make_qt_args(layer))
 
     # UNUSED
-    def debug_reload(self):
-        print("debug_reload")
-
     def refresh_canvas(self):
         self.iface.mapCanvas().refresh()
         # assert False # debug unload module
-
     def previous_canvas_extent(self):
         self.iface.mapCanvas().zoomToPreviousExtent()
-
+    #
+    
     def open_clear_cache_dialog(self):
         parent = self.iface.mainWindow()
         dialog = ConfirmDialog(parent, "Delete cache will make loaded layer unusable !!")

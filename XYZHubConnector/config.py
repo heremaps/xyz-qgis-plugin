@@ -13,6 +13,7 @@ from qgis.core import QgsApplication
 PLUGIN_NAME = __package__
 USER_DIR = os.path.abspath(QgsApplication.qgisSettingsDirPath())
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
 TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
 LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
 
