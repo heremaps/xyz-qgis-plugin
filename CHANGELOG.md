@@ -3,6 +3,8 @@
 ## version 1.5.6
 
 * add HERE map tile
+* persistent config file across plugin versions
+* fix bugs with progress bar
 
 ## version 1.5.5
 

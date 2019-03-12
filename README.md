@@ -11,29 +11,17 @@ XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to 
 
 * QGIS version 3.0 or later
 
-### Install via custom repository in QGIS
+### Install via plugin repository in QGIS
 
-1. In QGIS, navigate to menu **Plugins** > **Manage and Install Plugins...** > **Settings**
-2. Scroll down to the **Plugin repositories**, select **Add..**
-3. Fill in the following details:
-
-<b>
-
-Name | HERE XYZ Hub Connector
--|-
-URL | https://raw.githubusercontent.com/heremaps/xyz-qgis-plugin/master/repo/plugins.xml
-Enabled | x
-
-</b>
-
-
-4. Move to Tab **All**, search for `XYZ Hub Connector`
-5. Select `XYZ Hub Connector`, then **Install plugin**
+1. In QGIS, navigate to menu **Plugins** > **Manage and Install Plugins...** > **All**
+2. Search for `XYZ Hub Connector` > **Install plugin**
+3. Switch to tab **Installed**, make sure the plugin `XYZ Hub Connector` is enabled.
 
 ### Install manually from zip file in QGIS
 
 1. Download the [latest release](https://github.com/heremaps/xyz-qgis-plugin/releases) zip file
 2. In QGIS, navigate to menu **Plugins** > **Manage and Install Plugins...** > **Install from ZIP**, then select the downloaded zip file.
+3. Switch to tab **Installed**, make sure the plugin `XYZ Hub Connector` is enabled.
 
 ## Usage
 
@@ -48,7 +36,6 @@ Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can
 `Add HERE Map Tile` : create HERE Map Tile layer given valid app_id and app_code.
 
 `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
-
 
 ## Development
 
