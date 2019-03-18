@@ -174,7 +174,7 @@ def xyz_json_to_feature(txt, map_fields=dict()):
         """
         for k,v in props.items():
             if isinstance(v, (dict,list,tuple)):
-                o = json.dumps(v) 
+                o = json.dumps(v,ensure_ascii = False) 
             else:
                 o = v
             yield k, o
@@ -241,7 +241,7 @@ def xyz_json_to_feature(txt, map_fields=dict()):
         s = json.dumps(geom)
         geom_ = QgsGeometry.fromWkt(ogr.CreateGeometryFromJson(s).ExportToWkt())
         ft.setGeometry(geom_)
-
+        
     obj = json.loads(txt)
     feature = obj["features"]
 

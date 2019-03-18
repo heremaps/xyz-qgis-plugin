@@ -5,6 +5,7 @@
 * add HERE map tile
 * persistent config file across plugin versions
 * fix bugs with progress bar
+* fix bugs not showing unicode char properly
 
 ## version 1.5.5
 

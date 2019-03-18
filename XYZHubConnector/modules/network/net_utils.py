@@ -72,7 +72,7 @@ def make_json_request( url, token):
     }
     return make_request(url, token, **header)
 def make_payload( obj):
-    txt = json.dumps(obj)
+    txt = json.dumps(obj,ensure_ascii = False)
     # print(txt)
     # print(txt.encode("utf-8"))
     return txt.encode("utf-8")
