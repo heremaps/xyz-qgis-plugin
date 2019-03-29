@@ -26,10 +26,11 @@ class XYZLayer(object):
     + loading a new layer from xyz
     + uploading a qgis layer to xyz, add conn_info, meta, vlayer
     """
-    def __init__(self, conn_info, meta, ext="gpkg"):
+    def __init__(self, conn_info, meta, tags="", ext="gpkg"):
         super().__init__()
         self.conn_info = conn_info
         self.meta = meta
+        self.tags = tags
         self.ext = ext
 
         self.map_vlayer = dict()
@@ -41,10 +42,12 @@ class XYZLayer(object):
         for geom in ["MultiPoint","MultiLineString","MultiPolygon",None]:
             self._init_ext_layer(geom, crs)
 
-    def _save_meta(self, vlayer, space_info):
-        vlayer.setCustomProperty("xyz-hub", space_info)
-        lic = space_info.get("license")
-        cr = space_info.get("copyright")
+    def _save_meta(self, vlayer):
+        meta = self.meta
+        vlayer.setCustomProperty("xyz-hub", meta)
+        lic = meta.get("license")
+        cr = meta.get("copyright")
+
         meta = vlayer.metadata()
         if lic is not None:
             meta.setLicenses([lic])
@@ -57,8 +60,9 @@ class XYZLayer(object):
         return geom_str in self.map_vlayer
     def get_layer(self, geom_str):
         return self.map_vlayer.get(geom_str)
-    def _layer_name(self, meta, geom_str):
-        return "{title} - {id} - {geom}".format(geom=geom_str,**meta)
+    def _layer_name(self, geom_str):
+        tags = " (%s)" %(self.tags) if len(self.tags) else ""
+        return "{title} - {id} - {geom}{tags}".format(geom=geom_str,tags=tags,**self.meta)
     def get_xyz_feat_id(self, geom_str):
         vlayer = self.get_layer(geom_str)
         key = parser.QGS_XYZ_ID
@@ -83,9 +87,8 @@ class XYZLayer(object):
         """
         ext=self.ext
         driver_name = ext.upper() # might not needed for 
-        meta = self.meta
 
-        layer_name = self._layer_name(meta, geom_str)
+        layer_name = self._layer_name(geom_str)
         
         fname = make_unique_full_path(ext=ext)
         
@@ -97,7 +100,7 @@ class XYZLayer(object):
         
         vlayer = QgsVectorLayer(fname, layer_name, "ogr")
         self._map_vlayer[geom_str] = vlayer
-        self._save_meta(vlayer, meta)
+        self._save_meta(vlayer)
 
         self.map_fields[geom_str] = vlayer.fields()
         # QgsProject.instance().addMapLayer(vlayer)

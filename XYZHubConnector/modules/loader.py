@@ -42,7 +42,8 @@ class ReloadLayerController(BaseLoader):
         for v in self.layer.map_vlayer.values():
             v.triggerRepaint()
     def start(self, conn_info, meta, **kw):
-        self.layer = XYZLayer(conn_info, meta)
+        tags = kw.get("tags","")
+        self.layer = XYZLayer(conn_info, meta, tags=tags)
         self.kw = kw
         self.max_feat = kw.get("max_feat", None)
         self.fixed_params = dict( (k,kw[k]) for k in ["tags"] if k in kw)
@@ -170,8 +171,7 @@ class ReloadLayerController(BaseLoader):
             geom,
             map_feat[geom],
             map_fields[geom]
-            )
-            for geom in map_feat.keys()
+            ) for geom in map_feat.keys()
         ]
         return lst_args
     def _render_single(self, geom, feat, fields):
@@ -181,3 +181,42 @@ class ReloadLayerController(BaseLoader):
             vlayer=self.layer.get_layer( geom)
 
         render.add_feature_render(vlayer, feat, fields)
+
+
+########################
+# Upload
+########################
+from .layer import layer_utils
+import copy
+
+class InitUploadLayerController(ChainController):
+    def __init__(self, network):
+        super(InitUploadLayerController, self).__init__()
+        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self._config(network)
+        
+    def start(self, conn_info, vlayer, **kw):
+        # assumed start() is called once
+        self.conn_info = copy.deepcopy(conn_info) # upload
+        self.kw = kw        
+        if vlayer is None:
+            return
+        super(InitUploadLayerController, self).start( vlayer)
+    def start_args(self, args):
+        a, kw = parse_qt_args(args)
+        self.start(*a, **kw)
+    def _config(self, network):
+        self.config_fun([
+            AsyncFun( layer_utils.get_feat_iter),
+            WorkerFun( layer_utils.get_feat_upload_from_iter, self.pool),
+            AsyncFun( self._setup_queue), 
+        ])
+
+    def _setup_queue(self, lst_added_feat, removed_feat):
+        if len(lst_added_feat) == 0:
+            self.signal.finished.emit()
+        self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
+        return make_qt_args(self.get_conn_info(), self.lst_added_feat, **self.kw)
+    def get_conn_info(self):
+        return self.conn_info
+        

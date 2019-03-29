@@ -78,9 +78,10 @@ class SpaceInfoDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
                 "ncsa", "unlicense", "zlib"
             ])
         )
+
 class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
     # ui = UP_CLASS()
-    title = "Upload to new XYZ Geospace"
+    title = "Upload to new XYZ Space"
     signal_upload_new_space = pyqtSignal(object)
 
     def __init__(self, *a):
@@ -139,7 +140,7 @@ class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
         # self.network.add_space(token, self.get_space_info())
 
 class EditSpaceDialog(SpaceInfoDialog):
-    title = "Edit XYZ Geospace"
+    title = "Edit XYZ Space"
 
     def __init__(self, parent=None):
         SpaceInfoDialog.__init__(self, parent)
@@ -148,3 +149,6 @@ class EditSpaceDialog(SpaceInfoDialog):
         self.groupBox_tags.setVisible(False) # no groupBox_tags
 
         self.setWindowTitle(self.title)
+
+class NewSpaceDialog(EditSpaceDialog):
+    title = "Create new XYZ Space"

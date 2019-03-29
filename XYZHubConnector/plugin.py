@@ -22,24 +22,24 @@ from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 from . import config
 from . import utils
 
-from .gui.space_dialog import ConnectManageSpaceDialog, ManageSpaceDialog
-from .gui.space_info_dialog import EditSpaceDialog, UploadNewSpaceDialog
-from .gui.util_dialog import ConfirmDialog
+from .gui.space_dialog import ConnectManageUploadSpaceDialog
+from .gui.space_info_dialog import EditSpaceDialog
+from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .gui.basemap_dialog import BaseMapDialog
 
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
-from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args
+from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
 from .modules.controller.manager import ControllerManager
 
 from .modules import loader
-from .modules.space_loader import *
-from .modules.refactor_loader import *
+from .modules.space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
+from .modules.refactor_loader import UploadLayerController
 
 from .modules.layer.manager import LayerManager
 from .modules.layer import bbox_utils
 
-from .modules.network import NetManager
+from .modules.network import NetManager, net_handler
 
 from .modules import basemap
 from .modules.basemap.auth_manager import AuthManager
@@ -85,13 +85,13 @@ class XYZHubConnector(object):
             QCoreApplication.translate(PLUGIN_NAME, "status tip message" ))
 
         self.action_clear_cache = QAction("Clear cache", parent)
-        self.action_upload = QAction("Upload to New XYZ Geospace", parent)
+        self.action_upload = QAction("Upload to a XYZ Space", parent)
         self.action_basemap = QAction("Add HERE Map Tile", parent)
 
 
         self.action_magic_sync = QAction("Magic Sync (EXPERIMENTAL)", parent)
-        self.action_manage = QAction("Manage XYZ Geospace (EXPERIMENTAL)", parent)
-        self.action_edit = QAction("Edit/Delete XYZ Geospace (EXPERIMENTAL)", parent)
+        self.action_manage = QAction("Manage XYZ Space (EXPERIMENTAL)", parent)
+        self.action_edit = QAction("Edit/Delete XYZ Space (EXPERIMENTAL)", parent)
 
         if self.iface.activeLayer() is None:
             # self.action_upload.setEnabled(False)
@@ -116,7 +116,7 @@ class XYZHubConnector(object):
 
         tool_btn = QToolButton(self.toolbar)
 
-        self.actions = [self.action_connect, self.action_upload, self.action_basemap, self.action_clear_cache] # , self.action_magic_sync, self.action_manage, self.action_edit
+        self.actions = [self.action_connect, self.action_basemap, self.action_clear_cache] # self.action_upload, self.action_magic_sync, self.action_manage, self.action_edit
         for a in self.actions:
             tool_btn.addAction(a)
             self.iface.addPluginToWebMenu(self.web_menu, a)
@@ -323,8 +323,16 @@ class XYZHubConnector(object):
 
     def open_connection_dialog(self):
         parent = self.iface.mainWindow()
-        dialog = ConnectManageSpaceDialog(parent)
+        dialog = ConnectManageUploadSpaceDialog(parent)
         dialog.config(self.token_model, self.conn_info)
+
+        ############ new btn   
+        
+        con = CreateSpaceController(self.network)
+        self.con_man.add_background(con)
+        con.signal.finished.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+        dialog.signal_new_space.connect( con.start_args)
 
         ############ edit btn   
 
@@ -373,6 +381,22 @@ class XYZHubConnector(object):
 
         # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
 
+
+        ############ upload btn        
+        vlayer = self.iface.activeLayer()
+        dialog.set_layer( vlayer)
+
+        con_upload = UploadLayerController(self.network, n_parallel=2)
+        self.con_man.add_background(con_upload)
+        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
+        con_upload.signal.error.connect( self.cb_handle_error_msg )
+        
+        con = loader.InitUploadLayerController(self.network)
+        self.con_man.add_background(con)
+
+        dialog.signal_upload_space.connect( con.start_args)
+        con.signal.results.connect( con_upload.start_args)
+        con.signal.error.connect( self.cb_handle_error_msg )
 
         dialog.exec_()
         self.con_man.finish_fast()

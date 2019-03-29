@@ -19,6 +19,7 @@ from .network import net_handler
 from ..gui.util_dialog import exec_warning_dialog
 from .loop_loader import BaseLoader, ParallelLoop
 
+# unused
 class InitLayerController(ChainController):
     def __init__(self, network):
         super().__init__()

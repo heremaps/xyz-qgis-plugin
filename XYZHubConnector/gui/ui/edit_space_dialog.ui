@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Edit XYZ Geospace</string>
+   <string>Edit XYZ Space</string>
   </property>
   <property name="sizeGripEnabled">
    <bool>false</bool>
@@ -147,7 +147,7 @@
       </sizepolicy>
      </property>
      <property name="title">
-      <string>XYZ Geospace</string>
+      <string>XYZ Space</string>
      </property>
      <layout class="QFormLayout" name="formLayout">
       <item row="0" column="0">
