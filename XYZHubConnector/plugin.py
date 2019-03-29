@@ -314,8 +314,7 @@ class XYZHubConnector(object):
     #
     
     def open_clear_cache_dialog(self):
-        parent = self.iface.mainWindow()
-        dialog = ConfirmDialog(parent, "Delete cache will make loaded layer unusable !!")
+        dialog = ConfirmDialog("Delete cache will make loaded layer unusable !!")
         ret = dialog.exec_()
         if ret != dialog.Ok: return
         

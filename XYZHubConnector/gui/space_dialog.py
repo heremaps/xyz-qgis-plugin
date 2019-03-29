@@ -223,16 +223,16 @@ class ConnectManageSpaceDialog(ConnectSpaceDialog):
         space_id = self._get_space_model().get_("id",index)
         
         self.conn_info.set_(token=token,space_id=space_id)
-
-        dialog = ConfirmDialog(self, "Do you want to Delete space ?")
+        
+        dialog = ConfirmDialog("Do you want to Delete space ?")
         ret = dialog.exec_()
         if ret != dialog.Ok: return
 
         self.signal_del_space.emit(make_qt_args(self.conn_info))
 
 class ConnectManageUploadSpaceDialog(ConnectManageSpaceDialog):
+    title="XYZ Hub Connection"
     signal_upload_space = pyqtSignal(object)
-
     def config(self, *a):
         super().config(*a)
         self.vlayer = None
@@ -248,12 +248,12 @@ class ConnectManageUploadSpaceDialog(ConnectManageSpaceDialog):
         tags = self.lineEdit_tags.text().strip()
         kw = dict(tags=tags) if len(tags) else dict()
 
-        dialog = ConfirmDialog(self,"\n".join([
-            "Confirm Uploading ?",
-            "+ From Layer:\t%s",
-            "+ To Space:\t%s",
-            "+ Tags:\t\t%s",
-            ]) % (self.vlayer.name(), meta["title"], tags)
+        dialog = ConfirmDialog("\n".join([
+            "From Layer:\t%s",
+            "To Space:\t%s",
+            "Tags:\t\t%s",
+            ]) % (self.vlayer.name(), meta["title"], tags),
+            title="Confirm Upload"
         )
         ret = dialog.exec_()
         if ret != dialog.Ok: return
@@ -309,7 +309,7 @@ class ManageSpaceDialog(SpaceDialog):
         
         self.conn_info.set_(token=token,space_id=space_id)
 
-        dialog = ConfirmDialog(self, "Do you want to Delete space ?")
+        dialog = ConfirmDialog("Do you want to Delete space ?")
         ret = dialog.exec_()
         if ret == dialog.Ok:
             self.signal_del_space.emit(self.conn_info)
