@@ -243,7 +243,7 @@ class XYZHubConnector(object):
     def show_net_err_dialog(self, err):
         assert isinstance(err, net_handler.NetworkError)
         reply_tag, status, reason, body, err_str, url = err.args[:6]
-        if reply_tag in ["count"]: # too many error
+        if reply_tag in ["count", "statistics"]: # too many error
             return 0
             
         detail = "\n". join(["Request:", url,"","Response:", body])
@@ -350,9 +350,10 @@ class XYZHubConnector(object):
         con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
+        dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
         dialog.signal_use_token.connect( con.start_args)
 
-        ############ get statisitics        
+        ############ get statistics        
         con = StatSpaceController(self.network)
         self.con_man.add(con)
         con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
