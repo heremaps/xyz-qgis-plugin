@@ -242,17 +242,18 @@ class XYZHubConnector(object):
 
     def show_net_err_dialog(self, err):
         assert isinstance(err, net_handler.NetworkError)
-        reply_tag, status, reason, body = err.args[:4]
+        reply_tag, status, reason, body, err_str, url = err.args[:6]
         if reply_tag in ["count"]: # too many error
             return 0
             
+        detail = "\n". join(["Request:", url,"","Response:", body])
         msg = (
             "%s: %s\n"%(status,reason) + 
             "There was a problem connecting to the server"
         )
         if status == 403:
             msg += "\n\n" + "Please make sure that the token has WRITE permission"
-        ret = exec_warning_dialog("Network Error",msg, body)
+        ret = exec_warning_dialog("Network Error",msg, detail)
         return 1
 
     def show_err_msgbar(self, err):
