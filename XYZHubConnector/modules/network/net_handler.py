@@ -107,7 +107,7 @@ def _onReceived(reply):
     elif reply_tag in ("add_space","edit_space","del_space"):
 
         args = [conn_info, obj]
-    elif reply_tag in ("stat", "count","space_meta"):
+    elif reply_tag in ("statistics", "count","space_meta"):
         print_qgis(txt[:100])
         args = [conn_info, obj]
     else:
