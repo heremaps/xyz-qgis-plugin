@@ -234,17 +234,23 @@ class XYZHubConnector(object):
         if isinstance(err, ChainInterrupt):
             e0, idx = err.args[0:2]
             if isinstance(e0, net_handler.NetworkError):
-                ok = self.show_net_err_dialog(e0)
+                ok = self.show_net_err(e0)
                 if ok: return
             elif isinstance(e0, loader.EmptyXYZSpaceError):
-                ret = exec_warning_dialog("Warning","Requested query returns no features")
+                ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
+                return
         self.show_err_msgbar(err)
 
-    def show_net_err_dialog(self, err):
+    def show_net_err(self, err):
         assert isinstance(err, net_handler.NetworkError)
         reply_tag, status, reason, body, err_str, url = err.args[:6]
         if reply_tag in ["count", "statistics"]: # too many error
-            return 0
+            msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
+            self.iface.messageBar().pushMessage(
+                TAG_PLUGIN, msg,  
+                Qgis.Warning, 5
+            )
+            return 1
             
         detail = "\n". join(["Request:", url,"","Response:", body])
         msg = (
