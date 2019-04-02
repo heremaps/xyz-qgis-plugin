@@ -1,5 +1,11 @@
 # Changelog 
 
+## version 1.5.7
+
+* fix bugs (unicode, feature count, etc.)
+* try to stop progress bar when error or close dialog
+* update keywords in metadata
+
 ## version 1.5.6
 
 * add HERE map tile
