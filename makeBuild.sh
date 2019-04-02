@@ -7,8 +7,8 @@ ver=$1
 # fi
 
 mkdir build 
-rm -r build/*
-# lst=$(git ls-files XYZHubConnector | grep -v '/\.')
+rm -r build/*/ # delete folders only
+# lst=$(git ls-files XYZHubConnector | grep -v '/\.') # input files are all files in XYZHubConnector folder
 # lst=$(git ls-tree --name-only -r master XYZHubConnector | grep -v '/\.') # input files is staged in git (master)
 lst=$(git ls-tree --name-only -r HEAD XYZHubConnector | grep -v '/\.') # input files is staged in git HEAD
 for f in $lst ; do
