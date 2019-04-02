@@ -8,17 +8,18 @@
 #
 ###############################################################################
 
-# from qgis.core import QgsSettings
-from qgis.PyQt.QtWidgets import (QDialog)
+from qgis.PyQt.QtCore import QRegExp, QSortFilterProxyModel, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator
-from qgis.PyQt.QtCore import pyqtSignal, Qt, QRegExp, QSortFilterProxyModel
-from ..models import XYZSpaceModel, SpaceConnectionInfo
+# from qgis.core import QgsSettings
+from qgis.PyQt.QtWidgets import QDialog
+
+from . import get_ui_class
+from ..models import SpaceConnectionInfo, XYZSpaceModel
+from ..modules.controller import make_qt_args
 from .space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from .util_dialog import ConfirmDialog
 from .token_ux import TokenUX
-from ..modules.controller import make_qt_args
-
-from . import get_ui_class
+from .ux import *
 
 ConnDialogUI = get_ui_class('new_connection_layer_dialog.ui')
 class SpaceDialog(QDialog, ConnDialogUI, TokenUX):
@@ -266,6 +267,27 @@ class ConnectManageUploadSpaceDialog(ConnectManageSpaceDialog):
         self.btn_upload.setEnabled(flag)
         self.btn_upload.clearFocus()
 
+class MainDialog(QDialog, ConnDialogUI, SpaceUX, ConnectUX, ManageUX, UploadUX):
+    title="XYZ Hub Connection"
+    def __init__(self, parent=None):
+        """init window"""
+        QDialog.__init__(self, parent)
+        ConnDialogUI.setupUi(self, self)
+        self.setWindowTitle(self.title)
+
+    def config(self, *a):
+        SpaceUX.config(self, *a)
+        ConnectUX.config(self, *a)
+        ManageUX.config(self, *a)
+        UploadUX.config(self, *a)
+    def ui_enable_ok_button(self, *a):
+        SpaceUX.ui_enable_ok_button(self,*a)
+        ManageUX.ui_enable_ok_button(self,*a)
+        UploadUX.ui_enable_ok_button(self,*a)
+    def ui_valid_token(self, *a):
+        flag = SpaceUX.ui_valid_token(self,*a)
+        return ManageUX.ui_valid_token(self, flag)
+        
 
 # unused
 class ManageSpaceDialog(SpaceDialog):
@@ -313,4 +335,3 @@ class ManageSpaceDialog(SpaceDialog):
         ret = dialog.exec_()
         if ret == dialog.Ok:
             self.signal_del_space.emit(self.conn_info)
-        

@@ -11,7 +11,7 @@
 
 from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
 
-from ...models import SpaceConnectionInfo, XYZSpaceModel
+from ...models import XYZSpaceModel, SpaceConnectionInfo
 from ...modules.controller import make_qt_args
 from ..token_ux import TokenUX
 
@@ -26,10 +26,8 @@ class SpaceUX(TokenUX):
         self.tableView_space = None
         self.buttonBox = None
         
-    def config(self, token_model, conn_info):
+    def config(self, token_model):
         
-        self.conn_info = SpaceConnectionInfo()
-
         space_model = XYZSpaceModel(self)
 
         proxy_model = QSortFilterProxyModel()
@@ -52,6 +50,10 @@ class SpaceUX(TokenUX):
     def _get_current_index(self):
         index =  self.tableView_space.currentIndex()
         return self._get_proxy_model().mapToSource(index)
+    def _after_clear_token(self):
+        TokenUX._after_clear_token(self)
+        self._get_space_model().reset()
+        
     ##### CALLBACK
     def cb_table_row_selected(self, index):
         # pending token -> gui
@@ -60,7 +62,7 @@ class SpaceUX(TokenUX):
 
     def cb_display_spaces(self, obj, *a, **kw):
         # this function can be put into dialog
-        self.ui_valid_token()
+        # self.ui_valid_token()
         self.insert_new_valid_token()
         conn_info = SpaceConnectionInfo(self.conn_info)
         lst_id = self.ui_display_spaces(obj)
@@ -85,8 +87,11 @@ class SpaceUX(TokenUX):
     def ui_display_spaces(self, obj):
         return self._get_space_model().set_obj(obj)
 
-    def ui_valid_input(self, flag=None):
-        ok = self.ui_valid_token(flag) and self._get_current_index().isValid()
+    def ui_valid_input(self, *a):
+        """ Returns true when token is succesfully connected and a space is selected
+        also enables button if condition above is met.
+        """
+        ok = self.ui_valid_token() and self._get_current_index().isValid()
         self.ui_enable_ok_button(ok)
         return ok
     def ui_enable_ok_button(self, flag):

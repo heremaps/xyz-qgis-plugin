@@ -10,8 +10,11 @@
 
 
 from qgis.PyQt.QtCore import pyqtSignal
-from .util_dialog import ConfirmDialog
+
+from ..models import SpaceConnectionInfo
 from ..modules.controller import make_qt_args
+from .util_dialog import ConfirmDialog
+
 
 class TokenUX(object):
     signal_use_token = pyqtSignal(object)
@@ -19,12 +22,15 @@ class TokenUX(object):
         # these are like abstract variables
         self.comboBox_token = None
         self.btn_use = None
+        self.btn_clear_token = None
+        self.comboBox_server = None
         self.conn_info = None
-        self.ui_valid_token = lambda *a: a
         self.ui_valid_input = lambda *a: a
         #
         self.used_token_idx = 0
     def config(self, token_model):
+        self.conn_info = SpaceConnectionInfo()
+        
         self.used_token_idx = 0
 
         self.comboBox_token.setModel( token_model)
@@ -47,7 +53,6 @@ class TokenUX(object):
         self.conn_info.set_server(self.comboBox_server.currentText())
 
         self.comboBox_token.setCurrentIndex(0)
-        self.ui_valid_input() # valid_input initially (explicit)
     def cb_set_server(self,server):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
@@ -63,14 +68,15 @@ class TokenUX(object):
             self.comboBox_token.clearEditText()
 
         if self.used_token_idx == idx:
-            self._get_space_model().reset()
-            self.used_token_idx = 0
-            self.comboBox_token.setCurrentIndex(0)
-            
+            self._after_clear_token()
+    def _after_clear_token(self):
+        self.used_token_idx = 0
+        self.comboBox_token.setCurrentIndex(0)
     def get_input_token(self):
         return self.comboBox_token.currentText().strip()
         
     def insert_new_valid_token(self):
+        self.ui_valid_token()
 
         ### find duplicate
         # print("current token index: %s"% self.comboBox_token.currentIndex())
@@ -118,6 +124,8 @@ class TokenUX(object):
 
 
     def ui_valid_token(self, *a):
+        """ Return true when token is used and shows Ok!
+        """
         flag_token = len(self.get_input_token()) > 0
         self.btn_use.setEnabled(flag_token)
 

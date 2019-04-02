@@ -7,6 +7,19 @@ from ..util_dialog import ConfirmDialog
 class UploadUX(object):
     title="XYZ Hub Connection"
     signal_upload_space = pyqtSignal(object)
+    
+    def __init__(self, *a):
+        # these are like abstract variables
+        self.btn_upload = None
+        self.lineEdit_tags = None
+
+        self.conn_info = None
+
+        self._get_current_index = lambda *a: a
+        self._get_space_model = lambda *a: a
+        self.get_input_token = lambda *a: a
+
+        raise NotImplementedError()
     def config(self, *a):
         # super().config(*a)
         self.vlayer = None
@@ -34,7 +47,7 @@ class UploadUX(object):
         self.signal_upload_space.emit(make_qt_args(self.conn_info, self.vlayer, **kw))
         self.close()
     def ui_enable_ok_button(self, flag):
-        super().ui_enable_ok_button(flag)
+        # super().ui_enable_ok_button(flag)
         flag = flag and self.vlayer is not None
         self.btn_upload.setEnabled(flag)
         self.btn_upload.clearFocus()

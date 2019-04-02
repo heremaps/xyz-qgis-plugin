@@ -12,11 +12,23 @@ class ConnectUX(object):
     signal_space_connect = pyqtSignal(object)
     signal_space_bbox = pyqtSignal(object)
     def __init__(self, *a):
-        pass
-        # SpaceDialog.__init__(self, *a)
-        
         # these are like abstract variables
+        self.btn_bbox = None
+        self.buttonBox = None
+        self.accepted = None
+        self.lineEdit_limit = None
+        self.lineEdit_max_feat = None
+        self.lineEdit_tags = None
+        self.lineEdit_limit = None
 
+        self.conn_info = None
+
+        self._get_current_index = lambda *a: a
+        self._get_space_model = lambda *a: a
+        self.get_input_token = lambda *a: a
+        
+        
+        
     def config(self, *a):
         # super().config(*a)
         self.btn_bbox.setVisible(False)

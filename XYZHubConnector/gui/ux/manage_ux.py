@@ -13,6 +13,21 @@ class ManageUX(object):
     signal_new_space = pyqtSignal(object)
     signal_edit_space = pyqtSignal(object)
     signal_del_space = pyqtSignal(object)
+    
+    def __init__(self, *a):
+        # these are like abstract variables
+        self.btn_new = None
+        self.btn_edit = None
+        self.btn_delete = None
+        self.groupBox_manage = None
+        self.checkBox_manage = None
+
+        self.conn_info = None
+
+        self._get_current_index = lambda *a: a
+        self._get_space_model = lambda *a: a
+        self.get_input_token = lambda *a: a
+        
     def config(self, *a):
         # super().config(*a)
 
@@ -22,12 +37,12 @@ class ManageUX(object):
 
         self.groupBox_manage.setEnabled(False)
         self.checkBox_manage.stateChanged.connect(self.ui_enable_manage)
-    def ui_valid_token(self, *a):
-        flag = super().ui_valid_token()
+    def ui_valid_token(self, flag):
+        # flag = super().ui_valid_token()
         self.btn_new.setEnabled(flag)
         return flag
     def ui_enable_ok_button(self, flag):
-        super().ui_enable_ok_button(flag)
+        # super().ui_enable_ok_button(flag)
         self.btn_edit.setEnabled(flag)
         self.btn_delete.setEnabled(flag)
         
@@ -71,6 +86,8 @@ class ManageUX(object):
         
         self.conn_info.set_(token=token,space_id=space_id)
         
-        dialog = ConfirmDialog("Do you want to Delete space ?")
+        dialog = ConfirmDialog("Do you want to Delete space %s?"%space_id)
         ret = dialog.exec_()
         if ret != dialog.Ok: return
+
+        self.signal_del_space.emit(make_qt_args(self.conn_info))

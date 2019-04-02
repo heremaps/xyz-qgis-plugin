@@ -22,7 +22,7 @@ from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 from . import config
 from . import utils
 
-from .gui.space_dialog import ConnectManageUploadSpaceDialog
+from .gui.space_dialog import ConnectManageUploadSpaceDialog, MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .gui.basemap_dialog import BaseMapDialog
@@ -161,7 +161,7 @@ class XYZHubConnector(object):
         self.layer_man = LayerManager()
 
         ######## data flow
-        self.conn_info = SpaceConnectionInfo()
+        # self.conn_info = SpaceConnectionInfo()
         
         ######## token      
         self.token_model.load_ini(config.USER_PLUGIN_DIR +"/token.ini")
@@ -328,8 +328,8 @@ class XYZHubConnector(object):
 
     def open_connection_dialog(self):
         parent = self.iface.mainWindow()
-        dialog = ConnectManageUploadSpaceDialog(parent)
-        dialog.config(self.token_model, self.conn_info)
+        dialog = MainDialog(parent)
+        dialog.config(self.token_model)
 
         ############ new btn   
         
