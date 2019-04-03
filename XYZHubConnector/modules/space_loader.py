@@ -44,8 +44,8 @@ class StatSpaceController(ChainController):
         super().start(conn_info)
     def _config(self, network):
         self.config_fun([
-            # NetworkFun( network.get_statistics), 
-            NetworkFun( network.get_count), 
+            NetworkFun( network.get_statistics), 
+            # NetworkFun( network.get_count), 
             WorkerFun( net_handler.on_received, self.pool),
         ])
 

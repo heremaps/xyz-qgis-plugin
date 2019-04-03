@@ -91,6 +91,7 @@ class ControllerManager(object):
 
         ptr = self._add(con)
         con.signal.finished.connect( self.make_deregister_cb(ptr))
+        con.signal.error.connect( self.make_deregister_cb(ptr))
 
         con.signal.finished.connect( try_finish)
         con.signal.error.connect(lambda e: try_finish())
@@ -106,7 +107,7 @@ class ControllerManager(object):
         self._reload_ptr.append(ptr)
         return ptr
     def make_deregister_cb(self, ptr):
-        def _deregister():
+        def _deregister(*a):
             self._lst.pop(ptr, None)
         return _deregister
     
