@@ -1,12 +1,22 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+#
+# Copyright (c) 2019 HERE Europe B.V.
+#
+# SPDX-License-Identifier: MIT
+# License-Filename: LICENSE
+#
+###############################################################################
 
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 
 from ...modules.controller import make_qt_args
 from ..space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from ..util_dialog import ConfirmDialog
+from .space_ux import SpaceUX
 
 
-class ManageUX(object):
+class ManageUX(SpaceUX):
     """ Dialog that contains table view of spaces + Token UX + Param input + Connect UX
     + Manage (New, Edit, Delete)
     """
@@ -21,13 +31,6 @@ class ManageUX(object):
         self.btn_delete = None
         self.groupBox_manage = None
         self.checkBox_manage = None
-
-        self.conn_info = None
-
-        self._get_current_index = lambda *a: a
-        self._get_space_model = lambda *a: a
-        self.get_input_token = lambda *a: a
-        
     def config(self, *a):
         # super().config(*a)
 
@@ -51,7 +54,7 @@ class ManageUX(object):
 
     def ui_enable_manage(self, check_state):
         self.groupBox_manage.setEnabled(check_state > 0)
-        
+
     def _exec_info_dialog(self, dialog, signal, copy_space_info=False):
         token = self.get_input_token()
         index = self._get_current_index()
@@ -83,10 +86,11 @@ class ManageUX(object):
         token = self.get_input_token()
         index = self._get_current_index()
         space_id = self._get_space_model().get_("id",index)
+        title = self._get_space_model().get_("title",index)
         
         self.conn_info.set_(token=token,space_id=space_id)
         
-        dialog = ConfirmDialog("Do you want to Delete space %s?"%space_id)
+        dialog = ConfirmDialog("Do you want to Delete space: %s?"%title)
         ret = dialog.exec_()
         if ret != dialog.Ok: return
 

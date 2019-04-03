@@ -18,7 +18,6 @@ from ..models import SpaceConnectionInfo, XYZSpaceModel
 from ..modules.controller import make_qt_args
 from .space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from .util_dialog import ConfirmDialog
-from .token_ux import TokenUX
 from .ux import *
 
 ConnDialogUI = get_ui_class('new_connection_layer_dialog.ui')
@@ -267,14 +266,13 @@ class ConnectManageUploadSpaceDialog(ConnectManageSpaceDialog):
         self.btn_upload.setEnabled(flag)
         self.btn_upload.clearFocus()
 
-class MainDialog(QDialog, ConnDialogUI, SpaceUX, ConnectUX, ManageUX, UploadUX):
+class MainDialog(QDialog, ConnDialogUI, ConnectUX, ManageUX, UploadUX, SpaceUX):
     title="XYZ Hub Connection"
     def __init__(self, parent=None):
         """init window"""
         QDialog.__init__(self, parent)
         ConnDialogUI.setupUi(self, self)
         self.setWindowTitle(self.title)
-
     def config(self, *a):
         SpaceUX.config(self, *a)
         ConnectUX.config(self, *a)

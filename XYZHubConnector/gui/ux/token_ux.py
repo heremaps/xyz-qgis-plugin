@@ -11,12 +11,13 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ..models import SpaceConnectionInfo
-from ..modules.controller import make_qt_args
-from .util_dialog import ConfirmDialog
+from ...models import SpaceConnectionInfo
+from ...modules.controller import make_qt_args
+from ..util_dialog import ConfirmDialog
+from .ux import UXDecorator
 
 
-class TokenUX(object):
+class TokenUX(UXDecorator):
     signal_use_token = pyqtSignal(object)
     def __init__(self):
         # these are like abstract variables
@@ -25,7 +26,6 @@ class TokenUX(object):
         self.btn_clear_token = None
         self.comboBox_server = None
         self.conn_info = None
-        self.ui_valid_input = lambda *a: a
         #
         self.used_token_idx = 0
     def config(self, token_model):

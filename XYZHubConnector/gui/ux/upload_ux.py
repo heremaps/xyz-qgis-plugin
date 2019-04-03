@@ -1,10 +1,21 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+#
+# Copyright (c) 2019 HERE Europe B.V.
+#
+# SPDX-License-Identifier: MIT
+# License-Filename: LICENSE
+#
+###############################################################################
+
 from qgis.PyQt.QtCore import pyqtSignal
 
 from ...modules.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
+from .space_ux import SpaceUX
 
 
-class UploadUX(object):
+class UploadUX(SpaceUX):
     title="XYZ Hub Connection"
     signal_upload_space = pyqtSignal(object)
     
@@ -12,14 +23,6 @@ class UploadUX(object):
         # these are like abstract variables
         self.btn_upload = None
         self.lineEdit_tags = None
-
-        self.conn_info = None
-
-        self._get_current_index = lambda *a: a
-        self._get_space_model = lambda *a: a
-        self.get_input_token = lambda *a: a
-
-        raise NotImplementedError()
     def config(self, *a):
         # super().config(*a)
         self.vlayer = None

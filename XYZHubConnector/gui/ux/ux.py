@@ -8,8 +8,11 @@
 #
 ###############################################################################
 
-from .token_ux import TokenUX
-from .space_ux import SpaceUX
-from .connect_ux import ConnectUX
-from .manage_ux import ManageUX
-from .upload_ux import UploadUX
+class UXDecorator(object):
+    def __init__(self):
+        raise NotImplementedError()
+    def config(self,*a):
+        raise NotImplementedError()
+    def ui_valid_input(self,*a):
+        raise NotImplementedError()
+    

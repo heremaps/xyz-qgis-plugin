@@ -11,10 +11,9 @@
 
 from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
 
-from ...models import XYZSpaceModel, SpaceConnectionInfo
+from ...models import SpaceConnectionInfo, XYZSpaceModel
 from ...modules.controller import make_qt_args
-from ..token_ux import TokenUX
-
+from .token_ux import TokenUX
 
 class SpaceUX(TokenUX):
     """ Base dialog that contains table view of spaces + Token UX

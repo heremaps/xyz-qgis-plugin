@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
 
 from . import get_ui_class
-from .token_ux import TokenUX
+# from .token_ux import TokenUX
 
 from ..models import SpaceConnectionInfo
 from ..modules.controller import make_qt_args
@@ -78,7 +78,7 @@ class SpaceInfoDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
                 "ncsa", "unlicense", "zlib"
             ])
         )
-
+"""
 class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
     # ui = UP_CLASS()
     title = "Upload to new XYZ Space"
@@ -138,7 +138,7 @@ class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
 
         self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer, **kw))
         # self.network.add_space(token, self.get_space_info())
-
+"""
 class EditSpaceDialog(SpaceInfoDialog):
     title = "Edit XYZ Space"
 

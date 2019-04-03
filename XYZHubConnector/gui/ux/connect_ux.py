@@ -1,11 +1,21 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+#
+# Copyright (c) 2019 HERE Europe B.V.
+#
+# SPDX-License-Identifier: MIT
+# License-Filename: LICENSE
+#
+###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal, QRegExp
+from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator
 
 from ...modules.controller import make_qt_args
+from .space_ux import SpaceUX
 
 
-class ConnectUX(object):
+class ConnectUX(SpaceUX):
     """ Dialog that contains table view of spaces + Token UX + Param input + Connect UX
     """
     title="Create a new XYZ Hub Connection"
@@ -20,15 +30,6 @@ class ConnectUX(object):
         self.lineEdit_max_feat = None
         self.lineEdit_tags = None
         self.lineEdit_limit = None
-
-        self.conn_info = None
-
-        self._get_current_index = lambda *a: a
-        self._get_space_model = lambda *a: a
-        self.get_input_token = lambda *a: a
-        
-        
-        
     def config(self, *a):
         # super().config(*a)
         self.btn_bbox.setVisible(False)
@@ -59,6 +60,7 @@ class ConnectUX(object):
     def _set_mask_tags(self, lineEdit):
         lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
         
+    
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
