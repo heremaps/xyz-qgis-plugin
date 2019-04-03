@@ -22,7 +22,7 @@ from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 from . import config
 from . import utils
 
-from .gui.space_dialog import ConnectManageUploadSpaceDialog, MainDialog
+from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .gui.basemap_dialog import BaseMapDialog
