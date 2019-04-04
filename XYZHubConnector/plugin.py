@@ -42,6 +42,7 @@ from .modules.layer import bbox_utils
 from .modules.network import NetManager
 
 from .modules import basemap
+from .modules.secret import Secret
 from .modules.basemap.auth_manager import AuthManager
 
 from .modules.common.error import format_traceback
@@ -148,6 +149,7 @@ class XYZHubConnector(object):
         # parent = self.iface.mainWindow()
         parent = QgsProject.instance()
 
+        self.secret = Secret(config.USER_PLUGIN_DIR +"/secret.ini")
         ######## Init xyz modules
         self.map_basemap_meta = basemap.load_default_xml()
         self.auth_manager = AuthManager(config.USER_PLUGIN_DIR +"/auth.ini")
@@ -188,6 +190,8 @@ class XYZHubConnector(object):
 
         # self.iface.mapCanvas().extentsChanged.disconnect( self.debug_reload)
 
+        self.secret.deactivate()
+        
         close_print_qgis()
         pass
     def unload(self):
@@ -325,6 +329,7 @@ class XYZHubConnector(object):
         parent = self.iface.mainWindow()
         dialog = ConnectManageSpaceDialog(parent)
         dialog.config(self.token_model, self.conn_info)
+        dialog.config_secret(self.secret)
 
         ############ edit btn   
 
@@ -389,6 +394,7 @@ class XYZHubConnector(object):
         parent = self.iface.mainWindow()
         dialog = UploadNewSpaceDialog(parent)
         dialog.config(self.token_model, self.network, vlayer)
+        dialog.config_secret(self.secret)
 
         ############ Use Token btn
         con = LoadSpaceController(self.network)
