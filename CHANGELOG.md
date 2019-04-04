@@ -3,6 +3,7 @@
 ## version 1.5.7
 
 * fix bugs (unicode, feature count, etc.)
+* use production server
 * try to stop progress bar when error or close dialog
 * update keywords in metadata
 

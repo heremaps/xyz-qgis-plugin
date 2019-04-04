@@ -16,8 +16,29 @@ from ...modules.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
 from .ux import UXDecorator
 
+class ServerUX(UXDecorator):
+    def __init__(self):
+        # these are like abstract variables
+        self.comboBox_server = None
+    def config_secret(self, secret):
+        self._secret_cnt = 0
+        self._secret = secret
+        if secret.activated():
+            self.comboBox_server.setVisible(True) # show for internal
+            self._check_secret = lambda:None
+        else:
+            self.comboBox_server.setCurrentIndex(0)
+            self.comboBox_server.setVisible(False) # disable for external
+    def _check_secret(self):
+        self._secret_cnt += 1
+        if self._secret_cnt == 5:
+            self._secret.activate()
+            self.comboBox_server.setVisible(True) # show for internal
+            self._check_secret = lambda:None
+    def mouseDoubleClickEvent(self, event):
+        self._check_secret()
 
-class TokenUX(UXDecorator):
+class TokenUX(ServerUX):
     signal_use_token = pyqtSignal(object)
     def __init__(self):
         # these are like abstract variables
@@ -53,6 +74,8 @@ class TokenUX(UXDecorator):
         self.conn_info.set_server(self.comboBox_server.currentText())
 
         self.comboBox_token.setCurrentIndex(0)
+        self.ui_valid_input() # valid_input initially (explicit)
+
     def cb_set_server(self,server):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
