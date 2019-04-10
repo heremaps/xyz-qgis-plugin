@@ -48,7 +48,8 @@ class UploadUX(SpaceUX):
         if ret != dialog.Ok: return
 
         self.signal_upload_space.emit(make_qt_args(self.conn_info, self.vlayer, **kw))
-        self.close()
+        # self.close()
+        
     def ui_enable_ok_button(self, flag):
         # super().ui_enable_ok_button(flag)
         flag = flag and self.vlayer is not None

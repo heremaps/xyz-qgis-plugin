@@ -117,7 +117,7 @@ class XYZHubConnector(object):
 
         tool_btn = QToolButton(self.toolbar)
 
-        self.actions = [self.action_connect, self.action_basemap, self.action_clear_cache] # self.action_upload, self.action_magic_sync, self.action_manage, self.action_edit
+        self.actions = [self.action_connect] #, self.action_basemap, self.action_clear_cache, self.action_upload, self.action_magic_sync, self.action_manage, self.action_edit
         for a in self.actions:
             tool_btn.addAction(a)
             self.iface.addPluginToWebMenu(self.web_menu, a)
@@ -335,6 +335,17 @@ class XYZHubConnector(object):
         dialog = MainDialog(parent)
         dialog.config(self.token_model)
         dialog.config_secret(self.secret)
+
+        auth = self.auth_manager.get_auth()
+        dialog.config_basemap(self.map_basemap_meta, auth)
+        
+        ############ clear cache btn
+        
+        dialog.signal_clear_cache.connect( self.open_clear_cache_dialog)
+        
+        ############ add map tile btn
+        
+        dialog.signal_add_basemap.connect( self.add_basemap_layer)
         
         ############ new btn   
         

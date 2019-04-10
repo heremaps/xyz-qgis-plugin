@@ -29,7 +29,6 @@ class ManageUX(SpaceUX):
         self.btn_new = None
         self.btn_edit = None
         self.btn_delete = None
-        self.groupBox_manage = None
         self.checkBox_manage = None
     def config(self, *a):
         # super().config(*a)
@@ -38,8 +37,6 @@ class ManageUX(SpaceUX):
         self.btn_edit.clicked.connect(self.ui_edit_space)
         self.btn_delete.clicked.connect(self.ui_del_space)
 
-        self.groupBox_manage.setEnabled(False)
-        self.checkBox_manage.stateChanged.connect(self.ui_enable_manage)
     def ui_valid_token(self, flag):
         # flag = super().ui_valid_token()
         self.btn_new.setEnabled(flag)
@@ -51,9 +48,6 @@ class ManageUX(SpaceUX):
         
         self.btn_edit.clearFocus()
         self.btn_delete.clearFocus()
-
-    def ui_enable_manage(self, check_state):
-        self.groupBox_manage.setEnabled(check_state > 0)
 
     def _exec_info_dialog(self, dialog, signal, copy_space_info=False):
         token = self.get_input_token()

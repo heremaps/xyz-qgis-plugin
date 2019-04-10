@@ -24,8 +24,7 @@ class ConnectUX(SpaceUX):
     def __init__(self, *a):
         # these are like abstract variables
         self.btn_bbox = None
-        self.buttonBox = None
-        self.accepted = None
+        self.btn_load = None
         self.lineEdit_limit = None
         self.lineEdit_max_feat = None
         self.lineEdit_tags = None
@@ -34,8 +33,7 @@ class ConnectUX(SpaceUX):
         # super().config(*a)
         self.btn_bbox.setVisible(False)
 
-        self.buttonBox.button(self.buttonBox.Ok).setText("Connect")
-        self.accepted.connect(self.start_connect)
+        self.btn_load.clicked.connect(self.start_connect)
         self.btn_bbox.clicked.connect(self.start_bbox)
 
         self._set_mask_number(self.lineEdit_limit)
@@ -60,17 +58,21 @@ class ConnectUX(SpaceUX):
     def _set_mask_tags(self, lineEdit):
         lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
         
+    def ui_enable_ok_button(self, flag):
+        for btn in [self.btn_load]:
+            btn.setEnabled(flag)
+            btn.clearFocus()
     
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
         self.signal_space_connect.emit( make_qt_args(self.conn_info, meta, **self.get_params() ))
+        # self.close()
 
     def start_bbox(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
         self.signal_space_bbox.emit( make_qt_args(self.conn_info, meta, **self.get_params() ))
-        # self.done(1)
-        self.close()
+        # self.close()

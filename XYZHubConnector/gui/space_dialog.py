@@ -15,11 +15,11 @@ from ..models import SpaceConnectionInfo, XYZSpaceModel
 from ..modules.controller import make_qt_args
 from .space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from .util_dialog import ConfirmDialog
-from .ux import ConnectUX, ManageUX, SpaceUX, UploadUX
+from .ux import ConnectUX, ManageUX, SpaceUX, UploadUX, BasemapUX, SettingUX
 
-ConnDialogUI = get_ui_class('new_connection_layer_dialog.ui')
+ConnDialogUI = get_ui_class('tab_dialog.ui')
 
-class MainDialog(QDialog, ConnDialogUI, ConnectUX, ManageUX, UploadUX, SpaceUX):
+class MainDialog(QDialog, ConnDialogUI, ConnectUX, ManageUX, UploadUX, SpaceUX, BasemapUX, SettingUX):
     title="XYZ Hub Connection"
     def __init__(self, parent=None):
         """init window"""
@@ -31,8 +31,9 @@ class MainDialog(QDialog, ConnDialogUI, ConnectUX, ManageUX, UploadUX, SpaceUX):
         ConnectUX.config(self, *a)
         ManageUX.config(self, *a)
         UploadUX.config(self, *a)
+        SettingUX.config(self, *a)
     def ui_enable_ok_button(self, *a):
-        SpaceUX.ui_enable_ok_button(self,*a)
+        ConnectUX.ui_enable_ok_button(self,*a)
         ManageUX.ui_enable_ok_button(self,*a)
         UploadUX.ui_enable_ok_button(self,*a)
     def ui_valid_token(self, *a):

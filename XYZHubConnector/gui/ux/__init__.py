@@ -13,3 +13,5 @@ from .space_ux import SpaceUX
 from .connect_ux import ConnectUX
 from .manage_ux import ManageUX
 from .upload_ux import UploadUX
+from .basemap_ux import BasemapUX
+from .setting_ux import SettingUX

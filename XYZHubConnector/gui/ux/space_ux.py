@@ -23,7 +23,6 @@ class SpaceUX(TokenUX):
     def __init__(self):
         # these are like abstract variables
         self.tableView_space = None
-        self.buttonBox = None
         
     def config(self, token_model):
         
@@ -94,5 +93,4 @@ class SpaceUX(TokenUX):
         self.ui_enable_ok_button(ok)
         return ok
     def ui_enable_ok_button(self, flag):
-        self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
-        self.buttonBox.button(self.buttonBox.Ok).clearFocus()
+        raise NotImplementedError()
