@@ -34,7 +34,6 @@ from .modules.controller.manager import ControllerManager
 
 from .modules import loader
 from .modules.space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
-from .modules.refactor_loader import UploadLayerController
 
 from .modules.layer.manager import LayerManager
 from .modules.layer import bbox_utils
@@ -407,7 +406,7 @@ class XYZHubConnector(object):
         vlayer = self.iface.activeLayer()
         dialog.set_layer( vlayer)
 
-        con_upload = UploadLayerController(self.network, n_parallel=2)
+        con_upload = loader.UploadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_upload)
         con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
         con_upload.signal.error.connect( self.cb_handle_error_msg )
@@ -422,13 +421,13 @@ class XYZHubConnector(object):
         dialog.exec_()
         self.con_man.finish_fast()
         # self.startTime = time.time()
-
+    # unused
     def open_manage_dialog(self):
         pass
-
+    # unused
     def open_edit_dialog(self):
         pass
-
+    # unused
     def open_upload_dialog(self):
         vlayer = self.iface.activeLayer()
         parent = self.iface.mainWindow()
@@ -461,7 +460,7 @@ class XYZHubConnector(object):
         self.con_man.finish_fast()
     def open_magic_sync_dialog(self):
         pass
-
+    #unused
     def open_basemap_dialog(self):
         parent = self.iface.mainWindow()
         auth = self.auth_manager.get_auth()

@@ -25,12 +25,15 @@ from .loop_loader import BaseLoader, ParallelLoop, ParallelFun
 
 class EmptyXYZSpaceError(Exception):
     pass
+class InvalidXYZLayerError(Exception):
+    pass
 class ManualInterrupt(Exception):
     pass
     
 class ReloadLayerController(BaseLoader):
     """ Load XYZ space into several qgis layer separated by Geometry type.
     If space is empty, no layer shall be created.
+    Stateful controller
     """
     def __init__(self, network, n_parallel=1):
         super(ReloadLayerController, self).__init__()
@@ -190,28 +193,30 @@ from .layer import layer_utils
 import copy
 
 class InitUploadLayerController(ChainController):
-    def __init__(self, network):
+    """ Prepare list of features of the input layer to be upload (added and removed)
+    Stateful controller
+    """
+    def __init__(self, *a):
         super(InitUploadLayerController, self).__init__()
         self.pool = QThreadPool() # .globalInstance() will crash afterward
-        self._config(network)
+        self._config()
         
     def start(self, conn_info, vlayer, **kw):
-        # assumed start() is called once
+        # assumed start() is called once # TODO: check if it is running
+        if vlayer is None:
+            raise InvalidXYZLayerError()
         self.conn_info = copy.deepcopy(conn_info) # upload
         self.kw = kw        
-        if vlayer is None:
-            return
         super(InitUploadLayerController, self).start( vlayer)
     def start_args(self, args):
         a, kw = parse_qt_args(args)
         self.start(*a, **kw)
-    def _config(self, network):
+    def _config(self):
         self.config_fun([
             AsyncFun( layer_utils.get_feat_iter),
             WorkerFun( layer_utils.get_feat_upload_from_iter, self.pool),
             AsyncFun( self._setup_queue), 
         ])
-
     def _setup_queue(self, lst_added_feat, removed_feat):
         if len(lst_added_feat) == 0:
             self.signal.finished.emit()
@@ -219,4 +224,50 @@ class InitUploadLayerController(ChainController):
         return make_qt_args(self.get_conn_info(), self.lst_added_feat, **self.kw)
     def get_conn_info(self):
         return self.conn_info
+        
+class UploadLayerController(ParallelLoop):
+    """ Upload the list of features of the input layer (added and removed) to the destination space (conn_info)
+    Stateful controller
+    """
+    def __init__(self, network, n_parallel=1):
+        super(UploadLayerController, self).__init__()
+        self.n_parallel = n_parallel
+        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self._config(network)
+        self.feat_cnt = 0
+    def _config(self, network):
+        self.config_fun([
+            NetworkFun( network.add_features), 
+            WorkerFun( net_handler.on_received, self.pool),
+            AsyncFun( self._process),
+        ])
+    def _process(self, obj, *a):
+        self.feat_cnt += len(obj["features"])
+    def get_feat_cnt(self):
+        return self.feat_cnt
+    def start(self, conn_info, lst_added_feat, **kw):
+        self.conn_info = conn_info
+        self.lst_added_feat = lst_added_feat
+
+        self.fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
+
+        if self.count_active() == 0:
+            super(UploadLayerController, self).reset()
+        self.dispatch_parallel(n_parallel=self.n_parallel)
+    def start_args(self, args):
+        a, kw = parse_qt_args(args)
+        self.start( *a, **kw)
+    def _run_loop(self):
+        if not self.lst_added_feat.has_next():
+            self._try_finish()
+            return
+            
+        conn_info = self.get_conn_info()
+        feat = self.lst_added_feat.get_params()
+        LoopController.start(self, conn_info, feat, **self.fixed_params)
+    def get_conn_info(self):
+        return self.conn_info
+
+    def _handle_error(self, err):
+        self.signal.error.emit(err)
         
