@@ -75,6 +75,7 @@ class NetworkFun(AsyncFun):
         a, kw = parse_qt_args( args)
         try:
             reply = self.fun( *a,**kw)
+            self.reply = reply
         except Exception as e:
             obj = make_exception_obj(e)
             self.signal.error.emit(obj)
