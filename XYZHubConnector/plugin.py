@@ -322,6 +322,83 @@ class XYZHubConnector(object):
         self.iface.mapCanvas().zoomToPreviousExtent()
     #
     
+    def fun_wrapper(self, fun, *a):
+        def _fun(args):
+            fun(args, *a)
+        return _fun
+        
+    def start_new_space(self, args, dialog):
+        con = CreateSpaceController(self.network)
+        self.con_man.add_background(con)
+        con.signal.finished.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_edit_space(self, args, dialog):
+        con = EditSpaceController(self.network)
+        self.con_man.add_background(con)
+        con.signal.finished.connect( dialog.btn_use.clicked.emit ) #!!!
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_delete_space(self, args, dialog):
+        con = DeleteSpaceController(self.network)
+        self.con_man.add_background(con)
+        con.signal.results.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_use_token(self, args, dialog):
+        con = LoadSpaceController(self.network)
+        self.con_man.add(con)
+        con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
+        con.signal.error.connect( self.cb_handle_error_msg )
+        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
+        con.signal.finished.connect( dialog.cb_enable_token_ui )
+
+        con.start_args(args)
+    def start_count_feat(self, args, dialog):
+        con = StatSpaceController(self.network)
+        self.con_man.add(con, show_progress=False)
+        con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_upload_space(self, args, dialog):
+        
+        vlayer = self.iface.activeLayer()
+        dialog.set_layer( vlayer)
+
+        con_upload = loader.UploadLayerController(self.network, n_parallel=2)
+        self.con_man.add_background(con_upload)
+        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
+        con_upload.signal.error.connect( self.cb_handle_error_msg )
+        
+        con = loader.InitUploadLayerController(self.network)
+        self.con_man.add_background(con)
+
+        con.signal.results.connect( con_upload.start_args)
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_load_layer(self, args, dialog):
+        # create new con
+        # config
+        # run
+        
+        ############ connect btn        
+        con_load = loader.ReloadLayerController(self.network, n_parallel=2)
+        self.con_man.add_background(con_load)
+        con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
+        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
+        con_load.signal.error.connect( self.cb_handle_error_msg )
+
+        con_load.start_args(args)
+
+        # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
+    ############### 
+    # Open dialog
+    ###############
     def open_clear_cache_dialog(self):
         dialog = ConfirmDialog("Delete cache will make loaded layer unusable !!")
         ret = dialog.exec_()
@@ -348,79 +425,35 @@ class XYZHubConnector(object):
         
         ############ new btn   
         
-        con = CreateSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.finished.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_new_space.connect( con.start_args)
+        dialog.signal_new_space.connect(self.fun_wrapper(self.start_new_space, dialog))
 
         ############ edit btn   
 
-        con = EditSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.finished.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_edit_space.connect( con.start_args)
+        dialog.signal_edit_space.connect(self.fun_wrapper(self.start_edit_space, dialog))
 
         ############ delete btn        
-
-        con = DeleteSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.results.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_del_space.connect( con.start_args)
+        dialog.signal_del_space.connect(self.fun_wrapper(self.start_delete_space, dialog))
 
         ############ Use Token btn        
         
-        con = LoadSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
-        con.signal.finished.connect( dialog.cb_enable_token_ui )
         dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
-        dialog.signal_use_token.connect( con.start_args)
+        dialog.signal_use_token.connect(self.fun_wrapper(self.start_use_token, dialog))
 
         ############ get statistics        
-        con = StatSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_space_count.connect( con.start_args)
-        
-        ############ TODO: bbox btn        
+        dialog.signal_space_count.connect(self.fun_wrapper(self.start_count_feat, dialog), Qt.QueuedConnection)
 
         ############ connect btn        
-        con_load = loader.ReloadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_load)
-        con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
-        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
-        con_load.signal.error.connect( self.cb_handle_error_msg )
 
-        dialog.signal_space_connect.connect( con_load.start_args)
-
-        # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
-
+        dialog.signal_space_connect.connect(self.fun_wrapper(self.start_load_layer, dialog))
 
         ############ upload btn        
-        vlayer = self.iface.activeLayer()
-        dialog.set_layer( vlayer)
 
-        con_upload = loader.UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_upload)
-        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.error.connect( self.cb_handle_error_msg )
-        
-        con = loader.InitUploadLayerController(self.network)
-        self.con_man.add_background(con)
-
-        dialog.signal_upload_space.connect( con.start_args)
-        con.signal.results.connect( con_upload.start_args)
-        con.signal.error.connect( self.cb_handle_error_msg )
+        dialog.signal_upload_space.connect(self.fun_wrapper(self.start_upload_space, dialog))
 
         dialog.exec_()
         self.con_man.finish_fast()
         # self.startTime = time.time()
+
     # unused
     def open_manage_dialog(self):
         pass
