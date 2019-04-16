@@ -17,7 +17,7 @@ from .controller import make_qt_args, parse_qt_args, parse_exception_obj, ChainI
 from .layer import XYZLayer, parser, render, queue, bbox_utils
 from .network import net_handler
 from ..gui.util_dialog import exec_warning_dialog
-from .loop_loader import BaseLoader, ParallelLoop, ParallelFun
+from .loop_loader import BaseLoader, BaseLoop, ParallelFun
 
 ########################
 # Load
@@ -225,7 +225,7 @@ class InitUploadLayerController(ChainController):
     def get_conn_info(self):
         return self.conn_info
         
-class UploadLayerController(ParallelLoop):
+class UploadLayerController(BaseLoop):
     """ Upload the list of features of the input layer (added and removed) to the destination space (conn_info)
     Stateful controller
     """
@@ -258,6 +258,9 @@ class UploadLayerController(ParallelLoop):
         a, kw = parse_qt_args(args)
         self.start( *a, **kw)
     def _run_loop(self):
+        if self.status == self.STOPPED: 
+            self.signal.error.emit(ManualInterrupt())
+            return 
         if not self.lst_added_feat.has_next():
             self._try_finish()
             return
