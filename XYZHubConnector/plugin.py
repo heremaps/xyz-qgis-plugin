@@ -30,7 +30,7 @@ from .gui.basemap_dialog import BaseMapDialog
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.controller.manager import ControllerManager
+from .modules.controller.manager import LoaderManager
 
 from .modules import loader
 from .modules.space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
@@ -158,7 +158,8 @@ class XYZHubConnector(object):
 
         self.network = NetManager(parent)
         
-        self.con_man = ControllerManager()
+        self.con_man = LoaderManager()
+        self.con_man.config(self.network)
         self.layer_man = LayerManager()
 
         ######## data flow
@@ -166,6 +167,9 @@ class XYZHubConnector(object):
         
         ######## token      
         self.token_model.load_ini(config.USER_PLUGIN_DIR +"/token.ini")
+
+        ######## dialog
+        self.config_dialog_con()
 
         ######## CALLBACK
         
@@ -326,46 +330,56 @@ class XYZHubConnector(object):
         def _fun(args):
             fun(args, *a)
         return _fun
-        
-    def start_new_space(self, args, dialog):
-        con = CreateSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.finished.connect( dialog.btn_use.clicked.emit )
+    def config_dialog_con(self):
+        parent = self.iface.mainWindow()
+        dialog = MainDialog(parent)
+        self.dialog = dict()
+        self.dialog["main"] = dialog
+
+        con = self.con_man.get_con("create")
+        con.signal.finished.connect( dialog.btn_use.clicked.emit ) # can be optimized !!
         con.signal.error.connect( self.cb_handle_error_msg )
 
-        con.start_args(args)
-    def start_edit_space(self, args, dialog):
-        con = EditSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.finished.connect( dialog.btn_use.clicked.emit ) #!!!
-        con.signal.error.connect( self.cb_handle_error_msg )
-
-        con.start_args(args)
-    def start_delete_space(self, args, dialog):
-        con = DeleteSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.results.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-
-        con.start_args(args)
-    def start_use_token(self, args, dialog):
-        con = LoadSpaceController(self.network)
-        self.con_man.add(con)
+        con = self.con_man.get_con("list")
         con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
         con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
 
-        con.start_args(args)
-    def start_count_feat(self, args, dialog):
-        con = StatSpaceController(self.network)
-        self.con_man.add(con, show_progress=False)
+        con = self.con_man.get_con("edit")
+        con.signal.finished.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con = self.con_man.get_con("delete")
+        con.signal.results.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con = self.con_man.get_con("stat")
         con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
         con.signal.error.connect( self.cb_handle_error_msg )
 
+
+    def start_new_space(self, args):
+        con = self.con_man.get_con("create")
         con.start_args(args)
+
+    def start_edit_space(self, args):
+        con = self.con_man.get_con("edit")
+        con.start_args(args)
+
+    def start_delete_space(self, args):
+        con = self.con_man.get_con("delete")
+        con.start_args(args)
+
+    def start_use_token(self, args):
+        con = self.con_man.get_con("list")
+        con.start_args(args)
+
+    def start_count_feat(self, args):
+        con = self.con_man.get_con("stat")
+        con.start_args(args)
+
     def start_upload_space(self, args, dialog):
-        
         vlayer = self.iface.activeLayer()
         dialog.set_layer( vlayer)
 
@@ -407,8 +421,7 @@ class XYZHubConnector(object):
         utils.clear_cache()
 
     def open_connection_dialog(self):
-        parent = self.iface.mainWindow()
-        dialog = MainDialog(parent)
+        dialog = self.dialog["main"]
         dialog.config(self.token_model)
         dialog.config_secret(self.secret)
 
@@ -425,22 +438,22 @@ class XYZHubConnector(object):
         
         ############ new btn   
         
-        dialog.signal_new_space.connect(self.fun_wrapper(self.start_new_space, dialog))
+        dialog.signal_new_space.connect(self.start_new_space)
 
         ############ edit btn   
 
-        dialog.signal_edit_space.connect(self.fun_wrapper(self.start_edit_space, dialog))
+        dialog.signal_edit_space.connect(self.start_edit_space)
 
         ############ delete btn        
-        dialog.signal_del_space.connect(self.fun_wrapper(self.start_delete_space, dialog))
+        dialog.signal_del_space.connect(self.start_delete_space)
 
         ############ Use Token btn        
         
         dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
-        dialog.signal_use_token.connect(self.fun_wrapper(self.start_use_token, dialog))
+        dialog.signal_use_token.connect(self.start_use_token)
 
         ############ get statistics        
-        dialog.signal_space_count.connect(self.fun_wrapper(self.start_count_feat, dialog), Qt.QueuedConnection)
+        dialog.signal_space_count.connect(self.start_count_feat, Qt.QueuedConnection)
 
         ############ connect btn        
 
