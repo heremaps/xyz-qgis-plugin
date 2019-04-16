@@ -118,8 +118,8 @@ class ControllerManager(object):
                 self._lst.pop(ptr, None)
 
 
-from ..space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
-from ..loader import ReloadLayerController, InitUploadLayerController, UploadLayerController
+from .space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
+from .loader import ReloadLayerController, InitUploadLayerController, UploadLayerController
 
 class LoaderManager(ControllerManager):
     def config(self, network):

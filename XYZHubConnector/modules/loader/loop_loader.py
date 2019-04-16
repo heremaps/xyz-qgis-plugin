@@ -9,8 +9,9 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import QTimer
-from .controller import LoopController
-from .controller import AsyncFun, parse_qt_args, make_qt_args,output_to_qt_args, make_exception_obj
+
+from ..controller import (AsyncFun, LoopController, make_exception_obj,
+                          make_qt_args, parse_qt_args)
 
 ########################
 # Base Load

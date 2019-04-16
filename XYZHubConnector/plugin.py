@@ -30,10 +30,7 @@ from .gui.basemap_dialog import BaseMapDialog
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.controller.manager import LoaderManager
-
-from .modules import loader
-from .modules.space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
+from .modules.loader import LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, ReloadLayerController, UploadLayerController
 
 from .modules.layer.manager import LayerManager
 from .modules.layer import bbox_utils
@@ -243,7 +240,7 @@ class XYZHubConnector(object):
             if isinstance(e0, net_handler.NetworkError):
                 ok = self.show_net_err(e0)
                 if ok: return
-            elif isinstance(e0, loader.EmptyXYZSpaceError):
+            elif isinstance(e0, EmptyXYZSpaceError):
                 ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
                 return
         self.show_err_msgbar(err)
@@ -383,12 +380,12 @@ class XYZHubConnector(object):
         vlayer = self.iface.activeLayer()
         dialog.set_layer( vlayer)
 
-        con_upload = loader.UploadLayerController(self.network, n_parallel=2)
+        con_upload = UploadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_upload)
         con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
         con_upload.signal.error.connect( self.cb_handle_error_msg )
         
-        con = loader.InitUploadLayerController(self.network)
+        con = InitUploadLayerController(self.network)
         self.con_man.add_background(con)
 
         con.signal.results.connect( con_upload.start_args)
@@ -401,7 +398,7 @@ class XYZHubConnector(object):
         # run
         
         ############ connect btn        
-        con_load = loader.ReloadLayerController(self.network, n_parallel=2)
+        con_load = ReloadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_load)
         con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
@@ -475,35 +472,7 @@ class XYZHubConnector(object):
         pass
     # unused
     def open_upload_dialog(self):
-        vlayer = self.iface.activeLayer()
-        parent = self.iface.mainWindow()
-        dialog = UploadNewSpaceDialog(parent)
-        dialog.config(self.token_model, self.network, vlayer)
-        dialog.config_secret(self.secret)
-
-        ############ Use Token btn
-        con = LoadSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_set_valid_token) ) # finished signal !?
-        con.signal.error.connect( self.cb_handle_error_msg )
-        con.signal.finished.connect( dialog.cb_enable_token_ui )
-        dialog.signal_use_token.connect( con.start_args)
-
-
-        con_upload = UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_upload)
-        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.error.connect( self.cb_handle_error_msg )
-
-        con = InitUploadLayerController(self.network)
-        self.con_man.add_background(con)
-
-        dialog.signal_upload_new_space.connect( con.start_args)
-        con.signal.results.connect( con_upload.start_args)
-        con.signal.error.connect( self.cb_handle_error_msg )
-
-        dialog.exec_()
-        self.con_man.finish_fast()
+        pass
     def open_magic_sync_dialog(self):
         pass
     #unused

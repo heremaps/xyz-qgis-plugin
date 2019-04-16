@@ -8,15 +8,19 @@
 #
 ###############################################################################
 
+import copy
 import json
-from qgis.PyQt.QtCore import QThreadPool
-from qgis.core import QgsProject
 
-from .controller import AsyncFun, ChainController, NetworkFun, LoopController, WorkerFun, BasicSignal
-from .controller import make_qt_args, parse_qt_args, parse_exception_obj, ChainInterrupt
-from .layer import XYZLayer, parser, render, queue, bbox_utils
-from .network import net_handler
-from ..gui.util_dialog import exec_warning_dialog
+from qgis.core import QgsProject
+from qgis.PyQt.QtCore import QThreadPool
+
+from ..controller import (AsyncFun, BasicSignal, ChainController,
+                          ChainInterrupt, LoopController, NetworkFun,
+                          WorkerFun, make_qt_args, parse_exception_obj,
+                          parse_qt_args)
+
+from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render
+from ..network import net_handler
 from .loop_loader import BaseLoader, BaseLoop, ParallelFun
 
 ########################
@@ -185,12 +189,9 @@ class ReloadLayerController(BaseLoader):
 
         render.add_feature_render(vlayer, feat, fields)
 
-
 ########################
 # Upload
 ########################
-from .layer import layer_utils
-import copy
 
 class InitUploadLayerController(ChainController):
     """ Prepare list of features of the input layer to be upload (added and removed)
@@ -273,4 +274,3 @@ class UploadLayerController(BaseLoop):
 
     def _handle_error(self, err):
         self.signal.error.emit(err)
-        
