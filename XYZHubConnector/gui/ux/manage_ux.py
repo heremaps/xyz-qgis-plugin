@@ -49,33 +49,32 @@ class ManageUX(SpaceUX):
         self.btn_edit.clearFocus()
         self.btn_delete.clearFocus()
 
-    def _exec_info_dialog(self, dialog, signal, copy_space_info=False):
+    def ui_new_space(self):
+        token = self.get_input_token()
+        self.conn_info.set_(token=token)
+
+        dialog = NewSpaceDialog(self)
+        dialog.accepted.connect(lambda: self.signal_new_space.emit(
+            make_qt_args(self.conn_info, dialog.get_space_info() )
+        ))
+        dialog.exec_()
+
+    def ui_edit_space(self):
         token = self.get_input_token()
         index = self._get_current_index()
         space_id = self._get_space_model().get_("id",index)
         space_info = self._get_space_model().get_(dict,index)
 
         self.conn_info.set_(token=token,space_id=space_id)
-        if copy_space_info:
-            dialog.set_space_info(space_info)
-        # dialog.accepted.connect(lambda: self.network.edit_space(token, space_id, dialog.get_space_info()))
-        
-        dialog.accepted.connect(lambda: signal.emit(
+
+        dialog = EditSpaceDialog(self)
+        dialog.set_space_info(space_info)
+
+        dialog.accepted.connect(lambda: self.signal_edit_space.emit(
             make_qt_args(self.conn_info, dialog.get_space_info() )
         ))
         dialog.exec_()
-    def ui_new_space(self):
-        self._exec_info_dialog(
-            NewSpaceDialog(self), 
-            self.signal_new_space,
-            copy_space_info=False
-        )
-    def ui_edit_space(self):
-        self._exec_info_dialog(
-            EditSpaceDialog(self), 
-            self.signal_edit_space,
-            copy_space_info=True
-        )
+
     def ui_del_space(self):
         token = self.get_input_token()
         index = self._get_current_index()
