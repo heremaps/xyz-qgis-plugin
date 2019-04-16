@@ -8,12 +8,18 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal, QObject
-from qgis.PyQt.QtCore import Qt, QMutex, QMutexLocker
 from threading import Lock
-from ..controller import BasicSignal
 
-from ..common.signal import make_print_qgis, close_print_qgis
+from qgis.PyQt.QtCore import QMutex, QMutexLocker, QObject, Qt, pyqtSignal
+
+from ..controller import BasicSignal
+from .layer_loader import (InitUploadLayerController, ReloadLayerController,
+                           UploadLayerController)
+from .space_loader import (CreateSpaceController, DeleteSpaceController,
+                           EditSpaceController, LoadSpaceController,
+                           StatSpaceController)
+
+from ..common.signal import close_print_qgis, make_print_qgis
 print_qgis = make_print_qgis("controller_manager",debug=True)
 
 class CanvasSignal(QObject):
@@ -118,8 +124,6 @@ class ControllerManager(object):
                 self._lst.pop(ptr, None)
 
 
-from .space_loader import LoadSpaceController, StatSpaceController, DeleteSpaceController, EditSpaceController, CreateSpaceController
-from .loader import ReloadLayerController, InitUploadLayerController, UploadLayerController
 
 class LoaderManager(ControllerManager):
     def config(self, network):
@@ -148,4 +152,3 @@ class LoaderManager(ControllerManager):
         self._map_layer_con[(key, layer)] = con
         self.add_background(con)
         return con
-    
