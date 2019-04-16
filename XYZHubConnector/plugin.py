@@ -237,7 +237,7 @@ class XYZHubConnector(object):
         err = parse_exception_obj(e)
         if isinstance(err, ChainInterrupt):
             e0, idx = err.args[0:2]
-            if isinstance(e0, net_handler.NetworkError):
+            if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
                 ok = self.show_net_err(e0)
                 if ok: return
             elif isinstance(e0, EmptyXYZSpaceError):
@@ -246,7 +246,6 @@ class XYZHubConnector(object):
         self.show_err_msgbar(err)
 
     def show_net_err(self, err):
-        assert isinstance(err, net_handler.NetworkError)
         reply_tag, status, reason, body, err_str, url = err.args[:6]
         if reply_tag in ["count", "statistics"]: # too many error
             msg = "Network Error: %s: %s. %s"%(status, reason, err_str)

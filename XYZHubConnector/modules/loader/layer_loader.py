@@ -162,11 +162,12 @@ class ReloadLayerController(BaseLoader):
         chain_err = parse_exception_obj(err)
         if isinstance(chain_err, ChainInterrupt):
             e, idx = chain_err.args[0:2]
-            if isinstance(e, net_handler.NetworkError):
+            if isinstance(e, net_handler.NetworkError): # retry only when network error, not timeout
                 reply = e.args[-1]
                 params = self._get_params_reply(reply)
                 self.params_queue.gen_retry_params(**params)
                 # start from beginning
+                self.dispatch_parallel(n_parallel=1)
                 return
         # otherwise emit error
         self.signal.error.emit(err)
