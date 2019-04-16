@@ -375,10 +375,7 @@ class XYZHubConnector(object):
         con = self.con_man.get_con("stat")
         con.start_args(args)
 
-    def start_upload_space(self, args, dialog):
-        vlayer = self.iface.activeLayer()
-        dialog.set_layer( vlayer)
-
+    def start_upload_space(self, args):
         con_upload = UploadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_upload)
         con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
@@ -391,7 +388,7 @@ class XYZHubConnector(object):
         con.signal.error.connect( self.cb_handle_error_msg )
 
         con.start_args(args)
-    def start_load_layer(self, args, dialog):
+    def start_load_layer(self, args):
         # create new con
         # config
         # run
@@ -424,6 +421,8 @@ class XYZHubConnector(object):
         auth = self.auth_manager.get_auth()
         dialog.config_basemap(self.map_basemap_meta, auth)
         
+        vlayer = self.iface.activeLayer()
+        dialog.set_layer( vlayer)
         ############ clear cache btn
         
         dialog.signal_clear_cache.connect( self.open_clear_cache_dialog)
@@ -453,11 +452,11 @@ class XYZHubConnector(object):
 
         ############ connect btn        
 
-        dialog.signal_space_connect.connect(self.fun_wrapper(self.start_load_layer, dialog))
+        dialog.signal_space_connect.connect(self.start_load_layer)
 
         ############ upload btn        
 
-        dialog.signal_upload_space.connect(self.fun_wrapper(self.start_upload_space, dialog))
+        dialog.signal_upload_space.connect(self.start_upload_space)
 
         dialog.exec_()
         self.con_man.finish_fast()

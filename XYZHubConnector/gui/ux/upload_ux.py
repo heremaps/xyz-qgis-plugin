@@ -9,7 +9,7 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import pyqtSignal
-
+from qgis.core import QgsMapLayerProxyModel
 from ...modules.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
 from .space_ux import SpaceUX
@@ -22,19 +22,30 @@ class UploadUX(SpaceUX):
     def __init__(self, *a):
         # these are like abstract variables
         self.btn_upload = None
-        self.lineEdit_tags = None
+        self.lineEdit_tags_upload = None
+        self.mMapLayerComboBox = None
     def config(self, *a):
         # super().config(*a)
         self.vlayer = None
         self.btn_upload.clicked.connect(self.start_upload)
+        # https://qgis.org/api/classQgsMapLayerProxyModel.html
+        
+        filters = QgsMapLayerProxyModel.VectorLayer # use &, |, ~ to set/unset flag, enum
+        self.mMapLayerComboBox.setFilters(filters)
+        self.mMapLayerComboBox.layerChanged.connect(self._set_layer)
+
     def set_layer(self,vlayer):
+        self.mMapLayerComboBox.setLayer(vlayer)
+        
+    def _set_layer(self,vlayer):
         self.vlayer = vlayer
+        
     def start_upload(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
 
-        tags = self.lineEdit_tags.text().strip()
+        tags = self.lineEdit_tags_upload.text().strip()
         kw = dict(tags=tags) if len(tags) else dict()
 
         dialog = ConfirmDialog("\n".join([
