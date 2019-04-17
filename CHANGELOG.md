@@ -1,5 +1,12 @@
 # Changelog 
 
+## version 1.6
+
+* tab ui
+* allow upload to existing layer
+* fix error in NetworkFun
+* fix bugs (#11, #10)
+
 ## version 1.5.7
 
 * fix bugs (unicode, feature count, etc.)
