@@ -8,11 +8,14 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal
 from qgis.core import QgsMapLayerProxyModel
+from qgis.PyQt.QtCore import QRegExp, pyqtSignal
+from qgis.PyQt.QtGui import QRegExpValidator
+
 from ...modules.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
 from .space_ux import SpaceUX
+from .ux import process_tags
 
 
 class UploadUX(SpaceUX):
@@ -28,8 +31,9 @@ class UploadUX(SpaceUX):
         # super().config(*a)
         self.vlayer = None
         self.btn_upload.clicked.connect(self.start_upload)
+        self._set_mask_tags(self.lineEdit_tags_upload)
+
         # https://qgis.org/api/classQgsMapLayerProxyModel.html
-        
         filters = QgsMapLayerProxyModel.VectorLayer # use &, |, ~ to set/unset flag, enum
         self.mMapLayerComboBox.setFilters(filters)
         self.mMapLayerComboBox.layerChanged.connect(self._set_layer)
@@ -40,18 +44,21 @@ class UploadUX(SpaceUX):
     def _set_layer(self,vlayer):
         self.vlayer = vlayer
         
+    def _set_mask_tags(self, lineEdit):
+        lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
+
     def start_upload(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
 
-        tags = self.lineEdit_tags_upload.text().strip()
+        tags = process_tags(self.lineEdit_tags_upload.text().strip())
         kw = dict(tags=tags) if len(tags) else dict()
 
         dialog = ConfirmDialog("\n".join([
             "From Layer:\t%s",
-            "To Space:\t%s",
-            "Tags:\t\t%s",
+            "To Space:  \t%s",
+            "Tags:      \t%s",
             ]) % (self.vlayer.name(), meta["title"], tags),
             title="Confirm Upload"
         )

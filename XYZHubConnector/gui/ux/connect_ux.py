@@ -13,6 +13,7 @@ from qgis.PyQt.QtGui import QRegExpValidator
 
 from ...modules.controller import make_qt_args
 from .space_ux import SpaceUX
+from .ux import process_tags
 
 
 class ConnectUX(SpaceUX):
@@ -45,7 +46,7 @@ class ConnectUX(SpaceUX):
     def get_params(self):
         key = ["tags","limit","max_feat"]
         val = [
-            self.lineEdit_tags.text().strip(),
+            process_tags(self.lineEdit_tags.text().strip()),
             self.lineEdit_limit.text().strip(),
             self.lineEdit_max_feat.text().strip()
         ]

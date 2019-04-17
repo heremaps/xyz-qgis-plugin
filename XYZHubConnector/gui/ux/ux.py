@@ -8,6 +8,10 @@
 #
 ###############################################################################
 
+def process_tags(tags):
+    sep = ","
+    return sep.join(s.strip() for s in tags.split(sep))
+
 class UXDecorator(object):
     def __init__(self):
         raise NotImplementedError()
