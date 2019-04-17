@@ -29,7 +29,7 @@ from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.loader import LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, ReloadLayerController, UploadLayerController
+from .modules.loader import LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, LoadLayerController, UploadLayerController
 
 from .modules.layer.manager import LayerManager
 from .modules.layer import bbox_utils
@@ -382,7 +382,7 @@ class XYZHubConnector(object):
         # run
         
         ############ connect btn        
-        con_load = ReloadLayerController(self.network, n_parallel=2)
+        con_load = LoadLayerController(self.network, n_parallel=1)
         self.con_man.add_background(con_load)
         con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)

@@ -13,7 +13,7 @@ from threading import Lock
 from qgis.PyQt.QtCore import QMutex, QMutexLocker, QObject, Qt, pyqtSignal
 
 from ..controller import BasicSignal
-from .layer_loader import (InitUploadLayerController, ReloadLayerController,
+from .layer_loader import (InitUploadLayerController, LoadLayerController,
                            UploadLayerController)
 from .space_loader import (CreateSpaceController, DeleteSpaceController,
                            EditSpaceController, LoadSpaceController,
@@ -136,19 +136,7 @@ class LoaderManager(ControllerManager):
             "edit": EditSpaceController(network),
             "create": CreateSpaceController(network)
         }
-        
-        self._map_layer_con_cls = {
-            "load":ReloadLayerController, 
-            "feat":InitUploadLayerController, 
-            "upload":UploadLayerController
-        }
-        self._map_layer_con = dict()
     def get_con(self,key):
         return self._map_fun_con[key]
 
-    def new_layer_con(self, key, layer):
-        C = self._map_layer_con_cls[key]
-        con = C(self.network)
-        self._map_layer_con[(key, layer)] = con
-        self.add_background(con)
-        return con
+

@@ -8,5 +8,5 @@
 #
 ###############################################################################
 
-from .layer_loader import ReloadLayerController, InitUploadLayerController, UploadLayerController, EmptyXYZSpaceError
+from .layer_loader import LoadLayerController, InitUploadLayerController, UploadLayerController, EmptyXYZSpaceError
 from .manager import LoaderManager

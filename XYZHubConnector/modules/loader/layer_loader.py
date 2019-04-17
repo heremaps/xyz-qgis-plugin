@@ -34,13 +34,13 @@ class InvalidXYZLayerError(Exception):
 class ManualInterrupt(Exception):
     pass
     
-class ReloadLayerController(BaseLoader):
+class LoadLayerController(BaseLoader):
     """ Load XYZ space into several qgis layer separated by Geometry type.
     If space is empty, no layer shall be created.
     Stateful controller
     """
     def __init__(self, network, n_parallel=1):
-        super(ReloadLayerController, self).__init__()
+        super(LoadLayerController, self).__init__()
         self.pool = QThreadPool() # .globalInstance() will crash afterward
         self.n_parallel = 1
         self.status = self.LOADING
@@ -58,7 +58,7 @@ class ReloadLayerController(BaseLoader):
         self.signal.finished.connect(self.post_render)
 
         # super(BaseLoader,self): super of BaseLoader 
-        super(ReloadLayerController, self).start( **kw)
+        super(LoadLayerController, self).start( **kw)
     def start_args(self, args):
         a, kw = parse_qt_args(args)
         self.start( *a, **kw)
