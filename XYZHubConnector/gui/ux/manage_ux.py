@@ -40,6 +40,7 @@ class ManageUX(SpaceUX):
     def ui_valid_token(self, flag):
         # flag = super().ui_valid_token()
         self.btn_new.setEnabled(flag)
+        self.btn_new.clearFocus()
         return flag
     def ui_enable_ok_button(self, flag):
         # super().ui_enable_ok_button(flag)

@@ -79,6 +79,14 @@ class SpaceInfoTokenDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
                 "ncsa", "unlicense", "zlib"
             ])
         )
+        self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
+        self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
+        self.ui_enable_btn()
+    def ui_enable_btn(self):
+        flag = (len(self.lineEdit_title.text()) > 0 and len(self.plainTextEdit_description.toPlainText()) > 0)
+        self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
+        self.buttonBox.button(self.buttonBox.Ok).clearFocus()
+
         
 class SpaceInfoDialog(SpaceInfoTokenDialog):
     def __init__(self, parent=None):
