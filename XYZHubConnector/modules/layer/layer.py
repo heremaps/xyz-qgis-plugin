@@ -61,6 +61,9 @@ class XYZLayer(object):
         return geom_str in self.map_vlayer
     def get_layer(self, geom_str):
         return self.map_vlayer.get(geom_str)
+    def get_name(self):
+        tags = " (%s)" %(self.tags) if len(self.tags) else ""
+        return "{title} - {id}{tags}".format(tags=tags,**self.meta)
     def _layer_name(self, geom_str):
         tags = " (%s)" %(self.tags) if len(self.tags) else ""
         return "{title} - {id} - {geom}{tags}".format(geom=geom_str,tags=tags,**self.meta)

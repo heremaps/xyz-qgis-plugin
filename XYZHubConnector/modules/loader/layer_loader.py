@@ -111,7 +111,12 @@ class LoadLayerController(BaseLoader):
         params = self.params_queue.get_params()
         
         LoopController.start(self, conn_info, **params, **self.fixed_params)
-
+    def _emit_finish(self):
+        super()._emit_finish()
+        token, space_id = self.layer.conn_info.get_xyz_space()
+        name = self.layer.get_name()
+        msg = "Layer: %s. Token: %s"%(name, token)
+        self.signal.results.emit( make_qt_args(msg))
     ##### custom fun
 
     def _process_render(self,txt,*a,**kw):
@@ -272,6 +277,14 @@ class UploadLayerController(BaseLoop):
         LoopController.start(self, conn_info, feat, **self.fixed_params)
     def get_conn_info(self):
         return self.conn_info
+    def _emit_finish(self):
+        super()._emit_finish()
+        
+        token, space_id = self.conn_info.get_xyz_space()
+        title = self.conn_info.get_("title")
+        tags = self.fixed_params.get("addTags","")
+        msg = "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, token)
+        self.signal.results.emit( make_qt_args(msg))
 
     def _handle_error(self, err):
         self.signal.error.emit(err)

@@ -199,12 +199,19 @@ class XYZHubConnector(object):
     def cb_success_msg(self, msg, info=""):
         self.iface.messageBar().pushMessage(
             msg, info,  
-            Qgis.Success, 1
+            Qgis.Success, 3
         )
 
     def make_cb_success(self, msg, info=""):
         def _cb_success_msg():
             txt = info
+            self.cb_success_msg(msg, txt)
+        return _cb_success_msg
+        
+    def make_cb_success_args(self, msg, info=""):
+        def _cb_success_msg(args):
+            a, kw = parse_qt_args(args)
+            txt = ". ".join(map(str,a))
             self.cb_success_msg(msg, txt)
         return _cb_success_msg
 
@@ -366,7 +373,8 @@ class XYZHubConnector(object):
     def start_upload_space(self, args):
         con_upload = UploadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_upload)
-        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
+        # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
+        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish") )
         con_upload.signal.error.connect( self.cb_handle_error_msg )
         
         con = InitUploadLayerController(self.network)
@@ -384,7 +392,8 @@ class XYZHubConnector(object):
         ############ connect btn        
         con_load = LoadLayerController(self.network, n_parallel=1)
         self.con_man.add_background(con_load)
-        con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
+        # con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
+        con_load.signal.results.connect( self.make_cb_success_args("Loading finish") )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
         con_load.signal.error.connect( self.cb_handle_error_msg )
 
