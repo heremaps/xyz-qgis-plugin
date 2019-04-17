@@ -115,17 +115,11 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="maximumSize">
-         <size>
-          <width>25</width>
-          <height>16777215</height>
-         </size>
-        </property>
         <property name="accessibleDescription">
          <string/>
         </property>
         <property name="text">
-         <string>X</string>
+         <string>Remove</string>
         </property>
        </widget>
       </item>

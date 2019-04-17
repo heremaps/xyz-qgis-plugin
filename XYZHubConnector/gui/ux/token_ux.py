@@ -80,7 +80,7 @@ class TokenUX(ServerUX):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
     def cb_clear_token(self):
-        dialog = ConfirmDialog("Do you want to Remove token?")
+        dialog = ConfirmDialog("Do you want to Remove token: %s ?"%(self.get_input_token()))
         ret = dialog.exec_()
         if ret != dialog.Ok: return
 
