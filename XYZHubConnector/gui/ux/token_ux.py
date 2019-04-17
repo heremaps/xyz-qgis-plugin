@@ -127,6 +127,7 @@ class TokenUX(ServerUX):
         elif self.btn_use.text() == txt_clicked:
             self.btn_use.setText(txt0)
         self.btn_use.setEnabled(flag)
+        self.btn_clear_token.setEnabled(flag)
         self.comboBox_server.setEnabled(flag)
         self.comboBox_token.setEnabled(flag)
     def cb_token_used(self):
@@ -151,6 +152,7 @@ class TokenUX(ServerUX):
         """
         flag_token = len(self.get_input_token()) > 0
         self.btn_use.setEnabled(flag_token)
+        # self.btn_clear_token.setEnabled(flag_token)
 
         flag = self.comboBox_token.currentIndex() > 0 and self.used_token_idx == self.comboBox_token.currentIndex()
         txt = "Ok!" if flag else "Use"
