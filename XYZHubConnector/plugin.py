@@ -199,7 +199,7 @@ class XYZHubConnector(object):
     def cb_success_msg(self, msg, info=""):
         self.iface.messageBar().pushMessage(
             msg, info,  
-            Qgis.Success, 3
+            Qgis.Success, 5
         )
 
     def make_cb_success(self, msg, info=""):
@@ -230,11 +230,7 @@ class XYZHubConnector(object):
     def show_net_err(self, err):
         reply_tag, status, reason, body, err_str, url = err.args[:6]
         if reply_tag in ["count", "statistics"]: # too many error
-            msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
-            self.iface.messageBar().pushMessage(
-                TAG_PLUGIN, msg,  
-                Qgis.Warning, 5
-            )
+            # msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
             return 1
             
         detail = "\n". join(["Request:", url,"","Response:", body])
@@ -250,7 +246,7 @@ class XYZHubConnector(object):
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
             TAG_PLUGIN, repr(err),  
-            Qgis.Warning, 5
+            Qgis.Warning, 3
         )
         msg = format_traceback(err)
         QgsMessageLog.logMessage( msg, TAG_PLUGIN, Qgis.Warning)
