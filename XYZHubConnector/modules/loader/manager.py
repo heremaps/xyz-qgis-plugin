@@ -123,20 +123,23 @@ class ControllerManager(object):
             for ptr in self._layer_ptr.get(i,list()):
                 self._lst.pop(ptr, None)
 
-
-
 class LoaderManager(ControllerManager):
     def config(self, network):
-        super().__init__()
         self.network = network
-        self._map_fun_con = {
-            "list": LoadSpaceController(network),
-            "stat": StatSpaceController(network),
-            "delete": DeleteSpaceController(network),
-            "edit": EditSpaceController(network),
-            "create": CreateSpaceController(network)
+        self._map_fun_con = dict()
+        self._map_fun_cls = {
+            "list": LoadSpaceController,
+            "stat": StatSpaceController,
+            "delete": DeleteSpaceController,
+            "edit": EditSpaceController,
+            "create": CreateSpaceController
         }
     def get_con(self,key):
         return self._map_fun_con[key]
-
-
+    def make_con(self,key):
+        if key not in self._map_fun_cls: 
+            raise Exception("Unknown key: %s (Available keys: %s)"%(key, ", ".join(self._map_fun_cls.keys())))
+        C = self._map_fun_cls[key]
+        con = C(self.network)
+        self._map_fun_con[key] = con
+        return con

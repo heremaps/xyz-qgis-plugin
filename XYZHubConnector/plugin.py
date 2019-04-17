@@ -303,25 +303,25 @@ class XYZHubConnector(object):
         auth = self.auth_manager.get_auth()
         dialog.config_basemap(self.map_basemap_meta, auth)
 
-        con = self.con_man.get_con("create")
+        con = self.con_man.make_con("create")
         con.signal.finished.connect( dialog.btn_use.clicked.emit ) # can be optimized !!
         con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.get_con("list")
+        con = self.con_man.make_con("list")
         con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
         con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
 
-        con = self.con_man.get_con("edit")
+        con = self.con_man.make_con("edit")
         con.signal.finished.connect( dialog.btn_use.clicked.emit )
         con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.get_con("delete")
+        con = self.con_man.make_con("delete")
         con.signal.results.connect( dialog.btn_use.clicked.emit )
         con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.get_con("stat")
+        con = self.con_man.make_con("stat")
         con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
         con.signal.error.connect( self.cb_handle_error_msg )
 
