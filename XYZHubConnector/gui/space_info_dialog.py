@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
 
 from . import get_ui_class
-from .token_ux import TokenUX
+# from .token_ux import TokenUX
 
 from ..models import SpaceConnectionInfo
 from ..modules.controller import make_qt_args
@@ -59,7 +59,8 @@ class BaseSpaceInfoDialog(QDialog):
         for k, fun in key_fun.items():
             if k in space_info:
                 fun(space_info[k])
-class SpaceInfoDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
+
+class SpaceInfoTokenDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
     def __init__(self, *a):
         BaseSpaceInfoDialog.__init__(self,*a)
         EditSpaceDialogUI.setupUi(self,self)
@@ -78,73 +79,25 @@ class SpaceInfoDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
                 "ncsa", "unlicense", "zlib"
             ])
         )
-class UploadNewSpaceDialog(SpaceInfoDialog, TokenUX):
-    # ui = UP_CLASS()
-    title = "Upload to new XYZ Geospace"
-    signal_upload_new_space = pyqtSignal(object)
-
-    def __init__(self, *a):
-        SpaceInfoDialog.__init__(self,*a)
-        
-        self.groupBox_token.setEnabled(True)
-        # self.used_token_idx = 0
-        
-        self.setWindowTitle(self.title)
-
-    def config(self, token_model, network, vlayer):
-        self.network = network
-        self.vlayer = vlayer
-        self.conn_info = SpaceConnectionInfo()
-
-        self.config_ui_token(token_model)
-        
-        self.lineEdit_title.textChanged.connect(self.ui_valid_input)
-        self.plainTextEdit_description.textChanged.connect(self.ui_valid_input)
-
-        self.buttonBox.button(self.buttonBox.Ok).setText("Create and Upload")
-        self.accepted.connect(self.start_upload)
-
-    ########## COMBOBOX Config + Function
-
-    def config_ui_token(self, token_model):
-        TokenUX.config(self, token_model)
-
-    def cb_set_valid_token(self, *a):
-        self.insert_new_valid_token()
-        self.ui_valid_input()
-
-    def ui_enable_ok_button(self, flag):
+        self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
+        self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
+        self.ui_enable_btn()
+    def ui_enable_btn(self):
+        flag = (len(self.lineEdit_title.text()) > 0 and len(self.plainTextEdit_description.toPlainText()) > 0)
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
-    # Check lineEdit as well
-    def ui_valid_input(self, flag=None):
-        ok = (
-            self.ui_valid_token(flag) and 
-            len(self.lineEdit_title.text()) and 
-            len(self.plainTextEdit_description.toPlainText())
-        )
-            
-        self.ui_enable_ok_button( ok)
         
-    def start_upload(self):
-        self.conn_info.set_(token=self.get_input_token())
-        
-        token = self.get_input_token()
-
-        tags = self.lineEdit_tags.text().strip()
-        kw = dict(tags=tags) if len(tags) else dict()
-
-        self.signal_upload_new_space.emit(make_qt_args(self.conn_info, self.get_space_info(), self.vlayer, **kw))
-        # self.network.add_space(token, self.get_space_info())
-
-class EditSpaceDialog(SpaceInfoDialog):
-    title = "Edit XYZ Geospace"
-
+class SpaceInfoDialog(SpaceInfoTokenDialog):
     def __init__(self, parent=None):
-        SpaceInfoDialog.__init__(self, parent)
+        SpaceInfoTokenDialog.__init__(self, parent)
         
         self.groupBox_token.setVisible(False) # no groupBox_token
         self.groupBox_tags.setVisible(False) # no groupBox_tags
 
         self.setWindowTitle(self.title)
+        
+class NewSpaceDialog(SpaceInfoDialog):
+    title = "Create new XYZ Space"
+class EditSpaceDialog(SpaceInfoDialog):
+    title = "Edit XYZ Space"

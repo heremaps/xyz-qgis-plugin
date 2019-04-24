@@ -21,6 +21,8 @@ print_qgis = make_print_qgis("net_handler")
 
 class NetworkError(Exception): 
     pass
+class NetworkTimeout(Exception): 
+    pass
 
 ############# reply handler
     
@@ -58,7 +60,7 @@ def on_received(reply):
     if err == reply.OperationCanceledError: # operation canceled
         reason = "Timeout"
         body = ""
-        raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
+        raise NetworkTimeout(reply_tag, status, reason, body, err_str, url, reply)
     elif status != 200:
         raw = reply.readAll()
         byt, body, obj = decode_byte( raw)

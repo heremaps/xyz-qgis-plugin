@@ -22,24 +22,19 @@ from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 from . import config
 from . import utils
 
-from .gui.space_dialog import ConnectManageSpaceDialog, ManageSpaceDialog
-from .gui.space_info_dialog import EditSpaceDialog, UploadNewSpaceDialog
-from .gui.util_dialog import ConfirmDialog
-from .gui.basemap_dialog import BaseMapDialog
+from .gui.space_dialog import MainDialog
+from .gui.space_info_dialog import EditSpaceDialog
+from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenModel
 from .modules.controller import ChainController
-from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args
-from .modules.controller.manager import ControllerManager
-
-from .modules import loader
-from .modules.space_loader import *
-from .modules.refactor_loader import *
+from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
+from .modules.loader import LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, LoadLayerController, UploadLayerController
 
 from .modules.layer.manager import LayerManager
 from .modules.layer import bbox_utils
 
-from .modules.network import NetManager
+from .modules.network import NetManager, net_handler
 
 from .modules import basemap
 from .modules.secret import Secret
@@ -85,18 +80,9 @@ class XYZHubConnector(object):
         self.action_connect.setStatusTip(
             QCoreApplication.translate(PLUGIN_NAME, "status tip message" ))
 
-        self.action_clear_cache = QAction("Clear cache", parent)
-        self.action_upload = QAction("Upload to New XYZ Geospace", parent)
-        self.action_basemap = QAction("Add HERE Map Tile", parent)
-
-
         self.action_magic_sync = QAction("Magic Sync (EXPERIMENTAL)", parent)
-        self.action_manage = QAction("Manage XYZ Geospace (EXPERIMENTAL)", parent)
-        self.action_edit = QAction("Edit/Delete XYZ Geospace (EXPERIMENTAL)", parent)
 
         if self.iface.activeLayer() is None:
-            # self.action_upload.setEnabled(False)
-            self.action_edit.setEnabled(False)
             self.action_magic_sync.setEnabled(False)
 
         # self.action_magic_sync.setVisible(False) # disable magic sync
@@ -104,35 +90,26 @@ class XYZHubConnector(object):
         ######## CONNECT action, button
 
         self.action_connect.triggered.connect(self.open_connection_dialog)
-        self.action_manage.triggered.connect(self.open_manage_dialog)
-        self.action_edit.triggered.connect(self.open_edit_dialog)
-        self.action_upload.triggered.connect(self.open_upload_dialog)
         self.action_magic_sync.triggered.connect(self.open_magic_sync_dialog)
-        self.action_clear_cache.triggered.connect(self.open_clear_cache_dialog)
-        self.action_basemap.triggered.connect(self.open_basemap_dialog)
 
         ######## Add the toolbar + button
         self.toolbar = self.iface.addToolBar(PLUGIN_NAME)
         self.toolbar.setObjectName("XYZ Hub Connector")
 
-        tool_btn = QToolButton(self.toolbar)
+        self.actions = [self.action_connect] 
 
-        self.actions = [self.action_connect, self.action_upload, self.action_basemap, self.action_clear_cache] # , self.action_magic_sync, self.action_manage, self.action_edit
-        for a in self.actions:
-            tool_btn.addAction(a)
-            self.iface.addPluginToWebMenu(self.web_menu, a)
+        # # uncomment to use menu button
+        # tool_btn = QToolButton(self.toolbar)
+        # for a in self.actions:
+        #     tool_btn.addAction(a)
+        #     self.iface.addPluginToWebMenu(self.web_menu, a)
+        # tool_btn.setDefaultAction(self.action_connect)
+        # tool_btn.setPopupMode(tool_btn.MenuButtonPopup)
+        # self.xyz_widget_action = self.toolbar.addWidget(tool_btn) # uncomment to use menu button
 
-        tool_btn.setDefaultAction(self.action_connect)
-        tool_btn.setPopupMode(tool_btn.MenuButtonPopup)
-
-        self.xyz_widget_action = self.toolbar.addWidget(tool_btn)
+        self.toolbar.addAction(self.action_connect)
 
         self.action_help = None
-        
-        self.action_reload = QAction(icon_bbox, "Reload BBox", parent)
-        self.action_reload.triggered.connect(self.layer_reload_bbox)
-        self.action_reload.setVisible(False) # disable
-        self.toolbar.addAction(self.action_reload)
 
         progress = QProgressBar()
         progress.setMinimum(0)
@@ -159,11 +136,12 @@ class XYZHubConnector(object):
 
         self.network = NetManager(parent)
         
-        self.con_man = ControllerManager()
+        self.con_man = LoaderManager()
+        self.con_man.config(self.network)
         self.layer_man = LayerManager()
 
         ######## data flow
-        self.conn_info = SpaceConnectionInfo()
+        # self.conn_info = SpaceConnectionInfo()
         
         ######## token      
         self.token_model.load_ini(config.USER_PLUGIN_DIR +"/token.ini")
@@ -214,9 +192,6 @@ class XYZHubConnector(object):
         flag_xyz = True if qlayer is not None and self.layer.is_xyz_supported_layer(qlayer) else False
         # disable magic sync
         # self.action_magic_sync.setEnabled(flag_xyz)
-        flag_layer = True
-        self.action_upload.setEnabled(flag_layer)
-        self.action_edit.setEnabled(flag_layer)
         
     ############### 
     # Callback of action (main function)
@@ -224,7 +199,7 @@ class XYZHubConnector(object):
     def cb_success_msg(self, msg, info=""):
         self.iface.messageBar().pushMessage(
             msg, info,  
-            Qgis.Success, 1
+            Qgis.Success, 5
         )
 
     def make_cb_success(self, msg, info=""):
@@ -232,23 +207,31 @@ class XYZHubConnector(object):
             txt = info
             self.cb_success_msg(msg, txt)
         return _cb_success_msg
+        
+    def make_cb_success_args(self, msg, info=""):
+        def _cb_success_msg(args):
+            a, kw = parse_qt_args(args)
+            txt = ". ".join(map(str,a))
+            self.cb_success_msg(msg, txt)
+        return _cb_success_msg
 
     def cb_handle_error_msg(self, e):
         err = parse_exception_obj(e)
         if isinstance(err, ChainInterrupt):
             e0, idx = err.args[0:2]
-            if isinstance(e0, net_handler.NetworkError):
-                ok = self.show_net_err_dialog(e0)
+            if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
+                ok = self.show_net_err(e0)
                 if ok: return
-            elif isinstance(e0, loader.EmptyXYZSpaceError):
-                ret = exec_warning_dialog("Warning","Requested query returns no features")
+            elif isinstance(e0, EmptyXYZSpaceError):
+                ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
+                return
         self.show_err_msgbar(err)
 
-    def show_net_err_dialog(self, err):
-        assert isinstance(err, net_handler.NetworkError)
+    def show_net_err(self, err):
         reply_tag, status, reason, body, err_str, url = err.args[:6]
         if reply_tag in ["count", "statistics"]: # too many error
-            return 0
+            # msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
+            return 1
             
         detail = "\n". join(["Request:", url,"","Response:", body])
         msg = (
@@ -263,7 +246,7 @@ class XYZHubConnector(object):
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
             TAG_PLUGIN, repr(err),  
-            Qgis.Warning, 5
+            Qgis.Warning, 3
         )
         msg = format_traceback(err)
         QgsMessageLog.logMessage( msg, TAG_PLUGIN, Qgis.Warning)
@@ -291,24 +274,14 @@ class XYZHubConnector(object):
     ############### 
     # Action (main function)
     ###############
+    # unused
     def load_bbox(self, con, args):
         bbox = bbox_utils.extend_to_bbox(bbox_utils.get_bounding_box(self.iface))
         a, kw = parse_qt_args(args)
         kw["bbox"] = bbox
         kw["limit"] = 1000
         con.start(*a, **kw)
-    def layer_reload_bbox(self):
-        con_bbox_reload = ReloadLayerController_bbox(self.network)
-        self.con_man.add(con_bbox_reload)
-        # con_bbox_reload.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
-        con_bbox_reload.signal.finished.connect( self.make_cb_success("Bounding box loading finish") )
-        con_bbox_reload.signal.error.connect( self.cb_handle_error_msg )
 
-        # TODO: set/get params from vlayer
-        layer_id = self.iface.activeLayer().id()
-        layer = self.layer_man.get(layer_id)
-        self.load_bbox(con_bbox_reload, make_qt_args(layer))
-        
     # UNUSED
     def refresh_canvas(self):
         # self.iface.activeLayer().triggerRepaint()
@@ -317,121 +290,139 @@ class XYZHubConnector(object):
         self.iface.mapCanvas().zoomToPreviousExtent()
     #
     
-    def open_clear_cache_dialog(self):
+    def new_main_dialog(self):
         parent = self.iface.mainWindow()
-        dialog = ConfirmDialog(parent, "Delete cache will make loaded layer unusable !!")
+        dialog = MainDialog(parent)
+
+        dialog.config(self.token_model)
+        dialog.config_secret(self.secret)
+        auth = self.auth_manager.get_auth()
+        dialog.config_basemap(self.map_basemap_meta, auth)
+
+        con = self.con_man.make_con("create")
+        con.signal.finished.connect( dialog.btn_use.clicked.emit ) # can be optimized !!
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con = self.con_man.make_con("list")
+        con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
+        con.signal.error.connect( self.cb_handle_error_msg )
+        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
+        con.signal.finished.connect( dialog.cb_enable_token_ui )
+
+        con = self.con_man.make_con("edit")
+        con.signal.finished.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con = self.con_man.make_con("delete")
+        con.signal.results.connect( dialog.btn_use.clicked.emit )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con = self.con_man.make_con("stat")
+        con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        ############ clear cache btn
+        dialog.signal_clear_cache.connect( self.open_clear_cache_dialog)
+        
+        ############ add map tile btn
+        dialog.signal_add_basemap.connect( self.add_basemap_layer)
+        
+        ############ btn: new, edit, delete space   
+        dialog.signal_new_space.connect(self.start_new_space)
+        dialog.signal_edit_space.connect(self.start_edit_space)
+        dialog.signal_del_space.connect(self.start_delete_space)
+
+        ############ Use Token btn        
+        dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
+        dialog.signal_use_token.connect(self.start_use_token)
+
+        ############ get count        
+        dialog.signal_space_count.connect(self.start_count_feat, Qt.QueuedConnection) # queued -> non-blocking ui
+
+        ############ connect btn        
+        dialog.signal_space_connect.connect(self.start_load_layer)
+
+        ############ upload btn        
+        dialog.signal_upload_space.connect(self.start_upload_space)
+        
+        return dialog
+    def start_new_space(self, args):
+        con = self.con_man.get_con("create")
+        con.start_args(args)
+
+    def start_edit_space(self, args):
+        con = self.con_man.get_con("edit")
+        con.start_args(args)
+
+    def start_delete_space(self, args):
+        con = self.con_man.get_con("delete")
+        con.start_args(args)
+
+    def start_use_token(self, args):
+        con = self.con_man.get_con("list")
+        con.start_args(args)
+
+    def start_count_feat(self, args):
+        con = self.con_man.get_con("stat")
+        con.start_args(args)
+
+    def start_upload_space(self, args):
+        con_upload = UploadLayerController(self.network, n_parallel=2)
+        self.con_man.add_background(con_upload)
+        # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
+        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish") )
+        con_upload.signal.error.connect( self.cb_handle_error_msg )
+        
+        con = InitUploadLayerController(self.network)
+        self.con_man.add_background(con)
+
+        con.signal.results.connect( con_upload.start_args)
+        con.signal.error.connect( self.cb_handle_error_msg )
+
+        con.start_args(args)
+    def start_load_layer(self, args):
+        # create new con
+        # config
+        # run
+        
+        ############ connect btn        
+        con_load = LoadLayerController(self.network, n_parallel=1)
+        self.con_man.add_background(con_load)
+        # con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
+        con_load.signal.results.connect( self.make_cb_success_args("Loading finish") )
+        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
+        con_load.signal.error.connect( self.cb_handle_error_msg )
+
+        con_load.start_args(args)
+
+        # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
+        
+    def add_basemap_layer(self, args):
+        a, kw = parse_qt_args(args)
+        meta, app_id, app_code = a
+        self.auth_manager.save(app_id, app_code)
+        basemap.add_basemap_layer( meta, app_id, app_code)
+
+    ############### 
+    # Open dialog
+    ###############
+    def open_clear_cache_dialog(self):
+        dialog = ConfirmDialog("Delete cache will make loaded layer unusable !!")
         ret = dialog.exec_()
         if ret != dialog.Ok: return
         
         utils.clear_cache()
 
     def open_connection_dialog(self):
-        parent = self.iface.mainWindow()
-        dialog = ConnectManageSpaceDialog(parent)
-        dialog.config(self.token_model, self.conn_info)
-        dialog.config_secret(self.secret)
-
-        ############ edit btn   
-
-        con = EditSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.finished.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_edit_space.connect( con.start_args)
-
-        ############ delete btn        
-
-        con = DeleteSpaceController(self.network)
-        self.con_man.add_background(con)
-        con.signal.results.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_del_space.connect( con.start_args)
-
-        ############ Use Token btn        
+        dialog = self.new_main_dialog()
         
-        con = LoadSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
-        con.signal.finished.connect( dialog.cb_enable_token_ui )
-        dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
-        dialog.signal_use_token.connect( con.start_args)
-
-        ############ get statistics        
-        con = StatSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        dialog.signal_space_count.connect( con.start_args)
+        vlayer = self.iface.activeLayer()
+        dialog.set_layer( vlayer)
         
-        ############ TODO: bbox btn        
-
-        ############ connect btn        
-        con_load = loader.ReloadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_load)
-        con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
-        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
-        con_load.signal.error.connect( self.cb_handle_error_msg )
-
-        dialog.signal_space_connect.connect( con_load.start_args)
-
-        # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
-
-
         dialog.exec_()
         self.con_man.finish_fast()
         # self.startTime = time.time()
-
-    def open_manage_dialog(self):
-        pass
-
-    def open_edit_dialog(self):
-        pass
-
-    def open_upload_dialog(self):
-        vlayer = self.iface.activeLayer()
-        parent = self.iface.mainWindow()
-        dialog = UploadNewSpaceDialog(parent)
-        dialog.config(self.token_model, self.network, vlayer)
-        dialog.config_secret(self.secret)
-
-        ############ Use Token btn
-        con = LoadSpaceController(self.network)
-        self.con_man.add(con)
-        con.signal.results.connect( make_fun_args(dialog.cb_set_valid_token) ) # finished signal !?
-        con.signal.error.connect( self.cb_handle_error_msg )
-        con.signal.finished.connect( dialog.cb_enable_token_ui )
-        dialog.signal_use_token.connect( con.start_args)
-
-
-        con_upload = UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_upload)
-        con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.error.connect( self.cb_handle_error_msg )
-
-        con = InitUploadLayerController(self.network)
-        self.con_man.add_background(con)
-
-        dialog.signal_upload_new_space.connect( con.start_args)
-        con.signal.results.connect( con_upload.start_args)
-        con.signal.error.connect( self.cb_handle_error_msg )
-
-        dialog.exec_()
-        self.con_man.finish_fast()
+    # not used
     def open_magic_sync_dialog(self):
         pass
-
-    def open_basemap_dialog(self):
-        parent = self.iface.mainWindow()
-        auth = self.auth_manager.get_auth()
-        dialog = BaseMapDialog(parent)
-        dialog.config(self.map_basemap_meta, auth)
-        dialog.signal_add_basemap.connect( self.add_basemap_layer)
-
-        dialog.exec_()
-    def add_basemap_layer(self, args):
-        a, kw = parse_qt_args(args)
-        meta, app_id, app_code = a
-        self.auth_manager.save(app_id, app_code)
-        basemap.add_basemap_layer( meta, app_id, app_code)
+    

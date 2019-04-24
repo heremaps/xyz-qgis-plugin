@@ -11,10 +11,9 @@
 
 from qgis.PyQt.QtWidgets import QMessageBox
 class ConfirmDialog(QMessageBox):
-    def __init__(self, parent, txt):
-        super().__init__(parent)
-        self.setText(txt)
-        self.setStandardButtons(self.Ok | self.Cancel)
+    def __init__(self, msg, title="Confirm"):
+        super().__init__(QMessageBox.NoIcon, title, msg, QMessageBox.Ok | QMessageBox.Cancel)
+        
 
 def exec_warning_dialog(title, msg, body=None):
     box = QMessageBox(QMessageBox.Warning, title, msg, QMessageBox.Close)

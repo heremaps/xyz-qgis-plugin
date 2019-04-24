@@ -10,10 +10,16 @@
 
 
 from qgis.PyQt.QtCore import pyqtSignal
-from .util_dialog import ConfirmDialog
-from ..modules.controller import make_qt_args
 
-class ServerUX():
+from ...models import SpaceConnectionInfo
+from ...modules.controller import make_qt_args
+from ..util_dialog import ConfirmDialog
+from .ux import UXDecorator
+
+class ServerUX(UXDecorator):
+    def __init__(self):
+        # these are like abstract variables
+        self.comboBox_server = None
     def config_secret(self, secret):
         self._secret_cnt = 0
         self._secret = secret
@@ -38,12 +44,14 @@ class TokenUX(ServerUX):
         # these are like abstract variables
         self.comboBox_token = None
         self.btn_use = None
+        self.btn_clear_token = None
+        self.comboBox_server = None
         self.conn_info = None
-        self.ui_valid_token = lambda *a: a
-        self.ui_valid_input = lambda *a: a
         #
         self.used_token_idx = 0
     def config(self, token_model):
+        self.conn_info = SpaceConnectionInfo()
+        
         self.used_token_idx = 0
 
         self.comboBox_token.setModel( token_model)
@@ -72,7 +80,7 @@ class TokenUX(ServerUX):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
     def cb_clear_token(self):
-        dialog = ConfirmDialog(self, "Do you want to Remove token?")
+        dialog = ConfirmDialog("Do you want to Remove token: %s ?"%(self.get_input_token()))
         ret = dialog.exec_()
         if ret != dialog.Ok: return
 
@@ -83,14 +91,15 @@ class TokenUX(ServerUX):
             self.comboBox_token.clearEditText()
 
         if self.used_token_idx == idx:
-            self._get_space_model().reset()
-            self.used_token_idx = 0
-            self.comboBox_token.setCurrentIndex(0)
-            
+            self._after_clear_token()
+    def _after_clear_token(self):
+        self.used_token_idx = 0
+        self.comboBox_token.setCurrentIndex(0)
     def get_input_token(self):
         return self.comboBox_token.currentText().strip()
         
     def insert_new_valid_token(self):
+        self.ui_valid_token()
 
         ### find duplicate
         # print("current token index: %s"% self.comboBox_token.currentIndex())
@@ -118,6 +127,7 @@ class TokenUX(ServerUX):
         elif self.btn_use.text() == txt_clicked:
             self.btn_use.setText(txt0)
         self.btn_use.setEnabled(flag)
+        self.btn_clear_token.setEnabled(flag)
         self.comboBox_server.setEnabled(flag)
         self.comboBox_token.setEnabled(flag)
     def cb_token_used(self):
@@ -138,8 +148,11 @@ class TokenUX(ServerUX):
 
 
     def ui_valid_token(self, *a):
+        """ Return true when token is used and shows Ok!
+        """
         flag_token = len(self.get_input_token()) > 0
         self.btn_use.setEnabled(flag_token)
+        # self.btn_clear_token.setEnabled(flag_token)
 
         flag = self.comboBox_token.currentIndex() > 0 and self.used_token_idx == self.comboBox_token.currentIndex()
         txt = "Ok!" if flag else "Use"

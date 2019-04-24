@@ -14,6 +14,8 @@ from qgis.PyQt.QtNetwork import QNetworkAccessManager
 
 from .net_utils import make_conn_request, set_qt_property, prepare_new_space_info, make_payload
 
+TIMEOUT_COUNT = 1000
+
 ##########
 
 class NetManager(QObject):
@@ -42,11 +44,12 @@ class NetManager(QObject):
     #############
     # TODO: remove callback params
     def get_statistics(self, conn_info):
-        return self._get_space_(conn_info, "statistics")
+        reply = self._get_space_(conn_info, "statistics")
+        timeout = TIMEOUT_COUNT
+        QTimer.singleShot(timeout, reply.abort)
+        return reply
     def get_count(self, conn_info):
         reply = self._get_space_(conn_info, "count")
-        # timeout = 1000
-        # QTimer.singleShot(timeout, reply.abort)
         return reply
     def get_meta(self, conn_info):
         return self._get_space_(conn_info, "space_meta")

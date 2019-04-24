@@ -9,8 +9,9 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import QTimer
-from .controller import LoopController
-from .controller import AsyncFun, parse_qt_args, make_qt_args,output_to_qt_args, make_exception_obj
+
+from ..controller import (AsyncFun, LoopController, make_exception_obj,
+                          make_qt_args, parse_qt_args)
 
 ########################
 # Base Load
@@ -101,10 +102,8 @@ class ParallelFun(AsyncFun,ParallelWrapper):
 
         ParallelWrapper.dispatch_parallel(self, **kw)
 
-class BaseLoader(ParallelLoop):
+class BaseLoop(ParallelLoop):
     LOADING = "loading"
-    ALL_FEAT = "all_feature"
-    MAX_FEAT = "max_feat"
     FINISHED = "finished"
     STOPPED = "stopped"
     
@@ -114,7 +113,7 @@ class BaseLoader(ParallelLoop):
     def _check_valid(self):
         return True
     def _check_status(self):
-        return True
+        return self.status != self.STOPPED
     def _run(self):
         LoopController.start(self)
     def _run_loop(self):
@@ -129,12 +128,15 @@ class BaseLoader(ParallelLoop):
     def stop_loop(self):
         self.status = self.STOPPED
     def reset(self, **kw):
-        super(BaseLoader, self).reset(**kw)
+        super(BaseLoop, self).reset(**kw)
         self.status = self.LOADING
-        
     def start(self, **kw):
         if not self._check_valid():
             return
         if self.count_active() == 0:
             self.reset( **kw)
         self.dispatch_parallel(n_parallel=self.n_parallel)
+
+class BaseLoader(BaseLoop):
+    ALL_FEAT = "all_feature"
+    MAX_FEAT = "max_feat"

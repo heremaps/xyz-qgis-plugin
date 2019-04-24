@@ -9,8 +9,10 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import QThreadPool
-from .controller import ChainController, NetworkFun, WorkerFun
-from .network import net_handler
+
+from ..controller import ChainController, NetworkFun, WorkerFun
+from ..network import net_handler
+
 
 class LoadSpaceController(ChainController):
     """ load space metadata (list space)
@@ -86,7 +88,6 @@ class EditSpaceController(ChainController):
             WorkerFun( net_handler.on_received, self.pool),
         ])
 
-#UNUSED: CreateSpace is done implicilty in UploadLayer
 class CreateSpaceController(ChainController):
     """ Create new space
     Args:
