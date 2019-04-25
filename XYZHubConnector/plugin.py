@@ -74,7 +74,7 @@ class XYZHubConnector(object):
 
         icon = QIcon("%s/%s" % (config.PLUGIN_DIR,"images/xyz.png"))
         icon_bbox = QIcon("%s/%s" % (config.PLUGIN_DIR,"images/bbox.svg"))
-        self.action_connect = QAction(icon, "New XYZ Hub Connection", parent)
+        self.action_connect = QAction(icon, "XYZ Hub Connection", parent)
         self.action_connect.setWhatsThis(
             QCoreApplication.translate(PLUGIN_NAME, "WhatsThis message" ))
         self.action_connect.setStatusTip(
@@ -98,11 +98,13 @@ class XYZHubConnector(object):
 
         self.actions = [self.action_connect] 
 
+        for a in self.actions:
+            self.iface.addPluginToWebMenu(self.web_menu, a)
+
         # # uncomment to use menu button
         # tool_btn = QToolButton(self.toolbar)
         # for a in self.actions:
         #     tool_btn.addAction(a)
-        #     self.iface.addPluginToWebMenu(self.web_menu, a)
         # tool_btn.setDefaultAction(self.action_connect)
         # tool_btn.setPopupMode(tool_btn.MenuButtonPopup)
         # self.xyz_widget_action = self.toolbar.addWidget(tool_btn) # uncomment to use menu button
