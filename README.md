@@ -25,17 +25,19 @@ XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to 
 
 ## Usage
 
-Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**
+Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**. The main dialog contains 5 tabs:
 
-![toolbar](res/toolbar.png)
++ `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
 
-`New XYZ Hub Connection` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
++ `Upload` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
 
-`Upload to a new XYZ Space` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
++ `Manage` : create new space, edit or delete existing space.
 
-`Add HERE Map Tile` : create HERE Map Tile layer given valid app_id and app_code.
++ `Map Tile` : create HERE Map Tile layer given valid `app_id` and `app_code`.
 
-`Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
++ `Settings` :
+
+    + `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
 
 ## Development
 
