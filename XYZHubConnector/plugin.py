@@ -37,7 +37,7 @@ from .modules.layer import bbox_utils
 from .modules.network import NetManager, net_handler
 
 from .modules import basemap
-from .modules.secret import Secret
+from .modules.common.secret import Secret
 from .modules.basemap.auth_manager import AuthManager
 
 from .modules.common.error import format_traceback

@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+###############################################################################
+#
+# Copyright (c) 2019 HERE Europe B.V.
+#
+# SPDX-License-Identifier: MIT
+# License-Filename: LICENSE
+#
+###############################################################################
+
 class Secret():
     SECRET = "WXpKV2FtTnRWakE9"
     def __init__(self, ini):
