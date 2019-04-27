@@ -25,6 +25,18 @@ print_qgis = make_print_qgis("parser")
 QGS_XYZ_ID = "xyz_id"
 XYZ_ID = "id"
 
+def unique_field_name(name, i):
+    if name.startswith("@"):
+        return name
+    return name + ".%s"%i 
+def normal_field_name(name):
+    if name.startswith("@"):
+        return name
+    parts = name.split(".")
+    if len(parts) > 1 and parts[-1].isdigit():
+        return ".".join(parts[0:-1])
+    return name
+
 LIMIT = int(1e7) # Amazon API limit: 10485760
 def estimate_chunk_size(byt):
     chunk_size = LIMIT // len(byt) # round down
@@ -78,13 +90,16 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
     def _xyz_props(props):
         # for all key start with @: str to dict
         # k = "@ns:com:here:xyz"
-        for k in props.keys():
+        new_props = dict()
+        for t in props.keys():
+            k = normal_field_name(t)
+            new_props[k] = props[t]
             if not k.startswith("@"): continue
-            v = props[k]
+            v = new_props[k]
             if isinstance(v,str):
-                try: props[k] = json.loads(v)
+                try: new_props[k] = json.loads(v)
                 except json.JSONDecodeError: pass # naively handle error
-        return props
+        return new_props
     def _single_feature(feat, transformer):
         # existing feature json
         obj = {
@@ -183,6 +198,7 @@ def xyz_json_to_feature(txt, map_fields=dict()):
         feat=QgsFeature()
         
         names = fields.names()
+        names_normal = list(map(normal_field_name, names))
         qattrs = list()
 
         # handle xyz id
@@ -210,8 +226,12 @@ def xyz_json_to_feature(txt, map_fields=dict()):
                 if not val.type() in valid_qvariant:
                     print_qgis("Invalid type", k, val.typeName())
                     continue
-                if k not in names:
+                if k not in names_normal:
+                    k = unique_field_name(k, len(fields))
                     fields.append( make_field(k, val))
+                else:
+                    idx = names_normal.index(k)
+                    k = names[idx]
                 qattrs.append([k,val])
 
             feat.setFields(fields)
