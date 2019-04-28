@@ -25,6 +25,9 @@ print_qgis = make_print_qgis("parser")
 QGS_XYZ_ID = "xyz_id"
 XYZ_ID = "id"
 
+QGS_ID = "fid"
+
+
 def unique_field_name(name, i):
     if name.startswith("@"):
         return name
@@ -88,17 +91,22 @@ def feature_collection(features):
 
 def feature_to_xyz_json(feature, vlayer, is_new=False):
     def _xyz_props(props):
-        # for all key start with @: str to dict
+        # for all key start with @ (internal): str to dict (disabled)
         # k = "@ns:com:here:xyz"
         new_props = dict()
         for t in props.keys():
+            # drop @ field, for consistency
+            if t.startswith("@ns:com:here:xyz"): continue
             k = normal_field_name(t)
             new_props[k] = props[t]
-            if not k.startswith("@"): continue
-            v = new_props[k]
-            if isinstance(v,str):
-                try: new_props[k] = json.loads(v)
-                except json.JSONDecodeError: pass # naively handle error
+
+            # # disabled
+            # if not k.startswith("@"): continue
+            # v = new_props[k]
+            # if isinstance(v,str): # no need to handle json str in props
+            #     # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
+            #     try: new_props[k] = json.loads(v)
+            #     except json.JSONDecodeError: pass # naively handle error
         return new_props
     def _single_feature(feat, transformer):
         # existing feature json
@@ -107,10 +115,12 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
         }
         json_str = QgsJsonUtils.exportAttributes(feat)
         props = json.loads(json_str)
-        props = _xyz_props(props)
+        props.pop(QGS_ID,"")
         if QGS_XYZ_ID in props:
             v = props.pop(QGS_XYZ_ID)
             if not is_new: obj[XYZ_ID] = v
+                
+        props = _xyz_props(props)
         obj["properties"] = props
 
         geom = feat.geometry()

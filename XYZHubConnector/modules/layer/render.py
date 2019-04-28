@@ -67,10 +67,10 @@ def add_feature_render(vlayer, feat, new_fields):
     print_qgis(len(new_fields), new_fields.names())
     print_qgis(len(diff_fields), [f.name() for f in diff_fields])
     print_qgis(len(feat), "\n".join(map(str,[f.fields().names() for f in feat])))
-    print_qgis(len(feat), [f.attribute("fid") for f in feat])
+    print_qgis(len(feat), [f.attribute(parser.QGS_ID) for f in feat])
 
     offset = pr.featureCount() + 1
-    for i,f in enumerate(feat): f.setAttribute("fid",i+offset) 
+    for i,f in enumerate(feat): f.setAttribute(parser.QGS_ID,i+offset) 
 
     pr.addAttributes(diff_fields)
     vlayer.updateFields()
