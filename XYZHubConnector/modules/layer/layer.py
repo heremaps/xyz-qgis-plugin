@@ -15,11 +15,15 @@ from . import parser
 from ...utils import make_unique_full_path 
 from qgis.core import  QgsVectorFileWriter, QgsCoordinateReferenceSystem
 from qgis.PyQt.QtCore import pyqtSignal, QObject
+from qgis.PyQt.QtXml import QDomDocument
+from .style import LAYER_QML
 
 from ...models.space_model import parse_copyright
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
+
+
 
 class XYZLayer(object):
     """ XYZ Layer is created in 2 scenarios:
@@ -82,6 +86,10 @@ class XYZLayer(object):
     def show_ext_layer(self, geom_str):
         vlayer = self._map_vlayer[geom_str]
         self.map_vlayer[geom_str] = vlayer
+
+        dom = QDomDocument()
+        dom.setContent(LAYER_QML, True) # xyz_id non editable
+        vlayer.importNamedStyle(dom)
 
         QgsProject.instance().addMapLayer(vlayer)
         return vlayer
