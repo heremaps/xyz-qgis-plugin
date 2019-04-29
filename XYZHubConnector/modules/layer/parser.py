@@ -53,7 +53,7 @@ def estimate_upload_chunk_single(lst):
     return chunk_size
 def make_lst_feature_collection(features):
     if len(features) == 0: 
-        return None
+        return list()
     chunk_size = estimate_upload_chunk_single(features)
     def _iter_collection():
         i0, i1= 0,0
