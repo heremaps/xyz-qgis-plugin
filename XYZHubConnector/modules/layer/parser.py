@@ -116,8 +116,11 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
         json_str = QgsJsonUtils.exportAttributes(feat)
         props = json.loads(json_str)
         props.pop(QGS_ID,"")
-        if QGS_XYZ_ID in props:
-            v = props.pop(QGS_XYZ_ID)
+        v = props.pop(QGS_XYZ_ID,"")
+        if len(v) > 0:
+            if v in exist_feat_id:
+                return None
+            exist_feat_id.add(v)
             if not is_new: obj[XYZ_ID] = v
                 
         props = _xyz_props(props)
@@ -145,10 +148,11 @@ def feature_to_xyz_json(feature, vlayer, is_new=False):
     crs_src = vlayer.crs()
     crs_dst = QgsCoordinateReferenceSystem('EPSG:4326')
     transformer = QgsCoordinateTransform(crs_src, crs_dst, QgsProject.instance())
-    return list( 
+    exist_feat_id = set()
+    return list( filter(None,(
         _single_feature(ft, transformer) 
         for ft in feature if ft.hasGeometry() # FIX: XYZHub doesnt like empty geom
-    )
+    )))
 
 # https://github.com/qgis/QGIS/blob/f3e9aaf79a9282b28a605abd0dadaab9951050c8/python/plugins/processing/algs/qgis/ui/FieldsMappingPanel.py
 valid_fieldTypes = dict([
