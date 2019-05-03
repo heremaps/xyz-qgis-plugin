@@ -8,8 +8,8 @@
 #
 ###############################################################################
 
-import os
 import sqlite3
+import time
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, QgsCoordinateTransform)
@@ -42,6 +42,7 @@ class XYZLayer(object):
         self._map_vlayer = dict()
         self.map_fields = dict()
 
+        self.unique = int(time.time() * 10)
 
         crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
         for geom in ["MultiPoint","MultiLineString","MultiPolygon",None]:
@@ -72,6 +73,10 @@ class XYZLayer(object):
     def _layer_name(self, geom_str):
         tags = " (%s)" %(self.tags) if len(self.tags) else ""
         return "{title} - {id} - {geom}{tags}".format(geom=geom_str,tags=tags,**self.meta)
+    def _db_layer_name(self, geom_str):
+        tags = self.tags.replace(",","_") if len(self.tags) else ""
+        return "{id}_{geom}_{tags}_{unique}".format(
+            geom=geom_str, tags=tags, unique=self.unique, **self.meta)
     def get_xyz_feat_id(self, geom_str):
         vlayer = self.get_layer(geom_str)
         key = parser.QGS_XYZ_ID
@@ -94,6 +99,8 @@ class XYZLayer(object):
 
         QgsProject.instance().addMapLayer(vlayer)
         return vlayer
+    def _make_mem_layer(self, geom_str, crs):
+        pass
     def _init_ext_layer(self, geom_str, crs):
         """ given non map of feat, init a qgis layer
         :map_feat: {geom_string: list_of_feat}
@@ -111,20 +118,23 @@ class XYZLayer(object):
 
         # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
 
-        db_layer_name = "test" # vlayer.id()
+        db_layer_name = self._db_layer_name(geom_str)
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.fileEncoding = "UTF-8"
         options.driverName = driver_name
         options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
         options.layerName = db_layer_name
-        QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
-
+        ret=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        print_qgis("write gpkg: %s"%repr(ret))
+        
         sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
         sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
-        self._init_constraint(fname, sql_constraint)
+        self._init_constraint(fname, sql_constraint, db_layer_name)
 
         uri = f"{fname}|layername={db_layer_name}"
         vlayer = QgsVectorLayer(uri, layer_name, "ogr")
+
+
         self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer)
 
@@ -133,28 +143,23 @@ class XYZLayer(object):
         
         return vlayer
 
-    def _init_constraint(self, fname, sql_constraint):
+    def _init_constraint(self, fname, sql_constraint, layer_name):
         # https://sqlite.org/lang_altertable.html
 
-        # old_name = os.path.basename(fname).split(".")[0] # table name
-        tmp_name = "XYZLayer"
+        tmp_name = "tmp_" + layer_name
 
         conn = sqlite3.connect(fname)
         cur = conn.cursor()
 
-        sql = 'SELECT table_name, data_type, srs_id FROM "gpkg_contents"'
-        cur.execute(sql)
-        meta = cur.fetchall()[0]
-        old_name = meta[0]
-
-        sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{old_name}"'
+        sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{layer_name}"'
         cur.execute(sql)
         lst = cur.fetchall()
+        if len(lst) == 0:
+            return 
         lst_old_sql = [p[1] for p in lst]
-        # print(lst)
-
         sql_create = lst_old_sql.pop(0)
-        sql_create = sql_create.replace(old_name, tmp_name)
+
+        sql_create = sql_create.replace(layer_name, tmp_name)
         parts = sql_create.partition(")")
         sql_create = "".join([
             parts[0], 
@@ -167,8 +172,8 @@ class XYZLayer(object):
             "BEGIN TRANSACTION",
             sql_create,
             "PRAGMA defer_foreign_keys = '1'",
-            f'DROP TABLE "{old_name}"',
-            f'ALTER TABLE "{tmp_name}" RENAME TO "{old_name}"',
+            f'DROP TABLE "{layer_name}"',
+            f'ALTER TABLE "{tmp_name}" RENAME TO "{layer_name}"',
             "PRAGMA defer_foreign_keys = '0'"
         ] + lst_old_sql + [
             # 'PRAGMA "main".foreign_key_check', # does not return anything -> unused
