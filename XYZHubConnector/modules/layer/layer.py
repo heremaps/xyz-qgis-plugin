@@ -8,17 +8,18 @@
 #
 ###############################################################################
 
-from qgis.core import QgsVectorLayer, QgsProject, QgsFeatureRequest
-from . import render
-from . import parser
+import os
+import sqlite3
 
-from ...utils import make_unique_full_path 
-from qgis.core import  QgsVectorFileWriter, QgsCoordinateReferenceSystem
-from qgis.PyQt.QtCore import pyqtSignal, QObject
+from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
+                       QgsProject, QgsVectorFileWriter, QgsVectorLayer, QgsCoordinateTransform)
+from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
-from .style import LAYER_QML
 
+from . import parser, render
 from ...models.space_model import parse_copyright
+from ...utils import make_unique_full_path
+from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
@@ -107,12 +108,23 @@ class XYZLayer(object):
         vlayer = QgsVectorLayer(
             "{geom}?crs={crs}&index=yes".format(geom=geom_str,crs=crs), 
             layer_name,"memory") # this should be done in main thread
-        QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
 
-        # uri = f"{fname}|layername=test"
-        self._init_sqlite(fname, geom_str)
+        # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
 
-        vlayer = QgsVectorLayer(fname, layer_name, "ogr")
+        db_layer_name = "test" # vlayer.id()
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.fileEncoding = "UTF-8"
+        options.driverName = driver_name
+        options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
+        options.layerName = db_layer_name
+        QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+
+        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
+        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
+        self._init_constraint(fname, sql_constraint)
+
+        uri = f"{fname}|layername={db_layer_name}"
+        vlayer = QgsVectorLayer(uri, layer_name, "ogr")
         self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer)
 
@@ -120,53 +132,33 @@ class XYZLayer(object):
         # QgsProject.instance().addMapLayer(vlayer)
         
         return vlayer
-    def _init_sql(self, fname, geom_str):
-        from osgeo import ogr
-        ds = ogr.GetDriverByName('GPKG').Open(fname, True)
-        old_name = ds.GetLayer(0).GetName()
-        print(old_name)
-        sql_geom = f'"geom" {geom_str.upper()},' if geom_str is not None else ""
-        sql_block = f"""
-        CREATE TABLE "XYZLayer" (
-            "fid" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, {sql_geom}
-            "xyz_id" TEXT UNIQUE ON CONFLICT REPLACE
-            );
-        ALTER TABLE "{old_name}" RENAME TO "tmp";
-        ALTER TABLE "XYZLayer" RENAME TO "{old_name}";
-        """
-        sql_stmts = ["%s;"%s for s in sql_block.strip().split(";") if len(s) > 0]
-        for sql in sql_stmts:
-            print(sql)
-            lyr = ds.ExecuteSQL(sql)
-            print("sql ret: %s"%(lyr))
-            ds.ReleaseResultSet(lyr)
-            
-        # code = ds.SyncToDisk()
-        # print("OGRErr: %s"%code)
-        ds = None
 
-    def _init_sqlite(self, fname, *a):
+    def _init_constraint(self, fname, sql_constraint):
         # https://sqlite.org/lang_altertable.html
-        import os
-        old_name = os.path.basename(fname).split(".")[0] # table name
+
+        # old_name = os.path.basename(fname).split(".")[0] # table name
         tmp_name = "XYZLayer"
-        import sqlite3
+
         conn = sqlite3.connect(fname)
         cur = conn.cursor()
+
+        sql = 'SELECT table_name, data_type, srs_id FROM "gpkg_contents"'
+        cur.execute(sql)
+        meta = cur.fetchall()[0]
+        old_name = meta[0]
+
         sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{old_name}"'
         cur.execute(sql)
         lst = cur.fetchall()
         lst_old_sql = [p[1] for p in lst]
         # print(lst)
-        sql_constraints = '"xyz_id" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
-        sql_constraints = '"xyz_id" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
 
         sql_create = lst_old_sql.pop(0)
         sql_create = sql_create.replace(old_name, tmp_name)
         parts = sql_create.partition(")")
         sql_create = "".join([
             parts[0], 
-            ", %s"%(sql_constraints), 
+            ", %s"%(sql_constraint), 
             parts[1], parts[2]
         ])
         # empty table, so insert is skipped
