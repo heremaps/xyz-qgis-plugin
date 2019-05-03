@@ -66,11 +66,12 @@ def add_feature_render(vlayer, feat, new_fields):
     print_qgis(len(names), names)
     print_qgis(len(new_fields), new_fields.names())
     print_qgis(len(diff_fields), [f.name() for f in diff_fields])
-    print_qgis(len(feat), "\n".join(map(str,[f.fields().names() for f in feat])))
+    print_qgis("field cnt of each feat", [len(f.fields()) for f in feat])
     print_qgis(len(feat), [f.attribute(parser.QGS_ID) for f in feat])
 
-    offset = pr.featureCount() + 1
-    for i,f in enumerate(feat): f.setAttribute(parser.QGS_ID,i+offset) 
+    # fid has some value because xyz space has fid 
+    # reset fid value (deprecated thanks to unique field name)
+    # for i,f in enumerate(feat): f.setAttribute(parser.QGS_ID,None) 
 
     pr.addAttributes(diff_fields)
     vlayer.updateFields()
