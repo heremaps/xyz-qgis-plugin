@@ -78,6 +78,10 @@ class XYZLayer(object):
         tags = self.tags.replace(",","_") if len(self.tags) else ""
         return "{id}_{geom}_{tags}_{unique}".format(
             geom=geom_str, tags=tags, unique=self.unique, **self.meta)
+    def _layer_fname(self):
+        tags = self.tags.replace(",","_") if len(self.tags) else ""
+        return "{id}_{tags}_{unique}".format(
+            tags=tags, unique=self.unique, **self.meta)
     def get_xyz_feat_id(self, geom_str):
         vlayer = self.get_layer(geom_str)
         key = parser.QGS_XYZ_ID
@@ -111,7 +115,7 @@ class XYZLayer(object):
 
         layer_name = self._layer_name(geom_str)
         
-        fname = make_fixed_full_path(ext=ext)
+        fname = make_fixed_full_path(self._layer_fname(),ext=ext)
         
         vlayer = QgsVectorLayer(
             "{geom}?crs={crs}&index=yes".format(geom=geom_str,crs=crs), 
@@ -126,7 +130,7 @@ class XYZLayer(object):
         options.driverName = driver_name
         options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
         options.layerName = db_layer_name
-        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer # update mode
         err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
         if err[0] == QgsVectorFileWriter.ErrCreateDataSource : 
             options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
