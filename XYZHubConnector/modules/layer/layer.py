@@ -12,13 +12,14 @@ import sqlite3
 import time
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
-                       QgsProject, QgsVectorFileWriter, QgsVectorLayer, QgsCoordinateTransform)
+                       QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
+                       QgsCoordinateTransform)
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser, render
 from ...models.space_model import parse_copyright
-from ...utils import make_unique_full_path
+from ...utils import make_unique_full_path, make_fixed_full_path
 from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
@@ -110,7 +111,7 @@ class XYZLayer(object):
 
         layer_name = self._layer_name(geom_str)
         
-        fname = make_unique_full_path(ext=ext)
+        fname = make_fixed_full_path(ext=ext)
         
         vlayer = QgsVectorLayer(
             "{geom}?crs={crs}&index=yes".format(geom=geom_str,crs=crs), 
@@ -119,13 +120,19 @@ class XYZLayer(object):
         # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
 
         db_layer_name = self._db_layer_name(geom_str)
+
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.fileEncoding = "UTF-8"
         options.driverName = driver_name
         options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
         options.layerName = db_layer_name
-        ret=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
-        print_qgis("write gpkg: %s"%repr(ret))
+        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+        err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        if err[0] == QgsVectorFileWriter.ErrCreateDataSource : 
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+            err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        if err[0] != QgsVectorFileWriter.NoError:
+            raise Exception("%s: %s"%err)
         
         sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
         sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
@@ -155,7 +162,7 @@ class XYZLayer(object):
         cur.execute(sql)
         lst = cur.fetchall()
         if len(lst) == 0:
-            return 
+            raise Exception("No layer found in GPKG")
         lst_old_sql = [p[1] for p in lst]
         sql_create = lst_old_sql.pop(0)
 
