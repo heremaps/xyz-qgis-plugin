@@ -212,6 +212,7 @@ def xyz_json_to_feature(txt, map_fields=dict()):
         feat=QgsFeature()
         
         names = fields.names()
+        if QGS_ID in names: names.remove(QGS_ID)
         names_normal = list(map(normal_field_name, names))
         qattrs = list()
 
