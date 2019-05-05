@@ -108,8 +108,10 @@ class XYZLayer(object):
             "{geom}?crs={crs}&index=yes".format(geom=geom_str,crs=crs), 
             layer_name,"memory") # this should be done in main thread
         QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
-    
-        
+
+        # uri = f"{fname}|layername=test"
+        self._init_sqlite(fname, geom_str)
+
         vlayer = QgsVectorLayer(fname, layer_name, "ogr")
         self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer)
@@ -118,7 +120,75 @@ class XYZLayer(object):
         # QgsProject.instance().addMapLayer(vlayer)
         
         return vlayer
+    def _init_sql(self, fname, geom_str):
+        from osgeo import ogr
+        ds = ogr.GetDriverByName('GPKG').Open(fname, True)
+        old_name = ds.GetLayer(0).GetName()
+        print(old_name)
+        sql_geom = f'"geom" {geom_str.upper()},' if geom_str is not None else ""
+        sql_block = f"""
+        CREATE TABLE "XYZLayer" (
+            "fid" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, {sql_geom}
+            "xyz_id" TEXT UNIQUE ON CONFLICT REPLACE
+            );
+        ALTER TABLE "{old_name}" RENAME TO "tmp";
+        ALTER TABLE "XYZLayer" RENAME TO "{old_name}";
+        """
+        sql_stmts = ["%s;"%s for s in sql_block.strip().split(";") if len(s) > 0]
+        for sql in sql_stmts:
+            print(sql)
+            lyr = ds.ExecuteSQL(sql)
+            print("sql ret: %s"%(lyr))
+            ds.ReleaseResultSet(lyr)
+            
+        # code = ds.SyncToDisk()
+        # print("OGRErr: %s"%code)
+        ds = None
 
+    def _init_sqlite(self, fname, *a):
+        # https://sqlite.org/lang_altertable.html
+        import os
+        old_name = os.path.basename(fname).split(".")[0] # table name
+        tmp_name = "XYZLayer"
+        import sqlite3
+        conn = sqlite3.connect(fname)
+        cur = conn.cursor()
+        sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{old_name}"'
+        cur.execute(sql)
+        lst = cur.fetchall()
+        lst_old_sql = [p[1] for p in lst]
+        # print(lst)
+        sql_constraints = '"xyz_id" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
+        sql_constraints = '"xyz_id" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
+
+        sql_create = lst_old_sql.pop(0)
+        sql_create = sql_create.replace(old_name, tmp_name)
+        parts = sql_create.partition(")")
+        sql_create = "".join([
+            parts[0], 
+            ", %s"%(sql_constraints), 
+            parts[1], parts[2]
+        ])
+        # empty table, so insert is skipped
+        lst_sql = [
+            "PRAGMA foreign_keys = '0'",
+            "BEGIN TRANSACTION",
+            sql_create,
+            "PRAGMA defer_foreign_keys = '1'",
+            f'DROP TABLE "{old_name}"',
+            f'ALTER TABLE "{tmp_name}" RENAME TO "{old_name}"',
+            "PRAGMA defer_foreign_keys = '0'"
+        ] + lst_old_sql + [
+            # 'PRAGMA "main".foreign_key_check', # does not return anything -> unused
+            "COMMIT",
+            "PRAGMA foreign_keys = '1'"
+        ]
+        for s in lst_sql:
+            cur.execute(s)
+
+        conn.commit()
+        conn.close()
+        
 """ Available vector format for QgsVectorFileWriter
 [i.driverName for i in QgsVectorFileWriter.ogrDriverList()]
 ['GPKG', 'ESRI Shapefile', 'BNA',
