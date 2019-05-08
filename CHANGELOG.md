@@ -1,6 +1,16 @@
 # Changelog 
 
-## version 1.6
+## version 1.6.1
+
+* fix several bugs in loading and uploading
+    * unique field name (suffix ".number")
+    * handle existing fid column in xyz space
+    * when upload, ensure no fid, no metadata @ns, no dupe-id, no empty value
+    * replace feature instead of modify properties of feature (upload)
+    * each space is stored in 1 gpkg file that contains many geom layer
+* add constraints in editing via UI (qml style)
+
+## version 1.6.0
 
 * tab ui
 * allow upload to existing layer

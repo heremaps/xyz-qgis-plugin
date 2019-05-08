@@ -19,8 +19,8 @@ from .space_loader import (CreateSpaceController, DeleteSpaceController,
                            EditSpaceController, LoadSpaceController,
                            StatSpaceController)
 
-from ..common.signal import close_print_qgis, make_print_qgis
-print_qgis = make_print_qgis("controller_manager",debug=True)
+from ..common.signal import make_print_qgis
+print_qgis = make_print_qgis("controller_manager")
 
 class CanvasSignal(QObject):
     canvas_zoom = pyqtSignal()

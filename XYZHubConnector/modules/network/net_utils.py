@@ -24,7 +24,7 @@ API_PRD_URL = "https://xyz.api.here.com/hub"
 API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
 API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
 
-from ..common.signal import make_print_qgis, close_print_qgis
+from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("net_utils")
 
 def check_gzip(byt):

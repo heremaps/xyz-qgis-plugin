@@ -11,11 +11,12 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.6.0
+version=1.6.1
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
 about=Integrates XYZ Hub API seamlessly into QGIS, allows users to connect and to update data directly into XYZ Hub. QGIS users can publish easily and quickly their work and analysis in vectorized format to XYZ Hub platform. Public and personal XYZ space can be loaded into QGIS for further analysis and visualization. The plugin is licensed under MIT License.
+
 
 
 # unquote url
@@ -41,3 +42,7 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
+changelog=Version 1.6.1 (2019-05-07)
+    * bugs fixing in loading and uploading
+    * restrict id duplication 
+    * .. more details on Github repos

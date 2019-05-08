@@ -12,7 +12,7 @@ from qgis.PyQt.QtNetwork import QNetworkReply
 from qgis.PyQt.QtCore import Qt
 
 from .. import make_exception_obj
-from .. import BasicSignal, LoggingSignal, output_to_qt_args, parse_qt_args
+from .. import BasicSignal, output_to_qt_args, parse_qt_args
 from ..worker import Worker
 
 class InvalidArgsException(Exception):

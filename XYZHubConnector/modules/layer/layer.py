@@ -8,18 +8,24 @@
 #
 ###############################################################################
 
-from qgis.core import QgsVectorLayer, QgsProject, QgsFeatureRequest
-from . import render
-from . import parser
+import sqlite3
+import time
 
-from ...utils import make_unique_full_path 
-from qgis.core import  QgsVectorFileWriter, QgsCoordinateReferenceSystem
-from qgis.PyQt.QtCore import pyqtSignal, QObject
+from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
+                       QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
+                       QgsCoordinateTransform)
+from qgis.PyQt.QtCore import QObject, pyqtSignal
+from qgis.PyQt.QtXml import QDomDocument
 
+from . import parser, render
 from ...models.space_model import parse_copyright
+from ...utils import make_unique_full_path, make_fixed_full_path
+from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
+
+
 
 class XYZLayer(object):
     """ XYZ Layer is created in 2 scenarios:
@@ -37,6 +43,7 @@ class XYZLayer(object):
         self._map_vlayer = dict()
         self.map_fields = dict()
 
+        self.unique = int(time.time() * 10)
 
         crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
         for geom in ["MultiPoint","MultiLineString","MultiPolygon",None]:
@@ -67,6 +74,14 @@ class XYZLayer(object):
     def _layer_name(self, geom_str):
         tags = " (%s)" %(self.tags) if len(self.tags) else ""
         return "{title} - {id} - {geom}{tags}".format(geom=geom_str,tags=tags,**self.meta)
+    def _db_layer_name(self, geom_str):
+        tags = self.tags.replace(",","_") if len(self.tags) else ""
+        return "{id}_{geom}_{tags}_{unique}".format(
+            geom=geom_str, tags=tags, unique=self.unique, **self.meta)
+    def _layer_fname(self):
+        tags = self.tags.replace(",","_") if len(self.tags) else ""
+        return "{id}_{tags}_{unique}".format(
+            tags=tags, unique=self.unique, **self.meta)
     def get_xyz_feat_id(self, geom_str):
         vlayer = self.get_layer(geom_str)
         key = parser.QGS_XYZ_ID
@@ -83,8 +98,14 @@ class XYZLayer(object):
         vlayer = self._map_vlayer[geom_str]
         self.map_vlayer[geom_str] = vlayer
 
+        dom = QDomDocument()
+        dom.setContent(LAYER_QML, True) # xyz_id non editable
+        vlayer.importNamedStyle(dom)
+
         QgsProject.instance().addMapLayer(vlayer)
         return vlayer
+    def _make_mem_layer(self, geom_str, crs):
+        pass
     def _init_ext_layer(self, geom_str, crs):
         """ given non map of feat, init a qgis layer
         :map_feat: {geom_string: list_of_feat}
@@ -94,15 +115,37 @@ class XYZLayer(object):
 
         layer_name = self._layer_name(geom_str)
         
-        fname = make_unique_full_path(ext=ext)
+        fname = make_fixed_full_path(self._layer_fname(),ext=ext)
         
         vlayer = QgsVectorLayer(
             "{geom}?crs={crs}&index=yes".format(geom=geom_str,crs=crs), 
             layer_name,"memory") # this should be done in main thread
-        QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
-    
+
+        # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
+
+        db_layer_name = self._db_layer_name(geom_str)
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.fileEncoding = "UTF-8"
+        options.driverName = driver_name
+        options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
+        options.layerName = db_layer_name
+        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer # update mode
+        err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        if err[0] == QgsVectorFileWriter.ErrCreateDataSource : 
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+            err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        if err[0] != QgsVectorFileWriter.NoError:
+            raise Exception("%s: %s"%err)
         
-        vlayer = QgsVectorLayer(fname, layer_name, "ogr")
+        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
+        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
+        self._init_constraint(fname, sql_constraint, db_layer_name)
+
+        uri = f"{fname}|layername={db_layer_name}"
+        vlayer = QgsVectorLayer(uri, layer_name, "ogr")
+
+
         self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer)
 
@@ -111,6 +154,49 @@ class XYZLayer(object):
         
         return vlayer
 
+    def _init_constraint(self, fname, sql_constraint, layer_name):
+        # https://sqlite.org/lang_altertable.html
+
+        tmp_name = "tmp_" + layer_name
+
+        conn = sqlite3.connect(fname)
+        cur = conn.cursor()
+
+        sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{layer_name}"'
+        cur.execute(sql)
+        lst = cur.fetchall()
+        if len(lst) == 0:
+            raise Exception("No layer found in GPKG")
+        lst_old_sql = [p[1] for p in lst]
+        sql_create = lst_old_sql.pop(0)
+
+        sql_create = sql_create.replace(layer_name, tmp_name)
+        parts = sql_create.partition(")")
+        sql_create = "".join([
+            parts[0], 
+            ", %s"%(sql_constraint), 
+            parts[1], parts[2]
+        ])
+        # empty table, so insert is skipped
+        lst_sql = [
+            "PRAGMA foreign_keys = '0'",
+            "BEGIN TRANSACTION",
+            sql_create,
+            "PRAGMA defer_foreign_keys = '1'",
+            f'DROP TABLE "{layer_name}"',
+            f'ALTER TABLE "{tmp_name}" RENAME TO "{layer_name}"',
+            "PRAGMA defer_foreign_keys = '0'"
+        ] + lst_old_sql + [
+            # 'PRAGMA "main".foreign_key_check', # does not return anything -> unused
+            "COMMIT",
+            "PRAGMA foreign_keys = '1'"
+        ]
+        for s in lst_sql:
+            cur.execute(s)
+
+        conn.commit()
+        conn.close()
+        
 """ Available vector format for QgsVectorFileWriter
 [i.driverName for i in QgsVectorFileWriter.ogrDriverList()]
 ['GPKG', 'ESRI Shapefile', 'BNA',

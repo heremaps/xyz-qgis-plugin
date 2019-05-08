@@ -9,6 +9,7 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
+from qgis.core import Qgis
 
 def make_qt_args(*a,**kw):
     return [a,kw]
@@ -32,31 +33,42 @@ def output_to_qt_args(output):
         return make_qt_args(*output)
     else:
         return make_qt_args(output)
-        
-class LoggingSignal(QObject):
-    logging = pyqtSignal(str, object)
 
 from qgis.core import QgsMessageLog, Qgis
 from qgis.PyQt.QtCore import Qt
 
-QOBJ_LOG = LoggingSignal()
-QOBJ_LOG.logging.connect(lambda tag, a: log_qgis(*a,tag=tag), Qt.QueuedConnection)
-
 from ... import config
-def log_qgis(*a,tag=""):
-    msg =  " ".join([str(i) for i in a])
+
+level = ["Info", "Warning", "Critical", "Success", "None"]
+qgis_level = dict(zip(map(lambda k: getattr(Qgis,k), level), level))
+
+def make_print_qgis(tag="debug",debug=False):
+    def _print_qgis(*a):    
+        msg =  " ".join([str(i) for i in a])
+        QgsMessageLog.logMessage( msg, tag, Qgis.Info)
+    return _print_qgis if debug else lambda *a: None
+    
+def cb_log_qgis(msg, tag, level):
     # careful for recursive loop logMessage()
     # QgsMessageLog.logMessage( msg, tag, Qgis.Info)
     with open( config.LOG_FILE, "a") as f:
-        f.write("%s: %s\n"%(tag,msg))
-        
-        
-def make_print_qgis(tag="debug",debug=False):
-    def _print_qgis(*a):
-        QOBJ_LOG.logging.emit(tag,a)
-    return _print_qgis if debug else lambda *a: None
-def close_print_qgis():
-    QOBJ_LOG.logging.disconnect()
+        f.write("{tag:20} {level:12} {msg}\n".format(
+            tag=tag,
+            level="[{}]".format(qgis_level.get(level,"unknown")), 
+            msg=msg
+        ))
+
+# dont need extra signal
+# class LoggingSignal(QObject):
+#     logging = pyqtSignal(object)
+# QOBJ_LOG = LoggingSignal()
+# QOBJ_LOG.logging.connect(lambda a: cb_log_qgis(*a), Qt.QueuedConnection)
+
+# def log_qgis(*a):
+#     QOBJ_LOG.logging.emit(a)
+# def close_file_logger():
+#     try:QOBJ_LOG.logging.disconnect()
+#     except: pass
 
 class BasicSignal(QObject):
     """

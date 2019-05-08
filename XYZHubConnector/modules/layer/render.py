@@ -63,9 +63,15 @@ def add_feature_render(vlayer, feat, new_fields):
     names = set(vlayer.fields().names())
     diff_fields = [f for f in new_fields if not f.name() in names]
     
-    print_qgis(len(names), names)
-    print_qgis(len(new_fields), new_fields.names())
-    print_qgis(len(diff_fields), [f.name() for f in diff_fields])
+    # print_qgis(len(names), names)
+    # print_qgis(len(new_fields), new_fields.names())
+    # print_qgis(len(diff_fields), [f.name() for f in diff_fields])
+    # print_qgis("field cnt of each feat", [len(f.fields()) for f in feat])
+    # print_qgis(len(feat), [f.attribute(parser.QGS_ID) for f in feat])
+
+    # fid has some value because xyz space has fid 
+    # reset fid value (deprecated thanks to unique field name)
+    # for i,f in enumerate(feat): f.setAttribute(parser.QGS_ID,None) 
 
     pr.addAttributes(diff_fields)
     vlayer.updateFields()

@@ -37,7 +37,7 @@ from .modules.layer import bbox_utils
 from .modules.network import NetManager, net_handler
 
 from .modules import basemap
-from .modules.secret import Secret
+from .modules.common.secret import Secret
 from .modules.basemap.auth_manager import AuthManager
 
 from .modules.common.error import format_traceback
@@ -46,10 +46,10 @@ from .modules.common.error import format_traceback
 PLUGIN_NAME = config.PLUGIN_NAME
 TAG_PLUGIN = "XYZ Hub"
 
-DEBUG = 1
+LOG_TO_FILE = 1
 
-from .modules.common.signal import make_print_qgis, close_print_qgis
-print_qgis = make_print_qgis(TAG_PLUGIN,debug=True)
+from .modules.common.signal import make_print_qgis, cb_log_qgis
+print_qgis = make_print_qgis(TAG_PLUGIN)
 
 
 class XYZHubConnector(object):
@@ -158,8 +158,8 @@ class XYZHubConnector(object):
 
         # self.iface.currentLayerChanged.connect( self.cb_layer_selected) # UNCOMMENT
 
-        if DEBUG:
-            QgsApplication.messageLog().messageReceived.connect(print_qgis)
+        if LOG_TO_FILE:
+            QgsApplication.messageLog().messageReceived.connect(cb_log_qgis)
 
     def unload_modules(self):
         # self.con_man.disconnect_ux( self.iface)
@@ -172,7 +172,7 @@ class XYZHubConnector(object):
 
         self.secret.deactivate()
         
-        close_print_qgis()
+        # close_file_logger()
         pass
     def unload(self):
         """teardown"""
@@ -268,10 +268,10 @@ class XYZHubConnector(object):
         pb = self.pb
         if self.flag_pb_show:
             pb.show()
-            print_qgis("show",pb)
+            # print_qgis("show",pb)
         else:
             pb.hide()        
-            print_qgis("hide")
+            # print_qgis("hide")
             
     ############### 
     # Action (main function)

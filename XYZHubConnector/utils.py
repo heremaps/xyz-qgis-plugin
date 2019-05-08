@@ -27,7 +27,8 @@ def get_ui_class(ui_file):
 
 def make_unique_full_path(ext="json"):
     return os.path.join(config.TMP_DIR, "%s.%s"%(time.time(),ext))
-    # return os.path.join(config.TMP_DIR, "%s.%s"%("test",ext))
+def make_fixed_full_path(name="temp", ext="json"):
+    return os.path.join(config.TMP_DIR, "%s.%s"%(name,ext))
 def clear_cache():
     files = [os.path.join(config.TMP_DIR, f) for f in os.listdir(config.TMP_DIR)]
     files.append(config.LOG_FILE)
