@@ -192,6 +192,11 @@ class XYZLayer(object):
             "PRAGMA foreign_keys = '1'"
         ]
         for s in lst_sql:
+            if "COMMIT" in s:
+                conn.commit()
+                continue
+            # if "COMMIT" in s and not conn.in_transaction: continue
+
             cur.execute(s)
 
         conn.commit()
