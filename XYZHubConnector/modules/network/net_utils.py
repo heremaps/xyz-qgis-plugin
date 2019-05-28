@@ -17,8 +17,6 @@ from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtCore import QVariant
 
-TOKEN = "CE178QTH5LQN1c4CWFabzg"
-
 API_CIT_URL = "https://xyz.cit.api.here.com/hub"
 API_PRD_URL = "https://xyz.api.here.com/hub"
 API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
@@ -41,7 +39,6 @@ def decode_byte(byt):
 
     return byt, txt, obj
 def _make_headers(token, **params):
-    if token is None: token = TOKEN
     h = {
         "Authorization": "Bearer %s"% token,
         "Accept" : "*/*",
