@@ -12,7 +12,7 @@
 from qgis.PyQt.QtCore import QObject, QTimer
 from qgis.PyQt.QtNetwork import QNetworkAccessManager
 
-from .net_utils import make_conn_request, set_qt_property, prepare_new_space_info, make_payload
+from .net_utils import make_conn_request, set_qt_property, prepare_new_space_info, make_payload, make_buffer
 
 TIMEOUT_COUNT = 1000
 
@@ -87,7 +87,9 @@ class NetManager(QObject):
         kw_prop = dict(reply_tag="edit_space")
 
         request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
-        reply = self.network.sendCustomRequest(request, b"PATCH", make_payload(space_info))
+        buffer = make_buffer(space_info)
+        reply = self.network.sendCustomRequest(request, b"PATCH", buffer)
+        buffer.setParent(reply)
         
         self._post_send_request(reply,conn_info, kw_prop=kw_prop)
         return reply
@@ -146,9 +148,9 @@ class NetManager(QObject):
         kw_prop.update(kw)
         request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
         
-        buffer = make_payload(added_feat)
-        # reply = self.network.post(request, buffer) # create or modify (merge existing feature with payload)
-        reply = self.network.put(request, buffer) # create or replace (replace existing feature with payload)
+        payload = make_payload(added_feat)
+        # reply = self.network.post(request, payload) # create or modify (merge existing feature with payload)
+        reply = self.network.put(request, payload) # create or replace (replace existing feature with payload)
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         #parallel case (merge output ? split input?)

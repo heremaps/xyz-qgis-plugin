@@ -16,6 +16,7 @@ import json
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtCore import QVariant
+from qgis.PyQt.QtCore import QBuffer, QByteArray
 
 API_CIT_URL = "https://xyz.cit.api.here.com/hub"
 API_PRD_URL = "https://xyz.api.here.com/hub"
@@ -70,9 +71,13 @@ def make_json_request( url, token):
     return make_request(url, token, **header)
 def make_payload( obj):
     txt = json.dumps(obj,ensure_ascii = False)
-    # print(txt)
-    # print(txt.encode("utf-8"))
     return txt.encode("utf-8")
+def make_buffer( obj):
+    data = QByteArray(make_payload(obj))
+    buffer = QBuffer()
+    buffer.setData(data)
+    buffer.open(buffer.ReadOnly)
+    return buffer
 def make_query_url( url, **kw):
     query = "&".join(
         "%s=%s"%(k,v)

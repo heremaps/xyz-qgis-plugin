@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.6.1
+version=1.6.2
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,7 +42,6 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.6.1 (2019-05-07)
-    * bugs fixing in loading and uploading
-    * restrict id duplication 
+changelog=Version 1.6.2 (2019-05-27)
+    * fix compatibility issues with some old qgis setups (py3 < 3.6, Qt5 < 5.8)
     * .. more details on Github repos

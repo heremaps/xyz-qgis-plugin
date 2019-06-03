@@ -138,11 +138,11 @@ class XYZLayer(object):
         if err[0] != QgsVectorFileWriter.NoError:
             raise Exception("%s: %s"%err)
         
-        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT REPLACE' # replace older duplicate
-        sql_constraint = f'"{parser.QGS_XYZ_ID}" TEXT UNIQUE ON CONFLICT IGNORE' # discard newer duplicate
+        sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT REPLACE'%(parser.QGS_XYZ_ID) # replace older duplicate
+        sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT IGNORE'%(parser.QGS_XYZ_ID) # discard newer duplicate
         self._init_constraint(fname, sql_constraint, db_layer_name)
 
-        uri = f"{fname}|layername={db_layer_name}"
+        uri = "%s|layername=%s"%(fname, db_layer_name)
         vlayer = QgsVectorLayer(uri, layer_name, "ogr")
 
 
@@ -162,7 +162,7 @@ class XYZLayer(object):
         conn = sqlite3.connect(fname)
         cur = conn.cursor()
 
-        sql = f'SELECT type, sql FROM sqlite_master WHERE tbl_name="{layer_name}"'
+        sql = 'SELECT type, sql FROM sqlite_master WHERE tbl_name="%s"'%(layer_name)
         cur.execute(sql)
         lst = cur.fetchall()
         if len(lst) == 0:
@@ -183,8 +183,8 @@ class XYZLayer(object):
             "BEGIN TRANSACTION",
             sql_create,
             "PRAGMA defer_foreign_keys = '1'",
-            f'DROP TABLE "{layer_name}"',
-            f'ALTER TABLE "{tmp_name}" RENAME TO "{layer_name}"',
+            'DROP TABLE "%s"'%(layer_name),
+            'ALTER TABLE "%s" RENAME TO "%s"'%(tmp_name, layer_name),
             "PRAGMA defer_foreign_keys = '0'"
         ] + lst_old_sql + [
             # 'PRAGMA "main".foreign_key_check', # does not return anything -> unused
@@ -192,6 +192,11 @@ class XYZLayer(object):
             "PRAGMA foreign_keys = '1'"
         ]
         for s in lst_sql:
+            if "COMMIT" in s:
+                conn.commit()
+                continue
+            # if "COMMIT" in s and not conn.in_transaction: continue
+
             cur.execute(s)
 
         conn.commit()
