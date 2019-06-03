@@ -5,6 +5,7 @@
 * fix compatibility issues with older setup (#15, #17, #18)
     * python 3, ver < 3.6
     * Qt5, ver < 5.8
+* clickable url in error message box
 
 ## version 1.6.1 (2019-05-07)
 

@@ -240,8 +240,10 @@ class XYZHubConnector(object):
             "%s: %s\n"%(status,reason) + 
             "There was a problem connecting to the server"
         )
-        if status == 403:
-            msg += "\n\n" + "Please make sure that the token has WRITE permission"
+        if status in [401,403]:
+            msg += ("\n\n" + "Please input valid token with correct permissions." + "\n" +
+            "Token is generated via " +
+            "<a href='https://xyz.api.here.com/token-ui/'>https://xyz.api.here.com/token-ui/</a>")
         ret = exec_warning_dialog("Network Error",msg, detail)
         return 1
 
