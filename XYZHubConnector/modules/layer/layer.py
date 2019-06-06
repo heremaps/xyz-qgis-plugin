@@ -139,7 +139,7 @@ class XYZLayer(object):
             raise Exception("%s: %s"%err)
         
         sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT REPLACE'%(parser.QGS_XYZ_ID) # replace older duplicate
-        sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT IGNORE'%(parser.QGS_XYZ_ID) # discard newer duplicate
+        # sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT IGNORE'%(parser.QGS_XYZ_ID) # discard newer duplicate
         self._init_constraint(fname, sql_constraint, db_layer_name)
 
         uri = "%s|layername=%s"%(fname, db_layer_name)

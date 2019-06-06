@@ -149,8 +149,8 @@ class NetManager(QObject):
         request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
         
         payload = make_payload(added_feat)
-        # reply = self.network.post(request, payload) # create or modify (merge existing feature with payload)
-        reply = self.network.put(request, payload) # create or replace (replace existing feature with payload)
+        reply = self.network.post(request, payload) # create or modify (merge existing feature with payload) # might add attributes
+        # reply = self.network.put(request, payload) # create or replace (replace existing feature with payload) # might add or drop attributes
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         #parallel case (merge output ? split input?)
