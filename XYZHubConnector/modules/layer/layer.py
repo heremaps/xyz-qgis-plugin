@@ -14,6 +14,7 @@ import time
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
                        QgsCoordinateTransform)
+from qgis.utils import iface
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
@@ -102,7 +103,13 @@ class XYZLayer(object):
         dom.setContent(LAYER_QML, True) # xyz_id non editable
         vlayer.importNamedStyle(dom)
 
-        QgsProject.instance().addMapLayer(vlayer)
+        tree_root = QgsProject.instance().layerTreeRoot()
+        pos = 0  # Insert to top
+
+        QgsProject.instance().addMapLayer(vlayer, False)
+        
+        tree_root.insertLayer(pos, vlayer)
+        iface.setActiveLayer(vlayer)
         return vlayer
     def _make_mem_layer(self, geom_str, crs):
         pass

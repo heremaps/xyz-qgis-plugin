@@ -45,4 +45,10 @@ def add_basemap_layer(meta, app_id, app_code):
     name = meta["name"]
     uri = parse_uri(meta)
     layer = QgsRasterLayer( uri, name, "wms")
-    QgsProject.instance().addMapLayer(layer)
+    
+    tree_root = QgsProject.instance().layerTreeRoot()
+    pos = len(tree_root.children())  # Insert to bottom
+
+    QgsProject.instance().addMapLayer(layer, False)
+    
+    tree_root.insertLayer(pos, layer)
