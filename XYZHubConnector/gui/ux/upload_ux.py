@@ -56,6 +56,8 @@ class UploadUX(SpaceUX):
         kw = dict(tags=tags) if len(tags) else dict()
 
         dialog = ConfirmDialog("\n".join([
+            "Attribute and geometry type are adjusted after data is loaded into QGIS.",
+            "Uploaded data might have different geojson format than expected !\n",
             "From Layer:\t%s",
             "To Space:  \t%s",
             "Tags:      \t%s",
