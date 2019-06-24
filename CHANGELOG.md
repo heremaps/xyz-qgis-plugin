@@ -1,5 +1,15 @@
 # Changelog 
 
+## version 1.7.0 (2019-06-24)
+
+* New: Changes of xyz layer can be pushed to XYZ Hub
+* allow delete large number of features, overcome URL limit of 2000
+* ignore null values when parsing feature to json
+* refactor layer_utils, parser, render
+* 2 variant of upload feature: modify and replace
+* xyz layer added to top, basemap added to bottom
+* finish message of controller is queued
+
 ## version 1.6.2 (2019-05-27)
 
 * fix compatibility issues with older setup (#15, #17, #18)
