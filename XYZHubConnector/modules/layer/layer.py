@@ -53,6 +53,7 @@ class XYZLayer(object):
     def _save_meta(self, vlayer):
         meta = self.meta
         vlayer.setCustomProperty("xyz-hub", meta)
+        vlayer.setCustomProperty("xyz-hub-conn", self.conn_info)
         vlayer.setCustomProperty("xyz-hub-tags", self.tags)
         lic = meta.get("license")
         cr = meta.get("copyright")

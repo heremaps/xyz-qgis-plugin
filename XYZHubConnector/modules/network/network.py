@@ -138,24 +138,30 @@ class NetManager(QObject):
         return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
 
     ###### feature function
-
-    def add_features(self, conn_info, added_feat, layer_id=None, **kw):
+    def add_features(self, conn_info, added_feat, **kw):
+        send_request = self.network.post # create or modify (merge existing feature with payload) # might add attributes
+        return self._add_features(conn_info, added_feat, send_request, **kw)
+    def modify_features(self, conn_info, added_feat, **kw):
+        return self.add_features(conn_info, added_feat, **kw)
+    def replace_features(self, conn_info, added_feat, **kw):
+        send_request = self.network.put # create or replace (replace existing feature with payload) # might add or drop attributes
+        return self._add_features(conn_info, added_feat, send_request, **kw)
+    def _add_features(self, conn_info, added_feat, send_request, **kw):
         # POST, payload: list of FeatureCollection
         
         endpoint = "/spaces/{space_id}/features"
         kw_request = dict(req_type="geo", **kw) # kw: query
-        kw_prop = dict(reply_tag="add_feat",layer_id=layer_id)
+        kw_prop = dict(reply_tag="add_feat")
         kw_prop.update(kw)
         request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
         
         payload = make_payload(added_feat)
-        reply = self.network.post(request, payload) # create or modify (merge existing feature with payload) # might add attributes
-        # reply = self.network.put(request, payload) # create or replace (replace existing feature with payload) # might add or drop attributes
+        reply = send_request(request, payload)
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         #parallel case (merge output ? split input?)
         return reply
-    def del_features(self, conn_info, removed_feat, layer_id, **kw):
+    def del_features(self, conn_info, removed_feat, **kw):
         # DELETE by Query URL, required list of feat_id
 
         query_del = {"id": ",".join(str(i) for i in removed_feat)}
@@ -163,7 +169,7 @@ class NetManager(QObject):
 
         endpoint = "/spaces/{space_id}/features"
         kw_request = dict(kw) # kw: query
-        kw_prop = dict(reply_tag="del_feat",layer_id=layer_id)
+        kw_prop = dict(reply_tag="del_feat")
 
         request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
     
@@ -171,11 +177,3 @@ class NetManager(QObject):
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         return reply
-    def sync(self, conn_info, feat, layer_id, **kw):
-        added_feat, removed_feat = feat
-        token, space_id = conn_info.get_xyz_space()
-        if not added_feat is None:
-            self.add_features(conn_info, added_feat, layer_id)
-        if len(removed_feat):
-            self.del_features(conn_info, removed_feat, layer_id)
-            

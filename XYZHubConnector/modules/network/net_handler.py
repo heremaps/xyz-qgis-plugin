@@ -40,17 +40,16 @@ def check_status(reply):
     conn_info, reply_tag = get_qt_property(reply,["conn_info", "reply_tag"])
     token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
     url = reply.request().url().toString()
-    limit, handle, layer_id = get_qt_property(reply,["limit", "handle", "layer_id"])
-    meta, = get_qt_property(reply,["meta"])
+
     if err > 0:
-        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, token, url)
-        # iface.messageBar().pushMessage("Network Error", msg, Qgis.Warning, 1)
+        msg = "%s: %s: %s. %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, token, space_id, url)
         QgsMessageLog.logMessage( 
             "Network Error! : %s"%msg, "Network.Error", Qgis.Warning
         )
     else:
-        QgsMessageLog.logMessage( 
-            "Network Ok! : %s: %s - %s. request: %s"%(reply_tag, token, space_id, url), "Network", Qgis.Success
+        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, token, space_id, url)
+        QgsMessageLog.logMessage(
+            "Network Ok! : %s"%msg, "Network", Qgis.Success
         )
     return reply_tag, status, reason, err, err_str
 
@@ -61,7 +60,7 @@ def on_received(reply):
         reason = "Timeout"
         body = ""
         raise NetworkTimeout(reply_tag, status, reason, body, err_str, url, reply)
-    elif status != 200:
+    elif err > 0:
         raw = reply.readAll()
         byt, body, obj = decode_byte( raw)
         raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
@@ -74,8 +73,7 @@ def _onReceived(reply):
     byt, txt, obj = decode_byte( raw)
     conn_info, reply_tag = get_qt_property(reply,["conn_info", "reply_tag"])
     token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
-    limit, handle, layer_id = get_qt_property(reply,["limit", "handle", "layer_id"])
-    meta, = get_qt_property(reply,["meta"])
+    limit, handle, meta = get_qt_property(reply,["limit", "handle", "meta"])
 
     args = list()
     kw = dict()
@@ -90,7 +88,7 @@ def _onReceived(reply):
         print_qgis("feature count:%s"%len(obj["features"]) if "features" in obj else "no features key")
         print_qgis(obj.keys())
 
-        args = [txt]
+        args = [obj]
         kw = dict(handle=handle, limit=limit)
     elif reply_tag in ("init_layer"):
         print_qgis(txt[:100])
@@ -98,14 +96,13 @@ def _onReceived(reply):
         args = [txt, raw]
     elif reply_tag in ("add_feat","del_feat","sync_feat"):
         #TODO: error handling, rollback layer, but already commited  !?!
-        layer_id, = get_qt_property(reply,["layer_id"])
         if len(txt):
             print_qgis("updated features")
         else:
             print_qgis("added/removed features")
         print_qgis(txt[:100])
         
-        args = [obj, layer_id]
+        args = [obj]
     elif reply_tag in ("add_space","edit_space","del_space"):
 
         args = [conn_info, obj]

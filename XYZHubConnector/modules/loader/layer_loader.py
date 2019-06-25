@@ -112,16 +112,15 @@ class LoadLayerController(BaseLoader):
         
         LoopController.start(self, conn_info, **params, **self.fixed_params)
     def _emit_finish(self):
-        super()._emit_finish()
+        BaseLoop._emit_finish(self)
         token, space_id = self.layer.conn_info.get_xyz_space()
         name = self.layer.get_name()
         msg = "Layer: %s. Token: %s"%(name, token)
         self.signal.results.emit( make_qt_args(msg))
     ##### custom fun
 
-    def _process_render(self,txt,*a,**kw):
+    def _process_render(self,obj,*a,**kw):
         # check if all feat fetched
-        obj = json.loads(txt)
         feat_cnt = len(obj["features"])
         total_cnt = self.get_feat_cnt()
         if feat_cnt + total_cnt == 0:
@@ -136,7 +135,7 @@ class LoadLayerController(BaseLoader):
             if self.status == self.LOADING:
                 self.status = self.ALL_FEAT
         map_fields = self.layer.get_map_fields()
-        return make_qt_args(txt, map_fields)
+        return make_qt_args(obj, map_fields)
     
     # non-threaded
     def _render(self, *parsed_feat):
@@ -221,10 +220,10 @@ class InitUploadLayerController(ChainController):
     def _config(self):
         self.config_fun([
             AsyncFun( layer_utils.get_feat_iter),
-            WorkerFun( layer_utils.get_feat_upload_from_iter, self.pool),
+            WorkerFun( layer_utils.get_feat_upload_from_iter_args, self.pool),
             AsyncFun( self._setup_queue), 
         ])
-    def _setup_queue(self, lst_added_feat, removed_feat):
+    def _setup_queue(self, lst_added_feat, *a):
         if len(lst_added_feat) == 0:
             self.signal.finished.emit()
         self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
@@ -278,7 +277,7 @@ class UploadLayerController(BaseLoop):
     def get_conn_info(self):
         return self.conn_info
     def _emit_finish(self):
-        super()._emit_finish()
+        BaseLoop._emit_finish(self)
         
         token, space_id = self.conn_info.get_xyz_space()
         title = self.conn_info.get_("title")
@@ -288,3 +287,102 @@ class UploadLayerController(BaseLoop):
 
     def _handle_error(self, err):
         self.signal.error.emit(err)
+
+class EditSyncController(UploadLayerController):
+    def start(self, conn_info, layer_cache, lst_added_feat, removed_feat, **kw):
+        self.conn_info = conn_info
+        self.layer_cache = layer_cache
+        self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
+        self.removed_feat = queue.SimpleQueue(removed_feat)
+        self.fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
+        self.feat_cnt_del = 0
+        if self.count_active() == 0:
+            super(UploadLayerController, self).reset()
+        self.dispatch_parallel(n_parallel=self.n_parallel)
+    def sync_feature(self, conn_info, **kw):
+        network = self.network
+        if "add" in kw:
+            feat, params = kw["add"]
+            return network.add_features(conn_info, feat, **params)
+        elif "remove" in kw:
+            feat = kw["remove"]
+            return network.del_features(conn_info, feat)
+    def _run_loop(self):
+        if self.status == self.STOPPED: 
+            self.signal.error.emit(ManualInterrupt())
+            return 
+        
+        conn_info = self.get_conn_info()
+        if not self.lst_added_feat.has_next():
+            if self.removed_feat.has_next():
+                feat = self.removed_feat.get_params()
+                self.feat_cnt_del += len(feat)
+                LoopController.start(self, conn_info, remove=(feat))
+            else:
+                self._try_finish()
+            return
+            
+        conn_info = self.get_conn_info()
+        feat = self.lst_added_feat.get_params()
+        LoopController.start(self, conn_info, add=(feat, self.fixed_params))
+    def _config(self, network):
+        self.network = network
+        self.config_fun([
+            NetworkFun( self.sync_feature), 
+            WorkerFun( net_handler.on_received, self.pool),
+            AsyncFun( self._process),
+        ])
+    def _process(self, obj, *a):
+        self.layer_cache.update_progress(obj)
+        if not "features" in obj: return
+        features = obj["features"]
+        self.feat_cnt += len(features)
+    def _emit_finish(self):
+        BaseLoop._emit_finish(self)
+        token, space_id = self.conn_info.get_xyz_space()
+        title = self.conn_info.get_("title")
+        tags = self.fixed_params.get("addTags","")
+        msg = "added/modified: %s. removed: %s. "%(self.feat_cnt, self.feat_cnt_del)
+        msg += "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, token) 
+        self.signal.results.emit( make_qt_args(msg))
+
+
+##### unused
+
+class EditAddController(UploadLayerController):
+    def start(self, conn_info, lst_added_feat, removed_feat, **kw):
+        self.conn_info = conn_info
+        self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
+        self.removed_feat = removed_feat
+        # self.fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
+
+        if self.count_active() == 0:
+            super(UploadLayerController, self).reset()
+        self.dispatch_parallel(n_parallel=self.n_parallel)
+    def _emit_finish(self):
+        BaseLoop._emit_finish(self)
+        
+        self.signal.results.emit( make_qt_args(self.conn_info, self.removed_feat))
+
+class EditRemoveController(ChainController):
+    def __init__(self, network):
+        super().__init__()
+        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self._config(network)
+    def start(self, conn_info, removed_feat, **kw):
+        if len(removed_feat) == 0:
+            self.signal.finished.emit()
+            self.signal.results.emit(make_qt_args())
+            return
+        super().start(conn_info, removed_feat)
+        # fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
+        # super().start(conn_info, removed_feat, **fixed_params)
+    def start_args(self, args):
+        a, kw = parse_qt_args(args)
+        self.start( *a, **kw)
+    def _config(self, network):
+        self.config_fun([
+            NetworkFun( network.del_features), 
+            WorkerFun( net_handler.on_received, self.pool),
+            # AsyncFun( self._process),
+        ])

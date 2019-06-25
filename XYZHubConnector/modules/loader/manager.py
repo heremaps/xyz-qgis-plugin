@@ -102,8 +102,8 @@ class ControllerManager(object):
             return ptr
         start_dispatch, try_finish = callbacks
         con.signal.progress.connect(start_dispatch, Qt.QueuedConnection)
-        con.signal.finished.connect( try_finish)
-        con.signal.error.connect(lambda e: try_finish())
+        con.signal.finished.connect( try_finish, Qt.QueuedConnection)
+        con.signal.error.connect(lambda e: try_finish(), Qt.QueuedConnection)
         
         return ptr
     def _add(self, con):
