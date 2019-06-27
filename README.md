@@ -39,6 +39,8 @@ Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can
 
     + `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
 
+When the user make some edits to the loaded layer, the changes can be pushed to XYZ Hub via the button `Push changes` in the toolbar.
+
 ## Development
 
 1. Clone this repository.
