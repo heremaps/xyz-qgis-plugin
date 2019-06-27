@@ -81,7 +81,7 @@ class XYZHubConnector(object):
         self.action_connect.setStatusTip(
             QCoreApplication.translate(PLUGIN_NAME, "status tip message" ))
 
-        self.action_sync_edit = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/sync.svg")),"", parent)
+        self.action_sync_edit = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/sync.svg")), "Push changes to XYZ Hub", parent)
 
         # self.action_sync_edit.setVisible(False) # disable magic sync
         self.edit_buffer.config_ui(self.enable_sync_btn)
