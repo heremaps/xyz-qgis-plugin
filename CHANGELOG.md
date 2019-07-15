@@ -1,5 +1,18 @@
 # Changelog 
 
+## version 1.7.1 (2019-07-25)
+
+* New: Features in space will be categorized according to geometry and properties
+* 1 XYZ space might be loaded into multiple qgs vector layer in 1 group
+* Property names will not be changed (except fid), ensure data consistency
+* Handle case-different duplicate properties (e.g. name vs. Name)
+* Handle special key properties (e.g. fid)
+* No more promote geometry to multi-geom
+* test parser, render layer
+* Clear cache in menu
+* Archive log file when it gets big (5MB)
+* bug fixing
+
 ## version 1.7.0 (2019-06-24)
 
 * New: Changes of xyz layer can be pushed to XYZ Hub

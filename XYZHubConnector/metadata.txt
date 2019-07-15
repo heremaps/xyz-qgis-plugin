@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.7.0
+version=1.7.1
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,8 +42,8 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.7.0 (2019-06-24)
-    * New: Changes of xyz layer can be pushed to XYZ Hub
-    * allow delete large number of features
-    * ignore null values when parsing feature to json
+changelog=Version 1.7.1 (2019-07-25)
+    * New: Features in space will be categorized according to geometry and properties
+    * Handle case-different duplicate properties
+    * Improve data consistency (geometry and property)
     * .. more details on Github repos
