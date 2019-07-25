@@ -81,6 +81,8 @@ class XYZHubConnector(object):
 
         self.action_sync_edit = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/sync.svg")), "Push changes to XYZ Hub", parent)
 
+        self.action_clear_cache = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/delete.svg")), "Clear cache", parent)
+
         # self.action_sync_edit.setVisible(False) # disable magic sync
         self.edit_buffer.config_ui(self.enable_sync_btn)
         
@@ -90,15 +92,18 @@ class XYZHubConnector(object):
 
         self.action_connect.triggered.connect(self.open_connection_dialog)
         self.action_sync_edit.triggered.connect(self.open_sync_edit_dialog)
+        self.action_clear_cache.triggered.connect( self.open_clear_cache_dialog)
 
         ######## Add the toolbar + button
         self.toolbar = self.iface.addToolBar(PLUGIN_NAME)
         self.toolbar.setObjectName("XYZ Hub Connector")
 
-        self.actions = [self.action_connect, self.action_sync_edit] 
+        self.actions_menu = [self.action_connect, self.action_sync_edit, self.action_clear_cache] 
 
-        for a in self.actions:
+        for a in [self.action_connect, self.action_sync_edit]:
             self.toolbar.addAction(a)
+
+        for a in self.actions_menu:
             self.iface.addPluginToWebMenu(self.web_menu, a)
 
         # # uncomment to use menu button
@@ -188,7 +193,7 @@ class XYZHubConnector(object):
         self.toolbar.clear() # remove action from custom toolbar (toolbar still exist)
         self.toolbar.deleteLater()
 
-        for a in self.actions:
+        for a in self.actions_menu:
             self.iface.removePluginWebMenu(self.web_menu, a)
 
 
