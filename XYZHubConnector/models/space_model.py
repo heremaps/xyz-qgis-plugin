@@ -64,7 +64,7 @@ class QJsonTableModel(QAbstractTableModel):
     def get_(self, key, index):
         if index is None: return None
         row = self.obj[index.row()]
-        if key is dict: return row
+        if key is dict: return dict(row)
         else: return row.get(key)
     def get_selected_space_info(self):
         return self.get_(dict, self.get_selected_index()) or dict()

@@ -46,7 +46,7 @@ class LoadLayerController(BaseLoader):
         self.status = self.LOADING
         self._config(network)
     def post_render(self):
-        for v in self.layer.map_vlayer.values():
+        for v in self.layer.iter_layer():
             v.triggerRepaint()
     def start(self, conn_info, meta, **kw):
         tags = kw.get("tags","")
@@ -141,16 +141,14 @@ class LoadLayerController(BaseLoader):
     def _render(self, *parsed_feat):
         map_feat, map_fields = parsed_feat
         for geom in map_feat.keys():
+            for idx, (feat, fields) in enumerate(
+            zip(map_feat[geom], map_fields[geom])):
+                if not self.layer.has_layer(geom, idx):
+                    vlayer=self.layer.add_ext_layer(geom, idx)
+                else:
+                    vlayer=self.layer.get_layer(geom, idx)
 
-            if not self.layer.is_valid( geom):
-                vlayer=self.layer.show_ext_layer(geom)
-            else:
-                vlayer=self.layer.get_layer( geom)
-
-            feat = map_feat[geom]
-            fields = map_fields[geom]
-
-            render.add_feature_render(vlayer, feat, fields)
+                render.add_feature_render(vlayer, feat, fields)
 
     def get_feat_cnt(self):
         return self.layer.get_feat_cnt()
@@ -181,17 +179,23 @@ class LoadLayerController(BaseLoader):
         map_feat, map_fields = parsed_feat
         lst_args = [(
             geom,
-            map_feat[geom],
-            map_fields[geom]
+            feat, 
+            fields,
+            idx
             ) for geom in map_feat.keys()
+            for idx, (feat, fields) in enumerate(zip(
+                map_feat[geom],
+                map_fields[geom]
+            ))
+            if feat
         ]
         return lst_args
-    def _render_single(self, geom, feat, fields):
-        if not self.layer.is_valid( geom):
-            vlayer=self.layer.show_ext_layer(geom)
+    def _render_single(self, geom, feat, fields, idx):
+        if not self.layer.has_layer(geom, idx):
+            vlayer=self.layer.add_ext_layer(geom, idx)
         else:
-            vlayer=self.layer.get_layer( geom)
-
+            vlayer=self.layer.get_layer(geom, idx)
+            
         render.add_feature_render(vlayer, feat, fields)
 
 ########################

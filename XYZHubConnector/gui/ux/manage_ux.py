@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from ...modules.controller import make_qt_args
 from ..space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from ..util_dialog import ConfirmDialog
-from .space_ux import SpaceUX
+from .space_ux import SpaceUX, SpaceConnectionInfo
 
 
 class ManageUX(SpaceUX):
@@ -53,10 +53,11 @@ class ManageUX(SpaceUX):
     def ui_new_space(self):
         token = self.get_input_token()
         self.conn_info.set_(token=token)
+        conn_info = SpaceConnectionInfo(self.conn_info)
 
         dialog = NewSpaceDialog(self)
         dialog.accepted.connect(lambda: self.signal_new_space.emit(
-            make_qt_args(self.conn_info, dialog.get_space_info() )
+            make_qt_args(conn_info, dialog.get_space_info() )
         ))
         dialog.exec_()
 
@@ -67,12 +68,13 @@ class ManageUX(SpaceUX):
         space_info = self._get_space_model().get_(dict,index)
 
         self.conn_info.set_(token=token,space_id=space_id)
+        conn_info = SpaceConnectionInfo(self.conn_info)
 
         dialog = EditSpaceDialog(self)
         dialog.set_space_info(space_info)
 
         dialog.accepted.connect(lambda: self.signal_edit_space.emit(
-            make_qt_args(self.conn_info, dialog.get_space_info() )
+            make_qt_args(conn_info, dialog.get_space_info() )
         ))
         dialog.exec_()
 
@@ -87,5 +89,6 @@ class ManageUX(SpaceUX):
         dialog = ConfirmDialog("Do you want to Delete space: %s?"%title)
         ret = dialog.exec_()
         if ret != dialog.Ok: return
-
-        self.signal_del_space.emit(make_qt_args(self.conn_info))
+            
+        conn_info = SpaceConnectionInfo(self.conn_info)
+        self.signal_del_space.emit(make_qt_args(conn_info))

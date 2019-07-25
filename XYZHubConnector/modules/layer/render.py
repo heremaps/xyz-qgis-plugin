@@ -68,10 +68,10 @@ def add_feature_render(vlayer, feat, new_fields):
     pr.addAttributes(diff_fields)
     vlayer.updateFields()
 
-    pr.addFeatures(feat)
+    ok, out_feat = pr.addFeatures(feat)
     vlayer.updateExtents() # will hide default progress bar
     # post_render(vlayer) # disable in order to keep default progress bar running
-
+    return ok, out_feat
 def post_render(vlayer):
     # print_qgis("Feature count:", vlayer.featureCount())
 

@@ -139,7 +139,8 @@ class TokenUX(ServerUX):
         # gui -> pending token
         self.used_token_idx = self.comboBox_token.currentIndex()
         self.conn_info.set_(token=token)
-        self.signal_use_token.emit( make_qt_args(self.conn_info) )
+        conn_info = SpaceConnectionInfo(self.conn_info)
+        self.signal_use_token.emit( make_qt_args(conn_info) )
         
 
     def cb_comboxBox_token_selected(self, index):

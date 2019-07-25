@@ -18,6 +18,7 @@ from XYZHubConnector.modules.network import NetManager, net_handler
 import time
 import sys
 import os
+import pprint
 
 def get_env(scope, keys):
     """ usage: get_env(locals(), ["APP_ID", "APP_CODE"]) #globals()
@@ -114,13 +115,35 @@ class BaseTestWorkerAsync(BaseTestAsync):
     #     print("active thread count", self.pool.activeThreadCount())
     #     super()._log_debug(*a, **kw)
     
+def format_long_args(*a, limit=200):
+    return " ".join(str(i)[:limit] for i in a)
 
 def log_debug(*a,**kw):
     # return
     # print(*a,**kw)
-    s = " ".join(str(i)[:200] for i in a)
+    s = format_long_args(*a)
     print(s,**kw)
 
+def len_of_struct(x, order=True):
+    if isinstance(x, dict):
+        return dict([(k, len_of_struct(v, order)) for k, v in x.items()]) 
+    elif hasattr(x, "__len__"):
+        if not hasattr(x, "__iter__"):
+            return len(x)
+        lst = [len_of_struct(v, order) for v in x]
+        if len(lst) == 0 or -1 in lst:
+            return len(lst)
+        return lst if order else set(lst)
+    else: 
+        return -1
+def len_of_struct_unorder(x):
+    return len_of_struct(x, False)
+def format_map_fields(x):
+    return pprint.pformat(
+        dict((k, [f.names() for f in v])
+        for k,v in x.items()), 
+        compact=True)
+        
 
 def add_test_fn_params(cls,fn_name,*a,**kw):
     """ Create new test function from function with params (similar to TestCase.subTest() ).
@@ -142,6 +165,20 @@ def add_test_fn_params(cls,fn_name,*a,**kw):
     if not new_name.startswith("test"):
         new_name = "test_" + new_name
     setattr(cls, new_name, _fn)
+
+
+def flatten(lst):
+    def _flatten(lst):
+        is_lst = (
+            hasattr(lst, "__len__") and 
+            not isinstance(lst, (str, dict)))
+        if not is_lst:
+            yield lst
+        else:
+            for i in lst:
+                for k in _flatten(i):
+                    yield k
+    return list(_flatten(lst))
 ######################################
 # io.py
 #####################################
@@ -159,6 +196,24 @@ def make_abs_path(*a):
     path,_ = os.path.split(__file__)
     
     return os.path.abspath(os.path.join(path, *a))
+    
+class TestFolder(object):
+    def __init__(self, *paths):
+        self.folder = make_abs_path("resources",*paths)
+        os.makedirs(self.folder,exist_ok=True)
+    def fullpath(self, fname):
+        return os.path.join(self.folder, fname)
+    def load(self, fname):
+        infile = os.path.join(self.folder, fname)
+        with open(infile,encoding="utf-8") as f:
+            txt = f.read()
+        return txt
+    def save(self, fname, txt):
+        outfile = os.path.join(self.folder, fname)
+        with open(outfile,"w",encoding="utf-8") as f:
+            f.write(txt)
+
+
 class LoadInput(object):
     def __init__(self, file, fn_name):
         path, fname = os.path.split(file)

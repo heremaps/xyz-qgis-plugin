@@ -14,7 +14,7 @@ from qgis.PyQt.QtGui import QRegExpValidator
 
 from ...modules.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
-from .space_ux import SpaceUX
+from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import process_tags
 
 
@@ -66,8 +66,8 @@ class UploadUX(SpaceUX):
         )
         ret = dialog.exec_()
         if ret != dialog.Ok: return
-
-        self.signal_upload_space.emit(make_qt_args(self.conn_info, self.vlayer, **kw))
+        conn_info = SpaceConnectionInfo(self.conn_info)
+        self.signal_upload_space.emit(make_qt_args(conn_info, self.vlayer, **kw))
         # self.close()
         
     def ui_enable_ok_button(self, flag):

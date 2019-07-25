@@ -12,7 +12,7 @@ from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator
 
 from ...modules.controller import make_qt_args
-from .space_ux import SpaceUX
+from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import process_tags
 
 
@@ -68,12 +68,14 @@ class ConnectUX(SpaceUX):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
-        self.signal_space_connect.emit( make_qt_args(self.conn_info, meta, **self.get_params() ))
+        conn_info = SpaceConnectionInfo(self.conn_info)
+        self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
         # self.close()
 
     def start_bbox(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
-        self.signal_space_bbox.emit( make_qt_args(self.conn_info, meta, **self.get_params() ))
+        conn_info = SpaceConnectionInfo(self.conn_info)
+        self.signal_space_bbox.emit( make_qt_args(conn_info, meta, **self.get_params() ))
         # self.close()

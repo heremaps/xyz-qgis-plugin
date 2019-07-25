@@ -13,7 +13,8 @@ import time
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
-                       QgsCoordinateTransform)
+                       QgsCoordinateTransform, QgsWkbTypes)
+
 from qgis.utils import iface
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
@@ -33,6 +34,11 @@ class XYZLayer(object):
     + loading a new layer from xyz
     + uploading a qgis layer to xyz, add conn_info, meta, vlayer
     """
+    NO_GEOM = "No geometry"
+    GEOM_ORDER = dict((k,i) 
+    for i,k in enumerate(["Point","Line","Polygon", "Unknown geometry", NO_GEOM]))
+    # https://qgis.org/api/qgswkbtypes_8cpp_source.html#l00129 
+
     def __init__(self, conn_info, meta, tags="", ext="gpkg"):
         super().__init__()
         self.conn_info = conn_info
@@ -41,14 +47,12 @@ class XYZLayer(object):
         self.ext = ext
 
         self.map_vlayer = dict()
-        self._map_vlayer = dict()
         self.map_fields = dict()
 
         self.unique = int(time.time() * 10)
 
-        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
-        for geom in ["MultiPoint","MultiLineString","MultiPolygon",None]:
-            self._init_ext_layer(geom, crs)
+        self.qgroups = dict()
+        self._group_name = "XYZ Hub Layer"
 
     def _save_meta(self, vlayer):
         meta = self.meta
@@ -66,63 +70,120 @@ class XYZLayer(object):
             meta.setRights(lst_txt)
         vlayer.setMetadata(meta)
 
-    def is_valid(self, geom_str):
-        return geom_str in self.map_vlayer
-    def get_layer(self, geom_str):
-        return self.map_vlayer.get(geom_str)
+        self._group_name = self._make_group_name()
+
+    def iter_layer(self):
+        for lst in self.map_vlayer.values():
+            for vlayer in lst:
+                yield vlayer
+    def has_layer(self, geom_str, idx):
+        return (
+            geom_str in self.map_vlayer and 
+            idx < len(self.map_vlayer[geom_str])
+            )
+    def get_layer(self, geom_str, idx):
+        return self.map_vlayer[geom_str][idx]
     def get_name(self):
-        tags = " (%s)" %(self.tags) if len(self.tags) else ""
-        return "{title} - {id}{tags}".format(tags=tags,**self.meta)
-    def _layer_name(self, geom_str):
-        tags = " (%s)" %(self.tags) if len(self.tags) else ""
-        return "{title} - {id} - {geom}{tags}".format(geom=geom_str,tags=tags,**self.meta)
-    def _db_layer_name(self, geom_str):
-        tags = self.tags.replace(",","_") if len(self.tags) else ""
-        return "{id}_{geom}_{tags}_{unique}".format(
-            geom=geom_str, tags=tags, unique=self.unique, **self.meta)
+        return self._group_name
+    def _make_group_name(self, idx=None):
+        """
+        returns main layer group name
+        """
+        tags = "-(%s)" %(self.tags) if len(self.tags) else ""
+        temp = "{title}-{id}{tags}" if idx is None else "{title}-{id}{tags}-{idx}"
+        name = temp.format(
+            tags=tags, idx=idx, **self.meta)
+        return name
+    def _group_geom_name(self, geom_str):
+        geom = QgsWkbTypes.geometryDisplayString(
+            QgsWkbTypes.geometryType(
+            QgsWkbTypes.parseType(
+            geom_str))) if geom_str else self.NO_GEOM
+        return geom 
+    def _layer_name(self, geom_str, idx):
+        """
+        returns vlayer name shown in qgis
+        """
+        tags = "-(%s)" %(self.tags) if len(self.tags) else ""
+        return "{title}-{id}{tags}-{geom}-{idx}".format(
+            geom=geom_str, idx=idx, tags=tags, **self.meta)
+    def _db_layer_name(self, geom_str, idx):
+        """
+        returns name of the table corresponds to vlayer in sqlite db
+        """
+        return "{geom}_{idx}".format(geom=geom_str, idx=idx)
     def _layer_fname(self):
+        """
+        returns file name of the sqlite db corresponds to xyz layer
+        """
         tags = self.tags.replace(",","_") if len(self.tags) else ""
         return "{id}_{tags}_{unique}".format(
             tags=tags, unique=self.unique, **self.meta)
-    def get_xyz_feat_id(self, geom_str):
-        vlayer = self.get_layer(geom_str)
-        key = parser.QGS_XYZ_ID
-        req = QgsFeatureRequest().setFilterExpression(key+" is not null").setSubsetOfAttributes([key], vlayer.fields())
-        return set([ft.attribute(key) for ft in vlayer.getFeatures(req)])
+
     def get_map_fields(self):
         return self.map_fields
     def get_feat_cnt(self):
         cnt = 0
-        for vlayer in self.map_vlayer.values():
+        for vlayer in self.iter_layer():
             cnt += vlayer.featureCount()
         return cnt
-    def show_ext_layer(self, geom_str):
-        vlayer = self._map_vlayer[geom_str]
-        self.map_vlayer[geom_str] = vlayer
+    def add_ext_layer(self, geom_str, idx):
+        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
+
+        vlayer = self._init_ext_layer(geom_str, idx, crs)
+        self._add_layer(geom_str, vlayer)
 
         dom = QDomDocument()
         dom.setContent(LAYER_QML, True) # xyz_id non editable
         vlayer.importNamedStyle(dom)
 
-        tree_root = QgsProject.instance().layerTreeRoot()
-        pos = 0  # Insert to top
-
         QgsProject.instance().addMapLayer(vlayer, False)
+
+        tree_root = QgsProject.instance().layerTreeRoot()
+
+        group = self.qgroups.get("main")
+        if not group:
+            name = self._make_group_name()
+            all_names = [g.name() for g in tree_root.findGroups()]
+            dupe_names = [x for x in all_names if x.startswith(name)]
+            idx = len(dupe_names)
+            if idx: name = self._make_group_name(idx)
+            self._group_name = name
+            group = tree_root.insertGroup(0, name)
+        self.qgroups["main"] = group
+
+        geom = self._group_geom_name(geom_str)
+        order = self.GEOM_ORDER.get(geom)
+        group_geom = self.qgroups.get(geom)
+        group_geom = group_geom or (
+            group.insertGroup(order,geom)
+            if order is not None else 
+            group.addGroup(geom)
+        )
+        self.qgroups[geom] = group_geom
+
+        group_geom.addLayer(vlayer)
         
-        tree_root.insertLayer(pos, vlayer)
-        iface.setActiveLayer(vlayer)
+        if iface: iface.setActiveLayer(vlayer)
         return vlayer
-    def _make_mem_layer(self, geom_str, crs):
-        pass
-    def _init_ext_layer(self, geom_str, crs):
+    def _add_layer(self, geom_str, vlayer):
+        self.map_vlayer.setdefault(geom_str, list()).append(vlayer)
+        self.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
+
+    def _init_ext_layer(self, geom_str, idx, crs):
         """ given non map of feat, init a qgis layer
         :map_feat: {geom_string: list_of_feat}
         """
         ext=self.ext
         driver_name = ext.upper() # might not needed for 
 
-        layer_name = self._layer_name(geom_str)
+        layer_name = self._layer_name(geom_str, idx)
         
+        # sqlite max connection 64
+        # if xyz space -> more than 64 vlayer,
+        # then create new fname
+        
+        # fname = make_unique_full_path(ext=ext)
         fname = make_fixed_full_path(self._layer_fname(),ext=ext)
         
         vlayer = QgsVectorLayer(
@@ -131,7 +192,7 @@ class XYZLayer(object):
 
         # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(), driver_name)
 
-        db_layer_name = self._db_layer_name(geom_str)
+        db_layer_name = self._db_layer_name(geom_str, idx)
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.fileEncoding = "UTF-8"
@@ -152,13 +213,7 @@ class XYZLayer(object):
 
         uri = "%s|layername=%s"%(fname, db_layer_name)
         vlayer = QgsVectorLayer(uri, layer_name, "ogr")
-
-
-        self._map_vlayer[geom_str] = vlayer
         self._save_meta(vlayer)
-
-        self.map_fields[geom_str] = vlayer.fields()
-        # QgsProject.instance().addMapLayer(vlayer)
         
         return vlayer
 
