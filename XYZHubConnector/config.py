@@ -16,5 +16,6 @@ PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
 TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
 LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
+TAG_PLUGIN = "XYZ Hub Connector"
 
 os.makedirs(TMP_DIR,exist_ok=True)

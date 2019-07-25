@@ -44,14 +44,12 @@ from .modules.basemap.auth_manager import AuthManager
 
 from .modules.common.error import format_traceback
 
-
 PLUGIN_NAME = config.PLUGIN_NAME
-TAG_PLUGIN = "XYZ Hub"
 
 LOG_TO_FILE = 1
 
 from .modules.common.signal import make_print_qgis, cb_log_qgis
-print_qgis = make_print_qgis(TAG_PLUGIN,debug=True)
+print_qgis = make_print_qgis("plugin",debug=True)
 
 class XYZHubConnector(object):
 
@@ -215,23 +213,22 @@ class XYZHubConnector(object):
     ############### 
     # Callback of action (main function)
     ###############
-    def cb_success_msg(self, msg, info=""):
+    def cb_success_msg(self, title, msg=""):
         self.iface.messageBar().pushMessage(
-            msg, info,  
+            title, msg,
             Qgis.Success, 5
         )
 
-    def make_cb_success(self, msg, info=""):
+    def make_cb_success(self, title, msg=""):
         def _cb_success_msg():
-            txt = info
-            self.cb_success_msg(msg, txt)
+            self.cb_success_msg(title, msg)
         return _cb_success_msg
         
-    def make_cb_success_args(self, msg, info=""):
+    def make_cb_success_args(self, title, msg=""):
         def _cb_success_msg(args):
             a, kw = parse_qt_args(args)
             txt = ". ".join(map(str,a))
-            self.cb_success_msg(msg, txt)
+            self.cb_success_msg(title, txt)
         return _cb_success_msg
 
     def cb_handle_error_msg(self, e):
@@ -266,11 +263,11 @@ class XYZHubConnector(object):
 
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
-            TAG_PLUGIN, repr(err),  
+            "Error", repr(err),
             Qgis.Warning, 3
         )
         msg = format_traceback(err)
-        QgsMessageLog.logMessage( msg, TAG_PLUGIN, Qgis.Warning)
+        QgsMessageLog.logMessage( msg, config.TAG_PLUGIN, Qgis.Warning)
 
     def cb_progress_busy(self, n_active):
         if n_active > 1: return

@@ -38,23 +38,31 @@ from qgis.core import QgsMessageLog, Qgis
 from qgis.PyQt.QtCore import Qt
 
 from ... import config
+import time
 
 level = ["Info", "Warning", "Critical", "Success", "None"]
 qgis_level = dict(zip(map(lambda k: getattr(Qgis,k), level), level))
+time_fmt = '%Y-%m-%dT%H:%M:%S%z'
 
 def make_print_qgis(tag="debug",debug=False):
     def _print_qgis(*a):    
         msg =  " ".join([str(i) for i in a])
-        QgsMessageLog.logMessage( msg, tag, Qgis.Info)
+        QgsMessageLog.logMessage(
+            "{tag:10} {msg}".format(
+                tag="[{}]".format(tag),
+                msg=msg),
+            config.TAG_PLUGIN, Qgis.Info)
     return _print_qgis if debug else lambda *a: None
     
 def cb_log_qgis(msg, tag, level):
+    if tag != config.TAG_PLUGIN: return
+
     # careful for recursive loop logMessage()
     # QgsMessageLog.logMessage( msg, tag, Qgis.Info)
     with open( config.LOG_FILE, "a") as f:
-        f.write("{tag:20} {level:12} {msg}\n".format(
-            tag=tag,
-            level="[{}]".format(qgis_level.get(level,"unknown")), 
+        f.write("{time} {level:10} {msg}\n".format(
+            time=time.strftime(time_fmt,time.localtime()),
+            level="/{}".format(qgis_level.get(level,"Unknown")), 
             msg=msg
         ))
 
