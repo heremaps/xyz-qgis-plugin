@@ -1,5 +1,18 @@
 # Changelog 
 
+## version 1.7.2 (2019-08-23)
+
+* Tile loading mode, supports Live Map
+    * A limited number of features per tile is reloaded every time panning or zooming occur.
+    * XYZ Layer in tile loading mode works after open Saved project
+* Layer categorization separates data in XYZ space based on fields similarity
+    * single: merge data into 1 layer/geom
+    * maximal: do not merge data, as many layers/geom
+    * balanced: merge only similar data
+* Similarity score [0-100] indicates the percentage of similar field
+    * similarity threshold (higher = more layers; 0 means 1 layer/geometry)
+* bug fixes: parser, fields similarity, case-different duplicate, dupe layer name
+
 ## version 1.7.1 (2019-07-25)
 
 * New: Features in space will be categorized according to geometry and properties

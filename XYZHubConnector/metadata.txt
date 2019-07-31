@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.7.1
+version=1.7.2
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,8 +42,8 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.7.1 (2019-07-25)
-    * New: Features in space will be categorized according to geometry and properties
-    * Handle case-different duplicate properties
-    * Improve data consistency (geometry and property)
+changelog=Version 1.7.2 (2019-08-23)
+    * New: Tile loading mode, supports Live Map
+    * New: Layer categorization separates data in XYZ space based on fields similarity
+    * bug fixes
     * .. more details on Github repos
