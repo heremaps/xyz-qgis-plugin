@@ -28,7 +28,7 @@ from ...models import SpaceConnectionInfo
 
 
 from ..common.signal import make_print_qgis
-print_qgis = make_print_qgis("layer_loader", debug=True)
+print_qgis = make_print_qgis("layer_loader")
 
 Meta = Dict[str,str]
 Geojson = Dict

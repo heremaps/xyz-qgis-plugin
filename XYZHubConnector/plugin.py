@@ -53,7 +53,7 @@ PLUGIN_NAME = config.PLUGIN_NAME
 LOG_TO_FILE = 1
 
 from .modules.common.signal import make_print_qgis, cb_log_qgis
-print_qgis = make_print_qgis("plugin",debug=True)
+print_qgis = make_print_qgis("plugin")
 
 class XYZHubConnector(object):
 
