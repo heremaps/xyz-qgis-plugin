@@ -231,7 +231,7 @@ class XYZHubConnector(object):
     ###############
     def cb_success_msg(self, title, msg="", dt=5):
         self.iface.messageBar().pushMessage(
-            title, msg,
+            config.TAG_PLUGIN, ": ".join([title,msg]),
             Qgis.Success, dt
         )
 
