@@ -11,7 +11,13 @@
 from qgis.PyQt.QtCore import QTimer
 
 from ..controller import (AsyncFun, LoopController, make_exception_obj,
-                          make_qt_args, parse_qt_args)
+                          make_qt_args, parse_qt_args, QtArgs)
+from typing import Sequence, Iterable
+from threading import Lock
+
+
+from ..common.signal import make_print_qgis
+print_qgis = make_print_qgis("loop_loader")
 
 ########################
 # Base Load
@@ -22,27 +28,35 @@ class ParallelWrapper():
         # super().__init__()
         self.n_parallel = n_parallel # deprecate
         self._n_active = 0
+        self.lock = Lock()
         
     def count_active(self):
-        return self._n_active
+        with self.lock:
+            n_active = self._n_active
+        return n_active
+    def _reserve(self):
+        with self.lock:
+            self._n_active = self._n_active + 1
+            n_active = self._n_active
+            print_qgis("reserve", n_active)
+        return n_active
     def _release(self):
-        self._n_active -= 1
+        with self.lock:
+            self._n_active = max(0, self._n_active - 1)
+            n_active = self._n_active
+        return n_active
     def _try_finish(self):
-        self._release()
-        if self.count_active() == 0:
+        n_active = self._release()
+        print_qgis("try_finish con", n_active)
+        if n_active == 0:
+            print_qgis("try_finish con emit")
             self._emit_finish()
     def dispatch_parallel(self, delay=0.1, delay_offset=0.001, n_parallel=1):
         for i in range(n_parallel): 
             d = delay*i  + delay_offset
             QTimer.singleShot(d, self._dispatch)
     def _dispatch(self):
-        if self.count_active() == 0:
-            self._emit_progress_start()
-        self._n_active += 1
         self._run_single()
-    def reset(self, **kw):
-        self._n_active = 0
-
     def _emit_progress_start(self):
         raise NotImplementedError()
     def _emit_finish(self):
@@ -60,24 +74,39 @@ class ParallelLoop(LoopController,ParallelWrapper):
         self.signal.progress.emit( 0)
     def _emit_finish(self):
         self.signal.finished.emit()
+    def dispatch_parallel(self, delay=0.1, delay_offset=0.001, n_parallel=1):
+        for i in range(n_parallel): 
+            if not self.count_active() < self.n_parallel: return
+            n_active = self._reserve()
+            print_qgis("dispatch con", n_active)
+            if n_active == 1:
+                print_qgis("dispatch con emit")
+                self._emit_progress_start()
+            d = delay*i  + delay_offset
+            QTimer.singleShot(d, self._dispatch)
 
 class ParallelFun(AsyncFun,ParallelWrapper):
     def __init__(self, fun):
         AsyncFun.__init__(self, fun)
         ParallelWrapper.__init__(self)
         self.results=dict()
-    def call(self, args):
+        self.iter_args: Iterable = None
+    def call(self, args: QtArgs):
         a, kw = parse_qt_args( args)
         self.dispatch_parallel(*a)
         
-    def _try_finish(self):
-        self._release()
-        if self.count_active() == 0:
-            self.signal.finished.emit()
+    def _emit_finish(self):
             self.signal.results.emit(make_qt_args(self.results))
-            
+            self.signal.finished.emit()
+
+    def _try_finish(self):
+        n_active = self._release()
+        if n_active == 0:
+            self._emit_finish()
+
     def _dispatch(self):
-        args = next(self.iter_args)
+        args = next(self.iter_args, None)
+        if args is None: return # hotfix
         k = args[0]
         try:
             output = self.fun( *args)
@@ -87,14 +116,14 @@ class ParallelFun(AsyncFun,ParallelWrapper):
         else:
             self.results[k] = output
             self._try_finish()
-    def dispatch_parallel(self, lst_args, **kw):
+    def dispatch_parallel(self, lst_args: Sequence, **kw):
         self.signal.progress.emit( 0)
         
         n_parallel = len(lst_args)
         self._n_active = n_parallel
 
         if n_parallel == 0:
-            self.signal.finished.emit()
+            self._emit_finish()
             return
 
         self.iter_args = iter(lst_args)
@@ -115,8 +144,14 @@ class BaseLoop(ParallelLoop):
     def _check_status(self):
         return self.status != self.STOPPED
     def _run(self):
+        """
+        internal default single run
+        """
         LoopController.start(self)
     def _run_loop(self):
+        """
+        internal default run loop logic
+        """
         if not self._check_valid():
             return
         if not self._check_status():
@@ -126,15 +161,24 @@ class BaseLoop(ParallelLoop):
         self.status = self.FINISHED
         self.signal.finished.emit()
     def stop_loop(self):
+        """
+        stop loop externally
+        """
         self.status = self.STOPPED
     def reset(self, **kw):
-        super(BaseLoop, self).reset(**kw)
+        """
+        reset is invoked when BaseLoop first started (no active thread)
+        """
         self.status = self.LOADING
-    def start(self, **kw):
-        if not self._check_valid():
-            return
-        if self.count_active() == 0:
-            self.reset( **kw)
+    def start(self, *a, **kw):
+        """
+        explicit invoke to start dispatching task (_run_loop) in parallel. Do not override !
+        """
+        # if not self._check_valid():
+        #     return
+        # if self.count_active() == 0:
+        ## parallel dispatch might fail
+        self.reset( **kw)
         self.dispatch_parallel(n_parallel=self.n_parallel)
 
 class BaseLoader(BaseLoop):

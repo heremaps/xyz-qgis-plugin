@@ -180,6 +180,9 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
      <widget class="QWidget" name="tab_load">
       <property name="enabled">
        <bool>true</bool>
@@ -199,7 +202,7 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <layout class="QFormLayout" name="formLayout_2">
+         <layout class="QGridLayout" name="gridLayout">
           <item row="0" column="0">
            <widget class="QLabel" name="label_3">
             <property name="sizePolicy">
@@ -213,7 +216,20 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Chunk size</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1" colspan="3">
            <widget class="QLineEdit" name="lineEdit_tags">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -235,8 +251,8 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label">
+          <item row="1" column="2">
+           <widget class="QLabel" name="label_2">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -244,7 +260,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Chunk size</string>
+             <string>Max Feature</string>
             </property>
            </widget>
           </item>
@@ -268,7 +284,7 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label_2">
+           <widget class="QLabel" name="label_9">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -276,11 +292,11 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Max Feature</string>
+             <string>Layer Categorization</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="1" column="3">
            <widget class="QLineEdit" name="lineEdit_max_feat">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -294,6 +310,10 @@
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
+           </widget>
+          </item>          
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBox_similarity_threshold">
            </widget>
           </item>
          </layout>
@@ -314,17 +334,20 @@
           <property name="rightMargin">
            <number>0</number>
           </property>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="btn_bbox">
-            <property name="text">
-             <string>BBox</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="1">
            <widget class="QPushButton" name="btn_load">
             <property name="text">
              <string>Load</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="checkBox_tile">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Tile loading</string>
             </property>
            </widget>
           </item>
@@ -660,7 +683,8 @@
   <tabstop>lineEdit_tags</tabstop>
   <tabstop>lineEdit_limit</tabstop>
   <tabstop>lineEdit_max_feat</tabstop>
-  <tabstop>btn_bbox</tabstop>
+  <tabstop>comboBox_similarity_threshold</tabstop>
+  <tabstop>checkBox_tile</tabstop>
   <tabstop>btn_load</tabstop>
   <tabstop>lineEdit_tags_upload</tabstop>
   <tabstop>mMapLayerComboBox</tabstop>

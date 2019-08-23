@@ -118,6 +118,13 @@ class NetManager(QObject):
         
         return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
 
+    def load_features_tile(self, conn_info, tile_id="0", tile_schema="quadkey", **kw):
+        reply_tag = "tile"
+        tile_url = "tile/{tile_schema}/{tile_id}".format(
+            tile_schema=tile_schema, tile_id=tile_id)
+        endpoint = "/spaces/{space_id}/" + tile_url
+        return self._load_features_endpoint(endpoint, conn_info, reply_tag=reply_tag, **kw)
+
     def load_features_iterate(self, conn_info, **kw_iterate):
         reply_tag = kw_iterate.pop("reply_tag","iterate")
         endpoint = "/spaces/{space_id}/iterate"
@@ -150,6 +157,7 @@ class NetManager(QObject):
         # POST, payload: list of FeatureCollection
         
         endpoint = "/spaces/{space_id}/features"
+        if "tags" in kw: kw["addTags"] = kw["tags"]
         kw_request = dict(req_type="geo", **kw) # kw: query
         kw_prop = dict(reply_tag="add_feat")
         kw_prop.update(kw)

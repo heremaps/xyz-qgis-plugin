@@ -14,6 +14,7 @@ from qgis.testing import unittest, start_app
 from XYZHubConnector.modules.controller import AsyncFun, WorkerFun
 from XYZHubConnector.modules.common.error import pretty_print_error
 from XYZHubConnector.modules.network import NetManager, net_handler
+from XYZHubConnector.models import SpaceConnectionInfo
 
 import time
 import sys
@@ -27,6 +28,10 @@ def get_env(scope, keys):
 def env_to_dict(keys):
     return dict( (k, os.environ[k]) for k in keys)
     
+class ErrorDuringTest(Exception):
+    pass
+class AllErrorsDuringTest(Exception):
+    pass
 
 # /tests/src/python/test_db_manager_gpkg.py
 class BaseTestAsync(unittest.TestCase):
@@ -48,19 +53,19 @@ class BaseTestAsync(unittest.TestCase):
         self.loop = QEventLoop()
         self._output = list()
         self._idx = 0
-        self.flag_error = False
+        self._lst_error = list()
         self.startTime = time.time()
     def tearDown(self):
         self._stop_async() # useless ?
         self._log_debug("Test ended. ################### \n")
-        self._log_info("%s: %.3fs" % (self.id(), time.time() - self.startTime))
+        self._log_info("%s: %.3fs" % (self._id(), time.time() - self.startTime))
         
     def _add_output(self, output):
         self._output.append(output)
     def output(self, idx=None):
         if idx is None:
             idx = self._idx
-            self._idx += 1
+            self._idx = min(idx + 1, len(self._output))
         return self._output[idx] if idx < len(self._output) else None
 
     def _stop_async(self):
@@ -70,14 +75,19 @@ class BaseTestAsync(unittest.TestCase):
     def _handle_error(self, e):
         pretty_print_error(e)
         self._stop_async()
-        self.flag_error = True
+        self._lst_error.append(e)
+        # raise ErrorDuringTest(e)
+
+    def _process_async(self):
+        self.loop.processEvents()
         
     def _wait_async(self):
         t0=time.time()
         self.loop.exec_()
 
-        self._log_info("%s: wait_async end: %.3fs" % (self.id(), time.time() - t0))
-        self.assertFalse(self.flag_error, "error")
+        self._log_info("%s: wait_async end: %.3fs" % (self._id(), time.time() - t0))
+        if self._lst_error:
+            raise AllErrorsDuringTest(self._lst_error)
         
     def _make_async_fun(self, fun):
         return AsyncFun(fun)
@@ -85,7 +95,11 @@ class BaseTestAsync(unittest.TestCase):
     def _log_info(self, *a,**kw):
         print(*a, file = sys.stderr, **kw)
     def _log_debug(self, *a,**kw):
-        log_debug(str(self.id()),*a, **kw)
+        fn_name = str(self._id())
+        # fn_name = sys._getframe(1).f_code.co_name
+        log_debug(fn_name,*a, **kw)
+    def _id(self):
+        return self._subtest.id() if self._subtest else self.id()
     #unused        
     def assertPairEqual(self, *a):
         pairs = [a[i:i+2] for i in range(0,len(a),2)]
@@ -102,6 +116,7 @@ class BaseTestWorkerAsync(BaseTestAsync):
         super().tearDown()
         
     def _stop_async(self):
+        if not self.loop.isRunning(): return
         super()._stop_async()
         self.pool.waitForDone(1)
         self.pool.clear()
@@ -124,19 +139,19 @@ def log_debug(*a,**kw):
     s = format_long_args(*a)
     print(s,**kw)
 
-def len_of_struct(x, order=True):
+def len_of_struct(x, strict=True):
     if isinstance(x, dict):
-        return dict([(k, len_of_struct(v, order)) for k, v in x.items()]) 
+        return dict([(k, len_of_struct(v, strict)) for k, v in x.items()]) 
     elif hasattr(x, "__len__"):
         if not hasattr(x, "__iter__"):
             return len(x)
-        lst = [len_of_struct(v, order) for v in x]
+        lst = [len_of_struct(v, strict) for v in x]
         if len(lst) == 0 or -1 in lst:
             return len(lst)
-        return lst if order else set(lst)
+        return lst if strict else sorted(lst)
     else: 
         return -1
-def len_of_struct_unorder(x):
+def len_of_struct_sorted(x):
     return len_of_struct(x, False)
 def format_map_fields(x):
     return pprint.pformat(
@@ -257,3 +272,22 @@ class CorrectOutput(object):
             txt = f.read()
         output = json.loads(txt)
         return output
+
+def load_token_space_file(fname):
+    path = make_abs_path("resources", fname)
+    with open(path) as f:
+        obj = json.load(f)
+    return obj
+
+TOKEN_SPACE_MAP = load_token_space_file("token_space.json")
+
+def get_token_space(key):
+    return TOKEN_SPACE_MAP.get(key, [None, None])
+
+def get_conn_info(key):
+    conn_info = SpaceConnectionInfo()
+    token, space_id, server = get_token_space(key)
+    if token is not None:
+        conn_info.set_(token=token,space_id=space_id)
+        conn_info.set_server(server)
+    return conn_info

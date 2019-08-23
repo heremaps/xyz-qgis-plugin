@@ -25,7 +25,9 @@ print_qgis = make_print_qgis("parser")
 QGS_XYZ_ID = "xyz_id"
 XYZ_ID = "id"
 QGS_ID = "fid"
-
+QGS_SPECIAL_KEYS = [QGS_ID, QGS_XYZ_ID]
+XYZ_SPECIAL_KEYS = ["@ns:com:here:xyz"]
+ALL_SPECIAL_KEYS = set(QGS_SPECIAL_KEYS).union(XYZ_SPECIAL_KEYS)
 
 def unique_field_name(name, i):
     return name # disable
@@ -105,8 +107,22 @@ def feature_collection(features):
         "type": "FeatureCollection",
         "features": features
     }
+    
+def transform_geom(ft, transformer):
+    geom = ft.geometry()
+    geom.transform(transformer)
+    ft.setGeometry(geom)
+    return ft
+    
+def make_transformer(crs_src, crs_dst):
+    def _crs(crs):
+        return (QgsCoordinateReferenceSystem(crs)
+        if isinstance(crs, str) else crs
+        )
+    crs_src, crs_dst = map(_crs, [crs_src, crs_dst])
+    return QgsCoordinateTransform(crs_src, crs_dst, QgsProject.instance())
 
-def feature_to_xyz_json(feature, vlayer, is_new=False, ignore_null=True):
+def feature_to_xyz_json(feature, is_new=False, ignore_null=True):
     def _xyz_props(props):
         # for all key start with @ (internal): str to dict (disabled)
         # k = "@ns:com:here:xyz"
@@ -126,7 +142,7 @@ def feature_to_xyz_json(feature, vlayer, is_new=False, ignore_null=True):
             #     try: new_props[k] = json.loads(v)
             #     except json.JSONDecodeError: pass # naively handle error
         return new_props
-    def _single_feature(feat, transformer):
+    def _single_feature(feat):
         # existing feature json
         if feat is None: return None
         obj = {
@@ -146,7 +162,6 @@ def feature_to_xyz_json(feature, vlayer, is_new=False, ignore_null=True):
         obj["properties"] = props
 
         geom = feat.geometry()
-        res = geom.transform(transformer)
         geom_ = json.loads(geom.asJson())
         if geom_ is None: 
             # print_qgis(obj)
@@ -164,12 +179,9 @@ def feature_to_xyz_json(feature, vlayer, is_new=False, ignore_null=True):
         return obj
         
     assert isinstance(feature,(list, tuple))
-    crs_src = vlayer.crs()
-    crs_dst = QgsCoordinateReferenceSystem('EPSG:4326')
-    transformer = QgsCoordinateTransform(crs_src, crs_dst, QgsProject.instance())
     exist_feat_id = set()
     return [
-        _single_feature(ft, transformer) 
+        _single_feature(ft) 
         for ft in feature
     ]
 
@@ -218,8 +230,6 @@ def fix_json_geom_single(ft):
     ft["properties"].update(uom["properties"])
     return ft
 
-def is_new_fields(ref_names, names):
-    return fields_similarity(ref_names, names) < 0.5
 def has_case_different_dupe(ref_names, names):
     all_names = set(ref_names).union(names)
     lnames = list(map(str.lower, all_names))
@@ -229,25 +239,30 @@ def has_case_different_dupe(ref_names, names):
             lnames.remove(n)
         # print("dupe case", lnames)
     return has_dupe
-
-def to_props_names(fields_names):
-    return [s for s in fields_names if s not in [QGS_ID, QGS_XYZ_ID]]
-def fields_similarity(ref_names, names):
+def is_special_key(k):
+    return k in ALL_SPECIAL_KEYS
+def filter_props_names(fields_names):
+    return [s for s in fields_names if not is_special_key(s)]
+def fields_similarity(ref_names, orig_names, names):
     """
     compute fields similarity [0..1]. 
     
     High score means 2 given fields are similar and should be merged
     """
-    # ref_names = ref_fields.names()
-    # names = fields.names()
-
-    if has_case_different_dupe(ref_names, names):
+    # ref_names = ref_fields.names() # filtered special keys
+    # names = fields.names() # or renamed props
+    if has_case_different_dupe(ref_names, orig_names):
         return 0
-    ref_names = to_props_names(ref_names)
+    ref_names = filter_props_names(ref_names)
+    names = filter_props_names(names)
     same_names = set(ref_names).intersection(names)
+    n1, n2 = map(len, [ref_names, names])
+    x = len(same_names)
+    # if n1 == 0 or n2 == 0: return 1 # handle empty, variant 1
+    if n1 == 0 and n2 == 0: return 1 # handle empty, variant 2
     return max(
-        (1.0*len(same_names)/x) if x > 0 else 0
-        for x in map(len, [ref_names, names])
+        (1.0*x/n) if n > 0 else 0
+        for n in [n1, n2]
         )
 def new_fields_gpkg():
     fields = QgsFields()
@@ -258,10 +273,9 @@ def rename_special_props(props):
     """
     rename json properties that duplicate qgis special keys
     """
-    special_keys = {QGS_ID, QGS_XYZ_ID}
     new_name_fmt = "{old}_{upper_idx}"
     for old in props:
-        if old.lower() not in special_keys: continue
+        if old.lower() not in QGS_SPECIAL_KEYS: continue
         upper_idx = "".join(str(i) for i, s in enumerate(old) if s.isupper())
         new_name = new_name_fmt.format(
             old=old, upper_idx=upper_idx)
@@ -276,9 +290,8 @@ def _attrs(props):
             o = v
         yield k, o
 def xyz_json_to_feat(feat_json, fields): 
-    """ Convert xyz geojson to feature
-    assume input geojson use crs = QgsCoordinateReferenceSystem('EPSG:4326')
-    or geom.transform(transformer)
+    """ 
+    Convert xyz geojson to feature, given fields
     """
 
     names = fields.names()
@@ -326,38 +339,48 @@ def xyz_json_to_feat(feat_json, fields):
 
     return feat
 
-def prepare_fields(feat_json, lst_fields):
+def prepare_fields(feat_json, lst_fields, threshold=0.8):
     """
-    Decide to merge fields or create new fields based on fields similarity score.
-    Low score will result in creating new fields instead of merging fields
+    Decide to merge fields or create new fields based on fields similarity score [0..1].
+    Score lower than threshold will result in creating new fields instead of merging fields
     """
     # adapt to existing fields
     props = feat_json.get("properties")
-    # rename_special_props(props) # rename fid in props
-    props_names = (
-        [k for k, v in props.items() if v is not None] 
-    if isinstance(props, dict) else [])
+    if not isinstance(props, dict):
+        orig_props_names = list()
+        props_names = list()
+    else:
+        orig_props_names = [k for k, v in props.items() 
+            if v is not None] 
+        rename_special_props(props) # rename fid in props
+        props_names = [k for k, v in props.items() 
+            if v is not None] 
     lst_score = [fields_similarity(
-        (fields.names()), props_names)
+        (fields.names()), orig_props_names, props_names)
         for fields in lst_fields]
-    print_qgis("score", lst_score)
     idx, score = max(enumerate(lst_score), key=lambda x:x[1],default=[0,0])
-    print_qgis(idx, score)
 
-    fields = new_fields_gpkg()
-    if score < 0.8: # new fields
+    if (score < threshold or not idx < len(lst_fields)): # new fields
         idx = len(lst_fields)
+        fields = new_fields_gpkg()
         lst_fields.append(fields)
+        print_qgis("len prop", len(props_names), "score", lst_score, "lst_fields", len(lst_fields))
     else:
         fields = lst_fields[idx]
+
     
     return fields, idx
 
-def xyz_json_to_feature_map(obj, map_fields=None):
+def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
     """ 
     xyz json to feature, organize in to map of geometry, 
     then to list of list of features. 
     Features in inner lists have the same fields. 
+
+        :param map_fields: parse json object to existing map_fields
+        :param similarity_threshold: percentage threshold of fields similarity from [0-100]
+            0: map_fields should have 1 fields/geom
+            100: map_fields should have as many as possible fields/geom
     """
 
     def _single_feature_map(feat_json, map_feat, map_fields):
@@ -368,11 +391,15 @@ def xyz_json_to_feature_map(obj, map_fields=None):
         # if g is not None and not g.startswith("Multi"): g = "Multi" + g
         
         lst_fields = map_fields.setdefault(g, list())
-        fields, idx = prepare_fields(feat_json, lst_fields)
+        if similarity_threshold is None:
+            fields, idx = prepare_fields(feat_json, lst_fields)
+        else:
+            fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold/100)
+
         ft = xyz_json_to_feat(feat_json, fields)
 
         lst = map_feat.setdefault(g, list())
-        
+
         while len(lst) < len(lst_fields):
             lst.append(list())
         lst[idx].append(ft)
@@ -384,7 +411,6 @@ def xyz_json_to_feature_map(obj, map_fields=None):
     map_feat = dict(
         (k, [list() for i in enumerate(v)])
         for k, v in map_fields.items())
-    crs = QgsCoordinateReferenceSystem('EPSG:4326')
 
     for ft in lst_feat:
         _single_feature_map(ft, map_feat, map_fields) 

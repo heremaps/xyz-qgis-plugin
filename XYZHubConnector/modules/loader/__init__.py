@@ -10,5 +10,6 @@
 
 from .layer_loader import (EditAddController, EditRemoveController, EditSyncController, 
                            EmptyXYZSpaceError, InitUploadLayerController,
-                           LoadLayerController, UploadLayerController)
+                           LoadLayerController, UploadLayerController, TileLayerLoader,
+                           ManualInterrupt)
 from .manager import LoaderManager

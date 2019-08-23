@@ -10,6 +10,7 @@
 
 import sqlite3
 import time
+import json
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
@@ -20,7 +21,9 @@ from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser, render
+from .layer_utils import get_feat_cnt_from_src
 from ...models.space_model import parse_copyright
+from ...models import SpaceConnectionInfo
 from ...utils import make_unique_full_path, make_fixed_full_path
 from .style import LAYER_QML
 
@@ -39,28 +42,53 @@ class XYZLayer(object):
     for i,k in enumerate(["Point","Line","Polygon", "Unknown geometry", NO_GEOM]))
     # https://qgis.org/api/qgswkbtypes_8cpp_source.html#l00129 
 
-    def __init__(self, conn_info, meta, tags="", ext="gpkg"):
+    def __init__(self, conn_info, meta, tags="", unique=None, group_name="XYZ Hub Layer", ext="gpkg"):
         super().__init__()
+        self.ext = ext
         self.conn_info = conn_info
         self.meta = meta
         self.tags = tags
-        self.ext = ext
+        self.unique = unique or int(time.time() * 10)
+        self._group_name = group_name
 
         self.map_vlayer = dict()
         self.map_fields = dict()
-
-        self.unique = int(time.time() * 10)
-
         self.qgroups = dict()
-        self._group_name = "XYZ Hub Layer"
+
+    @classmethod
+    def load_from_qnode(cls, qnode):
+        meta = qnode.customProperty("xyz-hub")
+        conn_info = qnode.customProperty("xyz-hub-conn")
+        tags = qnode.customProperty("xyz-hub-tags")
+        unique = qnode.customProperty("xyz-hub-id")
+        name = qnode.name()
+        meta = json.loads(meta)
+        conn_info = json.loads(conn_info)
+        conn_info = SpaceConnectionInfo.from_dict(conn_info)
+
+        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name)
+        obj.qgroups["main"] = qnode
+        for g in qnode.findGroups():
+            obj.qgroups[g.name()] = g
+            lst_vlayers = [i.layer() for i in g.findLayers()]
+            for vlayer in lst_vlayers:
+                geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
+                obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
+                obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
+                
+        return obj
+
+    def _save_meta_node(self, qnode):
+        qnode.setCustomProperty("xyz-hub", json.dumps(self.meta, ensure_ascii=False))
+        qnode.setCustomProperty("xyz-hub-conn", json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
+        qnode.setCustomProperty("xyz-hub-tags", self.tags)
+        qnode.setCustomProperty("xyz-hub-id", self.get_id())
 
     def _save_meta(self, vlayer):
-        meta = self.meta
-        vlayer.setCustomProperty("xyz-hub", meta)
-        vlayer.setCustomProperty("xyz-hub-conn", self.conn_info)
-        vlayer.setCustomProperty("xyz-hub-tags", self.tags)
-        lic = meta.get("license")
-        cr = meta.get("copyright")
+        self._save_meta_node(vlayer)
+
+        lic = self.meta.get("license")
+        cr = self.meta.get("copyright")
 
         meta = vlayer.metadata()
         if lic is not None:
@@ -69,8 +97,6 @@ class XYZLayer(object):
             lst_txt = parse_copyright(cr)
             meta.setRights(lst_txt)
         vlayer.setMetadata(meta)
-
-        self._group_name = self._make_group_name()
 
     def iter_layer(self):
         for lst in self.map_vlayer.values():
@@ -119,28 +145,17 @@ class XYZLayer(object):
         tags = self.tags.replace(",","_") if len(self.tags) else ""
         return "{id}_{tags}_{unique}".format(
             tags=tags, unique=self.unique, **self.meta)
-
+    def get_id(self):
+        return self.unique
     def get_map_fields(self):
         return self.map_fields
     def get_feat_cnt(self):
         cnt = 0
         for vlayer in self.iter_layer():
-            cnt += vlayer.featureCount()
+            cnt += get_feat_cnt_from_src(vlayer)
         return cnt
-    def add_ext_layer(self, geom_str, idx):
-        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
-
-        vlayer = self._init_ext_layer(geom_str, idx, crs)
-        self._add_layer(geom_str, vlayer)
-
-        dom = QDomDocument()
-        dom.setContent(LAYER_QML, True) # xyz_id non editable
-        vlayer.importNamedStyle(dom)
-
-        QgsProject.instance().addMapLayer(vlayer, False)
-
+    def add_empty_group(self):
         tree_root = QgsProject.instance().layerTreeRoot()
-
         group = self.qgroups.get("main")
         if not group:
             name = self._make_group_name()
@@ -150,7 +165,22 @@ class XYZLayer(object):
             if idx: name = self._make_group_name(idx)
             self._group_name = name
             group = tree_root.insertGroup(0, name)
-        self.qgroups["main"] = group
+            self.qgroups["main"] = group
+            self._save_meta_node(group)
+        return group
+    def add_ext_layer(self, geom_str, idx):
+        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
+
+        vlayer = self._init_ext_layer(geom_str, idx, crs)
+        self._add_layer(geom_str, vlayer, idx)
+
+        dom = QDomDocument()
+        dom.setContent(LAYER_QML, True) # xyz_id non editable
+        vlayer.importNamedStyle(dom)
+
+        QgsProject.instance().addMapLayer(vlayer, False)
+
+        group = self.add_empty_group()
 
         geom = self._group_geom_name(geom_str)
         order = self.GEOM_ORDER.get(geom)
@@ -166,9 +196,10 @@ class XYZLayer(object):
         
         if iface: iface.setActiveLayer(vlayer)
         return vlayer
-    def _add_layer(self, geom_str, vlayer):
-        self.map_vlayer.setdefault(geom_str, list()).append(vlayer)
-        self.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
+    def _add_layer(self, geom_str, vlayer, idx):
+        lst = self.map_vlayer.setdefault(geom_str, list())
+        assert idx == len(lst), "vlayer count mismatch"
+        lst.append(vlayer)
 
     def _init_ext_layer(self, geom_str, idx, crs):
         """ given non map of feat, init a qgis layer
@@ -264,7 +295,8 @@ class XYZLayer(object):
 
         conn.commit()
         conn.close()
-        
+
+
 """ Available vector format for QgsVectorFileWriter
 [i.driverName for i in QgsVectorFileWriter.ogrDriverList()]
 ['GPKG', 'ESRI Shapefile', 'BNA',

@@ -11,45 +11,50 @@
 from qgis.PyQt.QtCore import Qt
 
 from .. import make_exception_obj
-from .. import BasicSignal, make_qt_args
+from .. import BasicSignal, make_qt_args, parse_qt_args, QtArgs
 from .async_fun import AsyncFun, InvalidArgsException
 
+from typing import List, Callable
 # __package__ = __package__.rpartition(".")[0]
 # print(__package__)
 
 class Controller(object):
-    """ Contains all main features of the plugin: Load data, Upload data, Manage space 
-    Control threading, worker for async function (single of parallel). Acts as the central in message exchanging between workers.
-    Chain async function
+    """ 
+    Base Controller, it shall be used to:
+    + Contains all main features of the plugin: Load data, Upload data, Manage space. 
+    + Control threading, worker for async function (single of parallel). 
+    + Acts as the central in message exchanging between workers.
+    + Execute async functions in serial, parallel or complex logic
     """
     def __init__(self):
         self.signal = BasicSignal()
-        self.lst_fun = list()
+        self.lst_fun: List[AsyncFun] = list()
         self._cnt = 0
-    def config_fun(self, lst_fun):
+    def __hash__(self):
+        return id(self)
+    def config_fun(self, lst_fun: List[AsyncFun]) -> None:
         pass
-    def get_lst_fun(self):
+    def get_lst_fun(self) -> List[AsyncFun]:
         return self.lst_fun
-    def start_args(self, args):
-        self.lst_fun[0].call(args)
+    def start_args(self, args: QtArgs):
+        a, kw = parse_qt_args(args)
+        self.start( *a, **kw)
     def start(self, *a, **kw):
-        # use start_args define in base class
-        Controller.start_args( self, make_qt_args(*a,**kw))
+        self.lst_fun[0].call(make_qt_args(*a,**kw))
         
         
 class ChainInterrupt(Exception):
     pass
 class ChainController(Controller):
-    """ Chain async function
+    """ 
+    Controller that execute async function serially
     """
-    def config_fun(self, lst_fun):
+    def config_fun(self, lst_fun: List[AsyncFun]) -> None:
         """
         Args:
             lst_fun: list of AsyncFun
         """
         
-        for f in lst_fun:
-            assert(isinstance(f, AsyncFun))
         self.lst_fun = list(lst_fun)
         for idx, (fun, fun2) in enumerate(zip(self.lst_fun, self.lst_fun[1:])):
             fun.signal.results.connect(fun2.call, Qt.QueuedConnection)
@@ -61,7 +66,7 @@ class ChainController(Controller):
         fun.signal.finished.connect(self.signal.finished.emit)
         fun.signal.error.connect(self._make_error_handler(len(self.lst_fun)-1 ) )
         
-    def _make_error_handler(self, idx):
+    def _make_error_handler(self, idx) -> Callable:
         idx_str = "%s/%s in chain"%(idx + 1, len(self.lst_fun))
         def _chain_interrupt(e):
             self._handle_error(
@@ -71,18 +76,20 @@ class ChainController(Controller):
     def _handle_error(self, e):
         self.signal.error.emit(e)
         
-    def start_args(self, args):
+    def start(self, *a, **kw):
+        """
+        explicit invoke to start controller. Do not override !
+        """
         # increase the count of function calls
         self.signal.progress.emit(self._cnt)
         self._cnt += 1
-        Controller.start_args( self, args)
-    def start(self, *a, **kw):
-        # use start_args define in current class
-        ChainController.start_args( self, make_qt_args(*a,**kw))
+        super().start(*a, **kw)
 class LoopController(ChainController):
-    """ Loop of Chain async function
+    """ 
+    Base controller that execute repeatedly chain of async functions. 
+    LoopController should be extended and reimplemented
     """
-    def config_fun(self, lst_fun):
+    def config_fun(self, lst_fun: QtArgs) -> None:
         """
         Args:
             lst_fun: list of AsyncFun
@@ -108,5 +115,6 @@ class LoopController(ChainController):
         raise NotImplementedError("stop_loop")
         
     def start(self, *a, **kw):
-        # use start_args define in base class
-        Controller.start_args( self, make_qt_args(*a,**kw))
+        Controller.start(self, *a, **kw)
+        # super().start(*a, **kw) # should I use super() !?
+        

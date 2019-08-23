@@ -7,11 +7,20 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
+import json
 
 from ..controller import make_qt_args
+from ...models import SpaceConnectionInfo
 from . import parser
 from qgis.core import QgsFeatureRequest, QgsProject
 from qgis.PyQt.QtCore import QVariant
+
+def is_valid_json(txt):
+    try:
+        obj = json.loads(txt)
+    except ValueError as e:
+        return False
+    return True
 
 def get_feat_iter(vlayer):
     # assert isinstance(vlayer, QgsVectorLayer)
@@ -32,7 +41,15 @@ def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid=list(), lst_xyz_id=list
     else:
         it = map_feat.items()
     lst_fid, lst_feat = zip(*it)
-    added_feat = parser.feature_to_xyz_json(lst_feat, vlayer, is_new=False) 
+
+    crs_src = vlayer.crs()
+    crs_dst = 'EPSG:4326'
+    transformer = parser.make_transformer(crs_src, crs_dst)
+    if transformer.isValid() and not transformer.isShortCircuited():
+        lst_feat = [parser.transform_geom(ft, transformer) 
+        for ft in lst_feat]
+
+    added_feat = parser.feature_to_xyz_json(lst_feat, is_new=False) 
     for ft, xyz_id in zip(added_feat, lst_xyz_id):
         if ft is None or xyz_id is None: continue
         ft[parser.XYZ_ID] = xyz_id
@@ -45,9 +62,17 @@ def get_xyz_id_from_feat(ft, null=None):
     if x is None or (isinstance(x, QVariant) and (x.isNull() or not x.isValid())):
         x = null
     return x
+def get_iter_xyz_id_from_src(src):
+    return src.getFeatures(
+        QgsFeatureRequest().setSubsetOfAttributes([parser.QGS_XYZ_ID], src.fields())
+        .setFlags(QgsFeatureRequest.NoGeometry)
+    )
+def get_feat_cnt_from_src(src):
+    return len(list(get_iter_xyz_id_from_src(src)))
 def make_xyz_id_map_from_src(src, lst_fid):
     it = src.getFeatures(
         QgsFeatureRequest(lst_fid).setSubsetOfAttributes([parser.QGS_XYZ_ID], src.fields())
+        .setFlags(QgsFeatureRequest.NoGeometry)
     )
     m = dict([
         (ft.id(), get_xyz_id_from_feat(ft)) for ft in it
@@ -99,14 +124,27 @@ def get_layer(layer_id):
 def get_conn_info_from_layer(layer_id):
     vlayer = get_layer(layer_id)
     if vlayer is None: return
-    return vlayer.customProperty("xyz-hub-conn")
-
-# unused
-def update_xyz_id_of_layer(vlayer, fid, xyz_id):
-    ft = vlayer.getFeature(fid)
-    ft.setAttribute(parser.QGS_XYZ_ID, xyz_id)
-    update_feat_of_layer(vlayer, ft)
-def is_xyz_supported_layer(vlayer):
-    meta = vlayer.customProperty("xyz-hub")
-    flag = meta is not None
+    conn_info = vlayer.customProperty("xyz-hub-conn")
+    conn_info = json.loads(conn_info)
+    conn_info = SpaceConnectionInfo.from_dict(conn_info)
+    return conn_info
+    
+def is_root_node(qnode):
+    return qnode.parent() is None
+def is_xyz_supported_node(qnode):
+    meta = qnode.customProperty("xyz-hub")
+    flag = isinstance(meta, str) and is_valid_json(meta)
     return flag
+def get_group_node(qnode):
+    p = qnode.parent()
+    a = qnode if p.parent() is None else get_group_node(p)
+    # print(a, qnode, p)
+    return a
+def is_xyz_supported_node_recursive(qnode):
+    group = get_group_node(qnode)
+    return (is_xyz_supported_node(qnode) 
+        or is_xyz_supported_node(group))
+def is_xyz_supported_layer(vlayer):
+    qnode = QgsProject.instance().layerTreeRoot().findLayer(vlayer)
+    return (is_xyz_supported_node(vlayer) 
+        or is_xyz_supported_node_recursive(qnode))

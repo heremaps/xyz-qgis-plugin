@@ -13,19 +13,21 @@ import numpy as np
 import pprint
 
 from test.utils import (BaseTestAsync, TestFolder, format_long_args,
-                        len_of_struct, len_of_struct_unorder, flatten,
+                        len_of_struct, len_of_struct_sorted, flatten,
                         format_map_fields)
 from test import test_parser
 from qgis.testing import unittest
-from qgis.core import QgsWkbTypes
+from qgis.core import QgsWkbTypes, QgsProject
 
 from XYZHubConnector.modules.layer import XYZLayer, parser, render
-
-
 
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
 class TestRenderLayer(BaseTestAsync):
+    _assert_len_map_fields = test_parser.TestParser._assert_len_map_fields
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        test_parser.TestParser._id = lambda x: self._id()
     def test_render_mixed_json_to_layer_chunk(self):
         folder="xyzjson-small"
         fnames=[
@@ -39,15 +41,26 @@ class TestRenderLayer(BaseTestAsync):
             resource = TestFolder(folder)
             txt = resource.load(fname)
             obj = json.loads(txt)
-            self.subtest_render_mixed_json_to_layer_shuffle(obj)
-            self.subtest_render_mixed_json_to_layer_multi_chunk(obj)
+            ref_map_feat, ref_map_fields = self._test_render_mixed_json_to_layer(obj)
+            
+            ref = dict()
+            ref_len_fields = {'MultiPoint': [6, 18], 'MultiPolygon': [27]}
+            ref["len_fields"] = ref_len_fields
+            with self.subTest():
+                self._assert_len_fields(ref_map_fields, ref_len_fields)
+                ref["map_fields"] = ref_map_fields
+            obj = json.loads(txt)
+            self.subtest_render_mixed_json_to_layer_shuffle(obj, ref)
+            obj = json.loads(txt)
+            self.subtest_render_mixed_json_to_layer_multi_chunk(obj, ref)
+            obj = json.loads(txt)
+            self.subtest_render_mixed_json_to_layer_empty_chunk(obj, ref)
 
-    def subtest_render_mixed_json_to_layer_multi_chunk(self, obj, lst_chunk_size=None):
+    def subtest_render_mixed_json_to_layer_multi_chunk(self, obj, ref, lst_chunk_size=None):
         if not lst_chunk_size:
             p10 = 1+len(str(len(obj["features"])))
             lst_chunk_size = [10**i for i in range(p10)]
         with self.subTest(lst_chunk_size=lst_chunk_size):
-            ref_map_feat, ref_map_fields = self._test_render_mixed_json_to_layer(obj)
             lst_map_fields = list()
             for chunk_size in lst_chunk_size:
                 map_fields = self.subtest_render_mixed_json_to_layer_chunk(obj, chunk_size)
@@ -56,35 +69,44 @@ class TestRenderLayer(BaseTestAsync):
 
             for map_fields, chunk_size in zip(lst_map_fields, lst_chunk_size):
                 with self.subTest(chunk_size=chunk_size):
-                    self._assert_len_map_fields(
-                        ref_map_fields, map_fields)
-    def subtest_render_mixed_json_to_layer_shuffle(self, obj, n_shuffle=5, chunk_size=10):
+                    self._assert_len_ref_fields(
+                        map_fields, ref)
+    def subtest_render_mixed_json_to_layer_shuffle(self, obj, ref, n_shuffle=5, chunk_size=10):
         with self.subTest(n_shuffle=n_shuffle):
             o = dict(obj)
-            ref_map_feat, ref_map_fields = self._test_render_mixed_json_to_layer(obj)
             lst_map_fields = list()
             random.seed(0.5)
             for i in range(n_shuffle):
                 random.shuffle(o["features"])
-                map_fields = self.subtest_render_mixed_json_to_layer_chunk(obj, chunk_size)
+                map_fields = self.subtest_render_mixed_json_to_layer_chunk(o, chunk_size)
                 if map_fields is None: continue
                 lst_map_fields.append(map_fields)
                 
             for i, map_fields in enumerate(lst_map_fields):
                 with self.subTest(shuffle=i):
-                    self._assert_len_map_fields(
-                        ref_map_fields, map_fields)
+                    self._assert_len_ref_fields(
+                        map_fields, ref)
+    def subtest_render_mixed_json_to_layer_empty_chunk(self, obj, ref, chunk_size=10,empty_chunk=10):
+        with self.subTest(empty_chunk=empty_chunk):
+            map_fields = self.subtest_render_mixed_json_to_layer_chunk(obj, chunk_size, empty_chunk=empty_chunk)
+            self.assertIsNotNone(map_fields)
+            self._assert_len_ref_fields(
+                map_fields, ref)
 
-    def subtest_render_mixed_json_to_layer_chunk(self, obj, chunk_size=100):
+    def subtest_render_mixed_json_to_layer_chunk(self, obj, chunk_size=100, empty_chunk=None):
         with self.subTest(chunk_size=chunk_size):
             layer = self.new_layer()
             o = dict(obj)
             obj_feat = obj["features"]
-
             lst_map_feat = list()
             map_fields = dict()
-            for i0 in range(0,len(obj_feat), chunk_size):
-                chunk = obj_feat[i0:i0+chunk_size]
+            lst_chunk: list = [obj_feat[i0:i0+chunk_size]
+            for i0 in range(0,len(obj_feat), chunk_size)]
+            if empty_chunk:
+                step = max(2,len(lst_chunk)//empty_chunk)
+                for i in reversed(range(0, len(lst_chunk), step)):
+                    lst_chunk.insert(i, list())
+            for chunk in lst_chunk:
                 o["features"] = chunk
                 map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields)
                 test_parser.TestParser()._assert_parsed_map(chunk, map_feat, map_fields)
@@ -99,15 +121,10 @@ class TestRenderLayer(BaseTestAsync):
             self.assertEqual(len(lst_feat), len(obj["features"]))
 
             self.assert_layer(layer, obj, map_fields)
+
+            self.remove_layer(layer)
             return map_fields
             
-    def _assert_len_map_fields(self, ref, map_fields, strict=False):
-        len_ = len_of_struct if strict else len_of_struct_unorder
-        self.assertEqual(
-            len_(map_fields), len_(ref),
-            format_map_fields(map_fields)+"\n"+
-            format_map_fields(ref))
-
     def _assert_rendered_fields(self, vlayer, fields):
         name_vlayer_fields = vlayer.fields().names()
         name_fields = fields.names()
@@ -120,7 +137,7 @@ class TestRenderLayer(BaseTestAsync):
     def _test_render_mixed_json_to_layer(self, obj):
         layer = self.new_layer()
         # map_feat, map_fields = parser.xyz_json_to_feature_map(obj)
-        map_feat, map_fields = test_parser.TestParser()._test_parse_xyzjson_map(obj)
+        map_feat, map_fields = test_parser.TestParser().do_test_parse_xyzjson_map(obj)
         self._render_layer(layer, map_feat, map_fields)
         self.assert_layer(layer, obj, map_fields)
         return map_feat, map_fields
@@ -141,6 +158,21 @@ class TestRenderLayer(BaseTestAsync):
 
                 self._assert_rendered_fields(vlayer, fields)
 
+    def _assert_len_ref_fields(self, map_fields, ref, strict=False):
+        if "len_fields" in ref:
+            self._assert_len_fields(map_fields, ref["len_fields"], strict)
+        if "map_fields" in ref:
+            self._assert_len_map_fields(map_fields, ref["map_fields"], strict)
+
+    def _assert_len_fields(self, map_fields, ref, strict=False):
+        len_ = len_of_struct if strict else len_of_struct_sorted
+        self.assertEqual(
+            len_(map_fields), ref, "\n".join([
+                "len of map_fields is not correct (vs. ref). "+
+                "Please revised parser, similarity threshold.",
+                format_map_fields(map_fields),
+                ])
+            )
     def assert_layer(self, layer, obj, map_fields):
         lst_vlayer = list(layer.iter_layer())
         map_vlayer = layer.map_vlayer
@@ -157,7 +189,7 @@ class TestRenderLayer(BaseTestAsync):
 
         self.assertGreater(len(lst_vlayer), 0)
 
-        cnt = sum(x.featureCount() for x in lst_vlayer)
+        cnt = layer.get_feat_cnt()
         self.assertEqual(cnt, len(obj["features"]), len_vlayer)
 
         
@@ -182,12 +214,16 @@ class TestRenderLayer(BaseTestAsync):
                     
         # lst_feat = list(vlayer.getFeatures())
         # self._log_debug(lst_feat)
+    def remove_layer(self,layer:XYZLayer):
+        for vlayer in layer.iter_layer():
+            QgsProject.instance().removeMapLayer(vlayer)
     def new_layer(self):
         conn_info = dict(tags=["tags"])
         meta = dict(title="title", id="id")
         layer = XYZLayer(conn_info, meta)
         return layer
     
+
 if __name__ == "__main__":
     unittest.main()
     

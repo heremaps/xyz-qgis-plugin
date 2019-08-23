@@ -47,19 +47,12 @@ class LoaderPool(object):
         self.try_finish()
     def start_dispatch(self, progress):
         # if progress > 0: return
-
         self._dispatch()
         self.signal.progress.emit( self.count_active())
-
-        print_qgis("dispatch", progress, self.count_active() )
     def try_finish(self):
         self._release()
-        
         if self.count_active() == 0:
             self.signal.finished.emit()
-        
-        print_qgis("try_finish", self.count_active())
-        
     def _dispatch(self):
         # locker = QMutexLocker(self.mutex)
         with self.lock:
@@ -116,14 +109,41 @@ class ControllerManager(object):
         def _deregister(*a):
             self._lst.pop(ptr, None)
         return _deregister
-    
-    def remove(self, layer_ids):
-        idx = list()
-        for i in layer_ids:
-            for ptr in self._layer_ptr.get(i,list()):
-                self._lst.pop(ptr, None)
 
-class LoaderManager(ControllerManager):
+class LayerControllerManager(ControllerManager):
+    def __init__(self):
+        super().__init__()
+        self._layer_ptr = dict()
+
+    def make_register_xyz_layer_cb(self, con, ptr):
+        def _register_xyz_layer():
+            # assert con.layer is not None 
+            self._layer_ptr[con.layer.get_id()] = ptr
+        return _register_xyz_layer
+    def get_from_xyz_layer(self, xlayer_id):
+        return self._lst.get(self._layer_ptr.get(xlayer_id))
+    def add_layer(self, con, show_progress=True):
+        callbacks = [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
+        
+        ptr = self._add(con)
+        # con.signal.finished.connect( self.make_deregister_cb(ptr))
+        # con.signal.error.connect( self.make_deregister_cb(ptr))
+        if callbacks is not None: 
+            start_dispatch, try_finish = callbacks
+            con.signal.progress.connect(start_dispatch, Qt.QueuedConnection)
+            con.signal.finished.connect( try_finish, Qt.QueuedConnection)
+            con.signal.error.connect(lambda e: try_finish(), Qt.QueuedConnection)
+        
+        cb_register_layer = self.make_register_xyz_layer_cb(con, ptr)
+        if con.layer is None:
+            con.signal.progress.connect(cb_register_layer,
+                Qt.QueuedConnection)
+        else: 
+            cb_register_layer()
+
+        return ptr
+                
+class LoaderManager(LayerControllerManager):
     def config(self, network):
         self.network = network
         self._map_fun_con = dict()
@@ -143,3 +163,4 @@ class LoaderManager(ControllerManager):
         con = C(self.network)
         self._map_fun_con[key] = con
         return con
+

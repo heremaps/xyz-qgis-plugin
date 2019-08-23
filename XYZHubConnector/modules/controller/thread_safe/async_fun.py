@@ -9,11 +9,12 @@
 ###############################################################################
 
 from qgis.PyQt.QtNetwork import QNetworkReply
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QThreadPool
 
 from .. import make_exception_obj
-from .. import BasicSignal, output_to_qt_args, parse_qt_args
+from .. import BasicSignal, output_to_qt_args, parse_qt_args, QtArgs
 from ..worker import Worker
+from typing import Callable
 
 class InvalidArgsException(Exception):
     pass
@@ -24,14 +25,14 @@ class AsyncFun(object):
     -> by checking chain_id
     """
 
-    def __init__(self, fun):
+    def __init__(self, fun: Callable):
         self.signal = BasicSignal()
-        self.fun = fun
+        self.fun: Callable = fun
         self.cache = dict()
         self._finished=False
-    def get_fn(self):
+    def get_fn(self) -> Callable:
         return self.fun
-    def call(self, args):
+    def call(self, args: QtArgs) -> None:
         """ Assume args is qt_args
         """
         a, kw = parse_qt_args( args)
@@ -49,11 +50,11 @@ class AsyncFun(object):
 class WorkerFun(AsyncFun):
     """ wrapper for worker (without cache)
     """
-    def __init__(self, fun, pool):
+    def __init__(self, fun: Callable, pool: QThreadPool):
         super().__init__(fun)
         self.pool = pool
         
-    def call(self, args):
+    def call(self, args: QtArgs) -> None:
         a, kw = parse_qt_args( args)
         worker = Worker(self.fun, *a, **kw)
         
@@ -64,14 +65,14 @@ class WorkerFun(AsyncFun):
 
         
 class NetworkFun(AsyncFun):
-    def _emit(self, output):
+    def _emit(self, output: QtArgs):
         self.signal.finished.emit()
         self.signal.results.emit(output)
-    def _emitter(self, output):
+    def _emitter(self, output: QtArgs) -> Callable:
         def _fn():
             self._emit(output)
         return _fn
-    def call(self, args):
+    def call(self, args: QtArgs) -> None:
         a, kw = parse_qt_args( args)
         try:
             reply = self.fun( *a,**kw)
@@ -80,7 +81,7 @@ class NetworkFun(AsyncFun):
             obj = make_exception_obj(e)
             self.signal.error.emit(obj)
         else:
-            output = output_to_qt_args(reply)
+            output: QtArgs = output_to_qt_args(reply)
             if reply.isFinished():
                 self._emit(output)
             else:

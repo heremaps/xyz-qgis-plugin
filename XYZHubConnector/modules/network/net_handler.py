@@ -82,7 +82,7 @@ def _onReceived(reply):
     if reply_tag == "spaces":
         print_qgis(txt)
         args = [obj]
-    elif reply_tag in ("bbox","iterate","search"):
+    elif reply_tag in ("tile","bbox","iterate","search"):
         print_qgis(txt[:100])
         print_qgis(txt[-10:])
 

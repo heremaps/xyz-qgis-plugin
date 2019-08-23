@@ -20,3 +20,6 @@ tmp*/
 ### test cases
 input/
 output/
+
+### token
+token_space.json

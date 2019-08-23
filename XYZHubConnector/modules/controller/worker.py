@@ -32,7 +32,7 @@ class Worker(QRunnable):
     '''
 
     def __init__(self, fn, *a, **kw):
-        super(Worker, self).__init__()
+        QRunnable.__init__(self)
 
         # Store constructor arguments (re-used for processing)
         self.fn = fn

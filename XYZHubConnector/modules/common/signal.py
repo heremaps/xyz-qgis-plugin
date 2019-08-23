@@ -10,13 +10,16 @@
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
 from qgis.core import Qgis
+from typing import Tuple, Callable
 
-def make_qt_args(*a,**kw):
-    return [a,kw]
-def parse_qt_args(args):
+QtArgs = Tuple[tuple, dict]
+
+def make_qt_args(*a,**kw) -> QtArgs:
+    return a, kw
+def parse_qt_args(args: QtArgs) -> Tuple[tuple, dict]:
     a, kw = args
     return a, kw
-def make_fun_args(fun):
+def make_fun_args(fun: Callable) -> Callable[[QtArgs], Callable]:
     def _fun_args(args):
         a, kw = parse_qt_args(args)
         return fun(*a,**kw)
@@ -26,7 +29,7 @@ def validate_qt_args(output):
         return False
     a, kw = output
     return isinstance(a, tuple) and isinstance(kw, dict)
-def output_to_qt_args(output):
+def output_to_qt_args(output) -> QtArgs:
     if validate_qt_args(output):
         return output
     elif isinstance(output, tuple):

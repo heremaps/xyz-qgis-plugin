@@ -12,7 +12,7 @@ import random
 import numpy as np
 
 from test.utils import (BaseTestAsync, TestFolder, format_long_args,
-                        len_of_struct, len_of_struct_unorder, flatten,
+                        len_of_struct, len_of_struct_sorted, flatten,
                         format_map_fields)
 
 from qgis.core import QgsFields, QgsVectorLayer
@@ -23,6 +23,9 @@ from XYZHubConnector.modules.layer import parser
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
 class TestParser(BaseTestAsync):
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        self.similarity_threshold=80
     ######## Parse xyz geojson -> QgsFeature 
     def test_parse_xyzjson(self):
         folder = "xyzjson-small"
@@ -146,6 +149,25 @@ class TestParser(BaseTestAsync):
             "water-xyz.geojson",
         ]
         self.subtest_parse_xyzjson_mix(folder,mix_fnames)
+    def test_parse_xyzjson_map_similarity_0(self):
+        s = self.similarity_threshold
+        self.similarity_threshold = 0
+        try:
+            folder = "xyzjson-small"
+            fnames = [
+                "mixed-xyz.geojson",
+            ]
+            
+            for fname in fnames:
+                with self.subTest(folder=folder,fname=fname,
+                similarity_threshold=self.similarity_threshold):
+                    map_fields = self._parse_xyzjson_map_simple(folder,fname)
+                    self._assert_map_fields_similarity_0(map_fields)
+
+        finally:
+            self.similarity_threshold = s
+
+    
     def test_parse_xyzjson_map_dupe_case(self):
         folder = "xyzjson-small"
         fnames = [
@@ -154,7 +176,14 @@ class TestParser(BaseTestAsync):
         ]
         for fname in fnames:
             self.subtest_parse_xyzjson_map_dupe_case(folder,fname)
-        
+    
+    def _parse_xyzjson_map_simple(self,folder,fname):
+        resource = TestFolder(folder)
+        txt = resource.load(fname)
+        obj = json.loads(txt)
+        return self.subtest_parse_xyzjson_map_chunk(obj)
+
+
     def subtest_parse_xyzjson_map_dupe_case(self,folder,fname):
         with self.subTest(folder=folder,fname=fname):
             import random
@@ -241,33 +270,12 @@ class TestParser(BaseTestAsync):
             self.subtest_parse_xyzjson_map_shuffle(obj)
             self.subtest_parse_xyzjson_map_multi_chunk(obj)
 
-    def subtest_parse_xyzjson_map_chunk(self, obj, chunk_size=100):
-        with self.subTest(chunk_size=chunk_size):
-            o = dict(obj)
-            obj_feat = obj["features"]
-            lst_map_feat = list()
-            map_fields = dict()
-            for i0 in range(0,len(obj_feat), chunk_size):
-                chunk = obj_feat[i0:i0+chunk_size]
-                o["features"] = chunk
-                map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields)
-                self._assert_parsed_map(chunk, map_feat, map_fields)
-                lst_map_feat.append(map_feat)
-
-                # self._log_debug("len feat", len(chunk))
-                # self._log_debug("parsed feat", len_of_struct(map_feat))
-                # self._log_debug("parsed fields", len_of_struct(map_fields))
-
-            lst_feat = flatten([x.values() for x in lst_map_feat])
-            self.assertEqual(len(lst_feat), len(obj["features"]))
-            return map_fields
-    
     def subtest_parse_xyzjson_map_multi_chunk(self, obj, lst_chunk_size=None):
         if not lst_chunk_size:
             p10 = 1+len(str(len(obj["features"])))
             lst_chunk_size = [10**i for i in range(p10)]
         with self.subTest(lst_chunk_size=lst_chunk_size):
-            ref_map_feat, ref_map_fields = self._test_parse_xyzjson_map(obj)
+            ref_map_feat, ref_map_fields = self.do_test_parse_xyzjson_map(obj)
             lst_map_fields = list()
             for chunk_size in lst_chunk_size:
                 map_fields = self.subtest_parse_xyzjson_map_chunk(obj, chunk_size)
@@ -277,12 +285,12 @@ class TestParser(BaseTestAsync):
             for map_fields, chunk_size in zip(lst_map_fields, lst_chunk_size):
                 with self.subTest(chunk_size=chunk_size):
                     self._assert_len_map_fields(
-                        ref_map_fields, map_fields)
+                        map_fields, ref_map_fields)
     
     def subtest_parse_xyzjson_map_shuffle(self, obj, n_shuffle=5, chunk_size=10):
         with self.subTest(n_shuffle=n_shuffle):
             o = dict(obj)
-            ref_map_feat, ref_map_fields = self._test_parse_xyzjson_map(o)
+            ref_map_feat, ref_map_fields = self.do_test_parse_xyzjson_map(o)
             lst_map_fields = list()
             random.seed(0.5)
             for i in range(n_shuffle):
@@ -296,23 +304,37 @@ class TestParser(BaseTestAsync):
             for i, map_fields in enumerate(lst_map_fields):
                 with self.subTest(shuffle=i):
                     self._assert_len_map_fields(
-                        ref_map_fields, map_fields)
+                        map_fields, ref_map_fields)
 
-    def _assert_len_map_fields(self, ref, map_fields, strict=False):
-        len_ = len_of_struct if strict else len_of_struct_unorder
-        self.assertEqual(
-            len_(ref), len_(map_fields), "\n".join([
-                "ref_map_fields, map_fields",
-                format_map_fields(ref),
-                format_map_fields(map_fields),
-                ])
-            )
-        
-    def _test_parse_xyzjson_map(self, obj):
+    def subtest_parse_xyzjson_map_chunk(self, obj, chunk_size=100):
+        similarity_threshold = self.similarity_threshold
+        with self.subTest(chunk_size=chunk_size, similarity_threshold=similarity_threshold):
+            o = dict(obj)
+            obj_feat = obj["features"]
+            lst_map_feat = list()
+            map_fields = dict()
+            for i0 in range(0,len(obj_feat), chunk_size):
+                chunk = obj_feat[i0:i0+chunk_size]
+                o["features"] = chunk
+                map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields, similarity_threshold)
+                self._assert_parsed_map(chunk, map_feat, map_fields)
+                lst_map_feat.append(map_feat)
+
+                # self._log_debug("len feat", len(chunk))
+                # self._log_debug("parsed feat", len_of_struct(map_feat))
+                # self._log_debug("parsed fields", len_of_struct(map_fields))
+
+            lst_feat = flatten([x.values() for x in lst_map_feat])
+            self.assertEqual(len(lst_feat), len(obj["features"]))
+            return map_fields
+    
+    def do_test_parse_xyzjson_map(self, obj, similarity_threshold=None):
         obj_feat = obj["features"]
         # map_fields=dict()
-        map_feat, map_fields = parser.xyz_json_to_feature_map(obj)
-        
+        if similarity_threshold is None: 
+            similarity_threshold = self.similarity_threshold
+        map_feat, map_fields = parser.xyz_json_to_feature_map(obj, similarity_threshold=similarity_threshold)
+
         self._log_debug("len feat", len(obj_feat))
         self._log_debug("parsed feat", len_of_struct(map_feat))
         self._log_debug("parsed fields", len_of_struct(map_fields))
@@ -320,6 +342,16 @@ class TestParser(BaseTestAsync):
         self._assert_parsed_map(obj_feat, map_feat, map_fields)
         return map_feat, map_fields
 
+    def _assert_len_map_fields(self, map_fields, ref, strict=False):
+        len_ = len_of_struct if strict else len_of_struct_sorted
+        self.assertEqual(
+            len_(map_fields), len_(ref), "\n".join([
+                "map_fields, ref_map_fields",
+                format_map_fields(map_fields),
+                format_map_fields(ref),
+                ])
+            )
+        
     def _assert_parsed_map(self, obj_feat, map_feat, map_fields):
         self._assert_len_map_feat_fields(map_feat, map_fields)
         self.assertEqual(len(obj_feat), 
@@ -344,7 +376,14 @@ class TestParser(BaseTestAsync):
             "len mismatch: map_feat, map_fields" +
             "\n %s \n %s" % (len_of_struct(map_feat), len_of_struct(map_fields))
             )
-            
+    
+    def _assert_map_fields_similarity_0(self, map_fields):
+        fields_cnt = {k:len(lst_fields) for k, lst_fields in map_fields.items()}
+        ref = {k:1 for k in map_fields}
+        self.assertEqual(fields_cnt, ref, 
+        "given similarity_threshold=0, " + 
+        "map_fields should have exact 1 layer/fields per geom")
+
     def test_parse_xyzjson_map_large(self):
         folder = "xyzjson-large"
         fnames = [
@@ -370,7 +409,7 @@ class TestParser(BaseTestAsync):
             obj = json.loads(txt)
 
             vlayer = QgsVectorLayer(path, "test", "ogr")
-            feat = parser.feature_to_xyz_json(list(vlayer.getFeatures()),vlayer,is_new=True) # remove QGS_XYZ_ID if exist
+            feat = parser.feature_to_xyz_json(list(vlayer.getFeatures()),is_new=True) # remove QGS_XYZ_ID if exist
             self._log_debug(feat)
 
             self.assertListEqual(obj["features"],feat)
@@ -384,8 +423,9 @@ if __name__ == "__main__":
 
     tests = [
         # "TestParser.test_parse_xyzjson",
+        "TestParser.test_parse_xyzjson_map_similarity_0",
         # "TestParser.test_parse_xyzjson_map",
-        "TestParser.test_parse_xyzjson_map_dupe_case",
+        # "TestParser.test_parse_xyzjson_map_dupe_case",
         # "TestParser.test_parse_xyzjson_large",
         # "TestParser.test_parse_xyzjson_map_large",
         

@@ -10,19 +10,70 @@
 
 from collections import deque
 from . import bbox_utils
+from typing import Iterable
+class ParamsQueue(object):
+    """ queue: (limit=1, handle=0), (lim1, handle1), ..
+    if response error, retry with smaller limit from h0 to h1
+    """
+    def __init__(self, params: Iterable, **kw):
+        raise NotImplementedError()
+    def has_next(self) -> bool:
+        raise NotImplementedError()
+    def get_params(self):
+        raise NotImplementedError()
+    def gen_params(self, **kw):
+        pass
+    def gen_retry_params(self, **params):
+        pass
+    def has_retry(self) -> bool:
+        return False
 
-class SimpleQueue(object):
-    def __init__(self, lst):
+class SimpleQueue(ParamsQueue):
+    def __init__(self, params: list=None, key=None, **kw):
+        self._queue = list()
+        self.idx = 0
+        if params:
+            self.set_params(params)
+    def has_next(self):
+        return self.idx < len(self._queue)
+    def get_params(self):
+        idx = self.idx
+        self.idx += 1 
+        return self._queue[idx]
+    def set_params(self, lst: list):
         self._queue = list(lst)
+        self.idx = 0
+
+        
+class CachedQueue(ParamsQueue):
+    def __init__(self, key=None, **kw):
+        self._key = key
+        self._queue = list()
+        self._cache = set()
+        self.idx = 0
+    def set_params(self, lst: list):
+        self._cache.update(p[self._key] for p in self._queue[:self.idx] if self._key in p)
+        self._queue = [p for p in lst 
+            if self._key in p and 
+            p[self._key] not in self._cache]
         self.idx = 0
     def has_next(self):
         return self.idx < len(self._queue)
     def get_params(self):
         idx = self.idx
         self.idx += 1 
-        return self._queue[idx] # if idx < len(self._queue) else dict()
+        return self._queue[idx]
 
-class ParamsQueue_deque(object):
+class DequeParamsQueue(ParamsQueue):
+    def __init__(self, params: list, **kw):
+        self._queue = deque(params)
+    def has_next(self) -> bool:
+        return len(self._queue) > 0
+    def get_params(self):
+        params = self._queue.popleft()
+        return params
+
+class ParamsQueue_deque_v1(ParamsQueue):
     """ queue: (limit=1, handle=0), (lim1, handle1), ..
     if response error, retry with smaller limit from h0 to h1
     """
@@ -65,7 +116,7 @@ class ParamsQueue_deque(object):
         params = self._queue.popleft()
         return params
 
-class ParamsQueue_deque_v2(ParamsQueue_deque):
+class ParamsQueue_deque_v2(ParamsQueue_deque_v1):
     """ queue: (limit=1), (lim1, handle1), ..
     The parameter limit must be between 1 and 100000. (API 21.01.2019)
     if response error, retry with the same request

@@ -8,7 +8,8 @@
 #
 ###############################################################################
 
-from qgis.core import QgsVectorLayer, QgsWkbTypes, QgsProject
+from qgis.core import (QgsVectorLayer, QgsWkbTypes, QgsProject, 
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform)
 from qgis.utils import iface
 
 from . import parser
@@ -34,10 +35,10 @@ def get_vlayer(layer_id):
         print_qgis("no vlayer found!!")
         return None
     return vlayer
-    
+
 # mixed-geom
-def parse_feature(obj, map_fields):
-    map_feat, map_fields = parser.xyz_json_to_feature_map(obj, map_fields)
+def parse_feature(obj, map_fields, similarity_threshold=None):
+    map_feat, map_fields = parser.xyz_json_to_feature_map(obj, map_fields,similarity_threshold)
     return map_feat, map_fields
 
 def truncate_add_render(vlayer, feat, new_fields):
@@ -45,12 +46,24 @@ def truncate_add_render(vlayer, feat, new_fields):
     if pr.truncate():
         vlayer.updateExtents()
     return add_feature_render(vlayer, feat, new_fields)
+
 def add_feature_render(vlayer, feat, new_fields):
     pr = vlayer.dataProvider()
     geom_type = QgsWkbTypes.geometryType(pr.wkbType())
 
-    if geom_type < QgsWkbTypes.UnknownGeometry:
-        feat = [ft for ft in feat if QgsWkbTypes.geometryType(ft.geometry().wkbType()) == geom_type]
+    # redundant geom transform
+    # vlayer in xyz layer default to use 4326
+    crs_src = QgsCoordinateReferenceSystem('EPSG:4326')
+    crs_dst = vlayer.crs()
+    transformer = parser.make_transformer(crs_src, crs_dst)
+
+    # feat should be according to geom in parser.py
+    # if geom_type < QgsWkbTypes.UnknownGeometry:
+    # if QgsWkbTypes.geometryType(ft.geometry().wkbType()) == geom_type
+
+    if transformer.isValid() and not transformer.isShortCircuited():
+        feat = [parser.transform_geom(ft, transformer) 
+        for ft in feat]
 
     names = set(vlayer.fields().names())
     diff_fields = [f for f in new_fields if not f.name() in names]

@@ -20,6 +20,13 @@ class SpaceConnectionInfo(object):
         else:
             self.obj = dict(conn_info.obj)
             self.server = conn_info.server
+    def to_dict(self):
+        return self.get_(dict)
+    @classmethod
+    def from_dict(cls, kw):
+        obj = cls()
+        obj.set_(**kw)
+        return obj
     def set_(self, **kw):
         if "id" in kw:
             kw["space_id"] = kw.pop("id")
