@@ -307,8 +307,8 @@ def xyz_json_to_feat(feat_json, fields):
         fields.append( make_field(QGS_XYZ_ID, val) )
 
     props = feat_json.get("properties")
-    rename_special_props(props) # rename fid in props
     if isinstance(props, dict):
+        rename_special_props(props) # rename fid in props
         attrs = list(_attrs(props))
         for k, v in attrs:
             val = QVariant(v)
