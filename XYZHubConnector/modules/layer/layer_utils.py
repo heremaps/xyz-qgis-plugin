@@ -141,10 +141,9 @@ def get_group_node(qnode):
     # print(a, qnode, p)
     return a
 def is_xyz_supported_node_recursive(qnode):
+    if not qnode: return False
     group = get_group_node(qnode)
     return (is_xyz_supported_node(qnode) 
         or is_xyz_supported_node(group))
 def is_xyz_supported_layer(vlayer):
-    qnode = QgsProject.instance().layerTreeRoot().findLayer(vlayer)
-    return (is_xyz_supported_node(vlayer) 
-        or is_xyz_supported_node_recursive(qnode))
+    return is_xyz_supported_node(vlayer)

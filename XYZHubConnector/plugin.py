@@ -164,7 +164,7 @@ class XYZHubConnector(object):
         QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.layer_man.remove_layers)
 
-        QgsProject.instance().layersAdded.connect( self.edit_buffer.config_connection)
+        # QgsProject.instance().layersAdded.connect( self.edit_buffer.config_connection)
 
         self.iface.currentLayerChanged.connect( self.cb_layer_selected) # UNCOMMENT
 
@@ -179,7 +179,7 @@ class XYZHubConnector(object):
         QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.layer_man.remove_layers)
 
-        QgsProject.instance().layersAdded.disconnect( self.edit_buffer.config_connection)
+        # QgsProject.instance().layersAdded.disconnect( self.edit_buffer.config_connection)
         self.edit_buffer.unload_connection()
 
         self.iface.currentLayerChanged.disconnect( self.cb_layer_selected) # UNCOMMENT
