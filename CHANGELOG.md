@@ -1,5 +1,9 @@
 # Changelog 
 
+## version 1.7.3 (2019-08-26)
+
+* bug fixes: edit buffer, data upload
+
 ## version 1.7.2 (2019-08-23)
 
 * Tile loading mode, supports Live Map
