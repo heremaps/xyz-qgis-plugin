@@ -430,7 +430,7 @@ class XYZHubConnector(object):
         canvas = self.iface.mapCanvas()
         rect = bbox_utils.extend_to_rect(
             bbox_utils.get_bounding_box(canvas))
-        level = tile_utils.get_zoom_for_current_map_scale(canvas)
+        level = tile_utils.get_zoom_level(self.iface)
         # rect = (-180,-90,180,90)
         # level = 0
         a, kw = parse_qt_args(args)
@@ -453,7 +453,7 @@ class XYZHubConnector(object):
         canvas = self.iface.mapCanvas()
         rect = bbox_utils.extend_to_rect(
             bbox_utils.get_bounding_box(canvas))
-        level = tile_utils.get_zoom_for_current_map_scale(canvas)
+        level = tile_utils.get_zoom_level(self.iface)
         kw = dict()
         kw["tile_schema"] = "here"
         kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)

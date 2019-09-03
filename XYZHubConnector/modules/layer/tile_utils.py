@@ -94,6 +94,16 @@ def coord_to_row_col(coord, level, schema="here"):
     col = max(0,min(ncol-1, math.floor(c*ncol)))
     return row, col
 
+def get_zoom_level_schema(level, schema="here"):
+    """ 
+    return valid zoom level according to schema
+    """
+    if schema == "here":
+        level = min(max(level,0),31)
+    else:
+        pass
+    return level
+
 # vector_tiles_reader, tile_helper.py
 
 _upper_bound_scale_to_zoom_level = {
@@ -136,6 +146,15 @@ def get_zoom_for_current_map_scale(canvas):
             break
     return zoom
 
+def get_zoom_level(iface):
+    # https://gis.stackexchange.com/questions/268890/get-current-zoom-level-from-qgis-map-canvas
+    scale=iface.mapCanvas().scale()
+    dpi=iface.mainWindow().physicalDpiX()
+    maxScalePerPixel = 156543.04
+    inchesPerMeter = 39.37
+    zoomlevel = int(round(math.log( ((dpi* inchesPerMeter * maxScalePerPixel) / scale), 2 ), 0))
+    return zoomlevel
+
 # bbox
 
 from .bbox_utils import spiral_index
@@ -154,12 +173,14 @@ def spiral_iter(lstX, lstY):
         yield (lstX[ix], lstY[iy]) 
 
 def bboxToListColRow(x_min,y_min,x_max,y_max,level,schema="here"):
+    level = get_zoom_level_schema(level, schema)
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level,schema)
     lst_row = list(range(r1,r2+1))
     lst_col = list(range(c1,c2+1))
     return ["{level}_{col}_{row}".format(level=level,row=row,col=col)
     for col, row in spiral_iter(lst_col, lst_row)]
 
+#### unused
 def bboxToListQuadkey(x_min,y_min,x_max,y_max,level):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level)
     lst_row = list(range(r1,r2+1))
