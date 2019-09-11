@@ -118,7 +118,10 @@ class XYZLayer(object):
         tags = "-(%s)" %(self.tags) if len(self.tags) else ""
         temp = "{title}-{id}{tags}" if idx is None else "{title}-{id}{tags}-{idx}"
         name = temp.format(
-            tags=tags, idx=idx, **self.meta)
+            id=self.meta.get("id",""),
+            title=self.meta.get("title",""),
+            tags=tags, idx=idx,
+            )
         return name
     def _group_geom_name(self, geom_str):
         geom = QgsWkbTypes.geometryDisplayString(
@@ -132,7 +135,10 @@ class XYZLayer(object):
         """
         tags = "-(%s)" %(self.tags) if len(self.tags) else ""
         return "{title}-{id}{tags}-{geom}-{idx}".format(
-            geom=geom_str, idx=idx, tags=tags, **self.meta)
+            id=self.meta.get("id",""),
+            title=self.meta.get("title",""),
+            geom=geom_str, idx=idx, tags=tags,
+            )
     def _db_layer_name(self, geom_str, idx):
         """
         returns name of the table corresponds to vlayer in sqlite db
@@ -144,7 +150,9 @@ class XYZLayer(object):
         """
         tags = self.tags.replace(",","_") if len(self.tags) else ""
         return "{id}_{tags}_{unique}".format(
-            tags=tags, unique=self.unique, **self.meta)
+            id=self.meta.get("id",""),
+            tags=tags, unique=self.unique,
+            )
     def get_id(self):
         return self.unique
     def get_map_fields(self):
