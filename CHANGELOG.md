@@ -1,5 +1,9 @@
 # Changelog 
 
+## version 1.7.4 (2019-09-11)
+
+* bug fixes: updates in API 1.4
+
 ## version 1.7.3 (2019-08-26)
 
 * bug fixes: edit buffer, data upload
