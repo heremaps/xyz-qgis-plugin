@@ -36,7 +36,7 @@ from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerC
 from .modules.layer.edit_buffer import EditBuffer
 from .modules.layer import bbox_utils
 from .modules.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
-    is_xyz_supported_node)
+    is_xyz_supported_node, get_customProperty_str)
     
 from .modules.layer import tile_utils, XYZLayer
 
@@ -469,7 +469,7 @@ class XYZHubConnector(object):
             if len(g.children()) == 0 and g.isVisible() 
             and is_xyz_supported_node(g)
         ]:
-            xlayer_id = qnode.customProperty("xyz-hub-id")
+            xlayer_id = get_customProperty_str(qnode, "xyz-hub-id")
             con = self.con_man.get_from_xyz_layer(xlayer_id)
             if con is None: continue
             if con in unique_con: continue

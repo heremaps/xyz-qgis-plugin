@@ -21,7 +21,7 @@ from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser, render
-from .layer_utils import get_feat_cnt_from_src
+from .layer_utils import get_feat_cnt_from_src, get_customProperty_str
 from ...models.space_model import parse_copyright
 from ...models import SpaceConnectionInfo
 from ...utils import make_unique_full_path, make_fixed_full_path
@@ -48,7 +48,7 @@ class XYZLayer(object):
         self.conn_info = conn_info
         self.meta = meta
         self.tags = tags
-        self.unique = unique or int(time.time() * 10)
+        self.unique = str(unique or int(time.time() * 10))
         self._group_name = group_name
 
         self.map_vlayer = dict()
@@ -57,10 +57,10 @@ class XYZLayer(object):
 
     @classmethod
     def load_from_qnode(cls, qnode):
-        meta = qnode.customProperty("xyz-hub")
-        conn_info = qnode.customProperty("xyz-hub-conn")
-        tags = qnode.customProperty("xyz-hub-tags")
-        unique = qnode.customProperty("xyz-hub-id")
+        meta = get_customProperty_str(qnode, "xyz-hub")
+        conn_info = get_customProperty_str(qnode, "xyz-hub-conn")
+        tags = get_customProperty_str(qnode, "xyz-hub-tags")
+        unique = get_customProperty_str(qnode, "xyz-hub-id")
         name = qnode.name()
         meta = json.loads(meta)
         conn_info = json.loads(conn_info)

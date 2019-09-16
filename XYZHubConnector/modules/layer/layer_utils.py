@@ -121,10 +121,13 @@ def update_feat_non_null(vlayer, ft):
         vlayer.updateExtents()
 def get_layer(layer_id):
     return QgsProject.instance().mapLayer(layer_id)
+def get_customProperty_str(qnode, key):
+    return str(qnode.customProperty(key))
+
 def get_conn_info_from_layer(layer_id):
     vlayer = get_layer(layer_id)
     if vlayer is None: return
-    conn_info = vlayer.customProperty("xyz-hub-conn")
+    conn_info = get_customProperty_str(vlayer, "xyz-hub-conn")
     conn_info = json.loads(conn_info)
     conn_info = SpaceConnectionInfo.from_dict(conn_info)
     return conn_info
@@ -132,7 +135,7 @@ def get_conn_info_from_layer(layer_id):
 def is_root_node(qnode):
     return qnode.parent() is None
 def is_xyz_supported_node(qnode):
-    meta = qnode.customProperty("xyz-hub")
+    meta = get_customProperty_str(qnode, "xyz-hub")
     flag = isinstance(meta, str) and is_valid_json(meta)
     return flag
 def get_group_node(qnode):
@@ -140,7 +143,7 @@ def get_group_node(qnode):
     a = qnode if p.parent() is None else get_group_node(p)
     # print(a, qnode, p)
     return a
-def is_xyz_supported_node_recursive(qnode):
+def is_xyz_supported_node_group(qnode):
     if not qnode: return False
     group = get_group_node(qnode)
     return (is_xyz_supported_node(qnode) 
