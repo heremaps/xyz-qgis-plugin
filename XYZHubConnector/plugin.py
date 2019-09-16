@@ -36,7 +36,7 @@ from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerC
 from .modules.layer.edit_buffer import EditBuffer
 from .modules.layer import bbox_utils
 from .modules.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
-    is_xyz_supported_node, get_customProperty_str)
+    is_xyz_supported_node, get_customProperty_str, iter_group_node)
     
 from .modules.layer import tile_utils, XYZLayer
 
@@ -465,7 +465,7 @@ class XYZHubConnector(object):
             vl for vl in QgsProject.instance().layerTreeRoot().checkedLayers()
             if is_xyz_supported_layer(vl)
             ] + [
-            g for g in QgsProject.instance().layerTreeRoot().findGroups()
+            g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
             if len(g.children()) == 0 and g.isVisible() 
             and is_xyz_supported_node(g)
         ]:
@@ -498,10 +498,10 @@ class XYZHubConnector(object):
 
     def init_tile_loader(self):
         cnt = 0
-        for qnode in [
-            g for g in QgsProject.instance().layerTreeRoot().findGroups()
+        for qnode in (
+            g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
             if is_xyz_supported_node(g)
-        ]:
+        ):
             try: 
                 layer = XYZLayer.load_from_qnode(qnode)
                 con_load = TileLayerLoader(self.network, n_parallel=1, layer=layer)

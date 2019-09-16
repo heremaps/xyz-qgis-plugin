@@ -132,21 +132,14 @@ def get_conn_info_from_layer(layer_id):
     conn_info = SpaceConnectionInfo.from_dict(conn_info)
     return conn_info
     
-def is_root_node(qnode):
-    return qnode.parent() is None
 def is_xyz_supported_node(qnode):
     meta = get_customProperty_str(qnode, "xyz-hub")
     flag = isinstance(meta, str) and is_valid_json(meta)
     return flag
-def get_group_node(qnode):
-    p = qnode.parent()
-    a = qnode if p.parent() is None else get_group_node(p)
-    # print(a, qnode, p)
-    return a
-def is_xyz_supported_node_group(qnode):
-    if not qnode: return False
-    group = get_group_node(qnode)
-    return (is_xyz_supported_node(qnode) 
-        or is_xyz_supported_node(group))
 def is_xyz_supported_layer(vlayer):
     return is_xyz_supported_node(vlayer)
+def iter_group_node(root):
+    for g in root.findGroups():
+        yield g
+        for gg in iter_group_node(g):
+            yield gg
