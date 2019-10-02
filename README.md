@@ -27,7 +27,13 @@ XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to 
 
 Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**. The main dialog contains 5 tabs:
 
-+ `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
++ `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. There are 2 modes of loading, `Tile loading` (default) and `Iterate loading`. 
+    + `Tile loading` loads the data in the current bounding box interactively everytime the user moves around the map, suitable for visualization of large spaces. `Chunk size` indicates the number of features per tile.
+    + The other mode `Iterate loading` tries to load all data available in the given XYZ space iteratively, suitable for visualization of small spaces. `Chunk size` indicates the number of features per iteration.
+    + `Layer categorization` controls the organization of data in XYZ space into different QGIS layers based on fields similarity, with 3 levels:
+        + `single`: merge data into 1 layer per geometry type
+        + `maximal`: do not merge data, as many layers per geometry type
+        + `balanced`: merge only similar data into 1 layer, balanced number of layers per geometry type
 
 + `Upload` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
 
@@ -47,6 +53,8 @@ When the user make some edits to the loaded layer, the changes can be pushed to 
 2. Build the plugin by running `sh makeBuild.sh <VERSION NUMBER>`,
 e.g. `sh makeBuild.sh 1.5.5`.
 
+## Changelog
+[CHANGELOG](CHANGELOG.md)
 ## License
 
 Copyright (C) 2019 HERE Europe B.V.
