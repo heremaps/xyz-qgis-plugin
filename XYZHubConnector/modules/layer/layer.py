@@ -42,13 +42,15 @@ class XYZLayer(object):
     for i,k in enumerate(["Point","Line","Polygon", "Unknown geometry", NO_GEOM]))
     # https://qgis.org/api/qgswkbtypes_8cpp_source.html#l00129 
 
-    def __init__(self, conn_info, meta, tags="", unique=None, group_name="XYZ Hub Layer", ext="gpkg"):
+    def __init__(self, conn_info, meta, tags="", unique:str=None, loader_params:dict=None, group_name="XYZ Hub Layer", ext="gpkg"):
         super().__init__()
         self.ext = ext
         self.conn_info = conn_info
         self.meta = meta
         self.tags = tags
         self.unique = str(unique or int(time.time() * 10))
+        self.loader_params = loader_params or dict()
+
         self._group_name = group_name
 
         self.map_vlayer = dict()
@@ -61,12 +63,14 @@ class XYZLayer(object):
         conn_info = get_customProperty_str(qnode, "xyz-hub-conn")
         tags = get_customProperty_str(qnode, "xyz-hub-tags")
         unique = get_customProperty_str(qnode, "xyz-hub-id")
+        loader_params = get_customProperty_str(qnode, "xyz-hub-loader")
         name = qnode.name()
         meta = json.loads(meta)
         conn_info = json.loads(conn_info)
         conn_info = SpaceConnectionInfo.from_dict(conn_info)
+        loader_params = json.loads(loader_params)
 
-        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name)
+        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
         obj.qgroups["main"] = qnode
         for g in qnode.findGroups():
             obj.qgroups[g.name()] = g
@@ -81,6 +85,7 @@ class XYZLayer(object):
     def _save_meta_node(self, qnode):
         qnode.setCustomProperty("xyz-hub", json.dumps(self.meta, ensure_ascii=False))
         qnode.setCustomProperty("xyz-hub-conn", json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
+        qnode.setCustomProperty("xyz-hub-loader", json.dumps(self.get_loader_params(), ensure_ascii=False))
         qnode.setCustomProperty("xyz-hub-tags", self.tags)
         qnode.setCustomProperty("xyz-hub-id", self.get_id())
 
@@ -107,6 +112,8 @@ class XYZLayer(object):
             geom_str in self.map_vlayer and 
             idx < len(self.map_vlayer[geom_str])
             )
+    def get_loader_params(self) -> dict:
+        return self.loader_params or dict()
     def get_layer(self, geom_str, idx):
         return self.map_vlayer[geom_str][idx]
     def get_name(self):
