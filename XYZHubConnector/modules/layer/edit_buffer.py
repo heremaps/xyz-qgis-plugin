@@ -11,7 +11,7 @@
 from qgis.core import QgsVectorLayer
 from qgis.PyQt.QtCore import Qt
 
-from . import parser
+from . import parser, layer_props as QProps
 from .layer_utils import (get_feat_upload_from_iter, is_layer_committed,
                           is_xyz_supported_layer, make_xyz_id_map_from_src,
                           update_feat_non_null, get_conn_info_from_layer,
@@ -19,6 +19,7 @@ from .layer_utils import (get_feat_upload_from_iter, is_layer_committed,
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("edit_buffer")
+
 
 def make_cb_fun(fun, *a0, **kw0):
     def _fun(*a,**kw):
@@ -394,8 +395,8 @@ class EditBuffer(object):
         
         for vlayer in lst_vlayer:
             if not (isinstance(vlayer, QgsVectorLayer) and is_xyz_supported_layer(vlayer)): continue
-            if vlayer.customProperty("xyz-hub-edit") is not None: continue
-            vlayer.setCustomProperty("xyz-hub-edit", True)
+            if vlayer.customProperty(QProps.EDIT_FLAG) is not None: continue
+            vlayer.setCustomProperty(QProps.EDIT_FLAG, True)
 
 
             layer_id = vlayer.id()
@@ -409,7 +410,7 @@ class EditBuffer(object):
     def unload_connection(self):
         for c in self.layer_buffer.values():
             vlayer = get_layer(c.get_layer_id())
-            vlayer.removeCustomProperty("xyz-hub-edit")
+            vlayer.removeCustomProperty(QProps.EDIT_FLAG)
             c.unload_connection()
             
     def make_connection_pair(self, vlayer, layer_cache):

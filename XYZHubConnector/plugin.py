@@ -38,7 +38,7 @@ from .modules.layer import bbox_utils
 from .modules.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
     is_xyz_supported_node, get_customProperty_str, iter_group_node)
     
-from .modules.layer import tile_utils, XYZLayer
+from .modules.layer import tile_utils, XYZLayer, layer_props as QProps
 
 from .modules.network import NetManager, net_handler
 
@@ -469,7 +469,7 @@ class XYZHubConnector(object):
             if len(g.children()) == 0 and g.isVisible() 
             and is_xyz_supported_node(g)
         ]:
-            xlayer_id = get_customProperty_str(qnode, "xyz-hub-id")
+            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
             con = self.con_man.get_from_xyz_layer(xlayer_id)
             if con is None: continue
             if con in unique_con: continue

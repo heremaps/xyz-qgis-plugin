@@ -9,11 +9,14 @@
 ###############################################################################
 import json
 
-from ..controller import make_qt_args
-from ...models import SpaceConnectionInfo
-from . import parser
 from qgis.core import QgsFeatureRequest, QgsProject
 from qgis.PyQt.QtCore import QVariant
+
+
+from ...models import SpaceConnectionInfo
+from ..controller import make_qt_args
+from . import parser, layer_props as QProps
+
 
 def is_valid_json(txt):
     try:
@@ -127,13 +130,13 @@ def get_customProperty_str(qnode, key):
 def get_conn_info_from_layer(layer_id):
     vlayer = get_layer(layer_id)
     if vlayer is None: return
-    conn_info = get_customProperty_str(vlayer, "xyz-hub-conn")
+    conn_info = get_customProperty_str(vlayer, QProps.CONN_INFO)
     conn_info = json.loads(conn_info)
     conn_info = SpaceConnectionInfo.from_dict(conn_info)
     return conn_info
     
 def is_xyz_supported_node(qnode):
-    meta = get_customProperty_str(qnode, "xyz-hub")
+    meta = get_customProperty_str(qnode, QProps.LAYER_META)
     flag = isinstance(meta, str) and is_valid_json(meta)
     return flag
 def is_xyz_supported_layer(vlayer):

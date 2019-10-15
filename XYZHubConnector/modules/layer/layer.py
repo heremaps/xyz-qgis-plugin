@@ -15,12 +15,12 @@ import json
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
                        QgsCoordinateTransform, QgsWkbTypes)
-
+                
 from qgis.utils import iface
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
-from . import parser, render
+from . import parser, render, layer_props as QProps
 from .layer_utils import get_feat_cnt_from_src, get_customProperty_str
 from ...models.space_model import parse_copyright
 from ...models import SpaceConnectionInfo
@@ -29,8 +29,6 @@ from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
-
-
 
 class XYZLayer(object):
     """ XYZ Layer is created in 2 scenarios:
@@ -59,11 +57,11 @@ class XYZLayer(object):
 
     @classmethod
     def load_from_qnode(cls, qnode):
-        meta = get_customProperty_str(qnode, "xyz-hub")
-        conn_info = get_customProperty_str(qnode, "xyz-hub-conn")
-        tags = get_customProperty_str(qnode, "xyz-hub-tags")
-        unique = get_customProperty_str(qnode, "xyz-hub-id")
-        loader_params = get_customProperty_str(qnode, "xyz-hub-loader")
+        meta = get_customProperty_str(qnode, QProps.LAYER_META)
+        conn_info = get_customProperty_str(qnode, QProps.CONN_INFO)
+        tags = get_customProperty_str(qnode, QProps.TAGS)
+        unique = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        loader_params = get_customProperty_str(qnode, QProps.LOADER_PARAMS)
         name = qnode.name()
         meta = json.loads(meta)
         conn_info = json.loads(conn_info)
@@ -83,11 +81,11 @@ class XYZLayer(object):
         return obj
 
     def _save_meta_node(self, qnode):
-        qnode.setCustomProperty("xyz-hub", json.dumps(self.meta, ensure_ascii=False))
-        qnode.setCustomProperty("xyz-hub-conn", json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
-        qnode.setCustomProperty("xyz-hub-loader", json.dumps(self.get_loader_params(), ensure_ascii=False))
-        qnode.setCustomProperty("xyz-hub-tags", self.tags)
-        qnode.setCustomProperty("xyz-hub-id", self.get_id())
+        qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))
+        qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.TAGS, self.tags)
+        qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
 
     def _save_meta(self, vlayer):
         self._save_meta_node(vlayer)
