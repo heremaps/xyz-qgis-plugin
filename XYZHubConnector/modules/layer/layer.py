@@ -81,13 +81,16 @@ class XYZLayer(object):
                 obj._save_meta(vlayer)
         return obj
 
+    def save_params_to_node(self, qnode):
+        qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.TAGS, self.tags)
+
     def _save_meta_node(self, qnode):
         qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))
         qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
-        qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
-        qnode.setCustomProperty(QProps.TAGS, self.tags)
         qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
-
+        self.save_params_to_node(qnode)
+        
     def _save_meta(self, vlayer):
         self._save_meta_node(vlayer)
 
