@@ -39,6 +39,8 @@ Geojson = Dict
 
 class EmptyXYZSpaceError(Exception):
     pass
+class InvalidQgsLayerError(Exception):
+    pass
 class InvalidXYZLayerError(Exception):
     pass
 class ManualInterrupt(Exception):
@@ -61,26 +63,31 @@ class LoadLayerController(BaseLoader):
         self.kw: dict = None
         self.fixed_params = dict()
         self.params_queue: queue.ParamsQueue = None
+        
         self._config(network)
     def post_render(self,*a,**kw):
         for v in self.layer.iter_layer():
             v.triggerRepaint()
     def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
         tags = kw.get("tags","")
-        self.layer = XYZLayer(conn_info, meta, tags=tags)
-        
-        
-        # super(BaseLoader,self): super of BaseLoader 
-        # includes check status and reset
+        self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
+        return self._start(**kw)
+
+    def _start(self, **kw):
+        # # super(BaseLoader,self): super of BaseLoader 
+        # # includes check status and reset
         BaseLoader.start(self, **kw)
         return self.layer
     def restart(self, *a, **kw):
         # if self.status != self.FINISHED: return
         # self.reset(**kw)
         # includes reset
-
-        BaseLoader.start(self, **kw)
-        return self.layer
+        if self.layer is None: 
+            raise InvalidXYZLayerError()
+        params = self.layer.get_loader_params()
+        params.update(kw)
+        return self._start(**params)
+        
 
     def reset(self, **kw):
         """
@@ -343,7 +350,7 @@ class InitUploadLayerController(ChainController):
     def start(self, conn_info: SpaceConnectionInfo, vlayer: QgsVectorLayer, **kw):
         # assumed start() is called once # TODO: check if it is running
         if vlayer is None:
-            raise InvalidXYZLayerError()
+            raise InvalidQgsLayerError()
         self.conn_info = copy.deepcopy(conn_info) # upload
         self.kw = kw        
         ChainController.start(self, vlayer)

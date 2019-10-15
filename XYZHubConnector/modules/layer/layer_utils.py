@@ -9,11 +9,15 @@
 ###############################################################################
 import json
 
-from ..controller import make_qt_args
-from ...models import SpaceConnectionInfo
-from . import parser
 from qgis.core import QgsFeatureRequest, QgsProject
 from qgis.PyQt.QtCore import QVariant
+
+
+from ...models import SpaceConnectionInfo
+from ..controller import make_qt_args
+from . import parser
+from .layer_props import QProps
+
 
 def is_valid_json(txt):
     try:
@@ -21,6 +25,13 @@ def is_valid_json(txt):
     except ValueError as e:
         return False
     return True
+def load_json_none(txt):
+    obj = None
+    try:
+        obj = json.loads(txt)
+    except ValueError as e:
+        pass
+    return obj
 
 def get_feat_iter(vlayer):
     # assert isinstance(vlayer, QgsVectorLayer)
@@ -121,29 +132,28 @@ def update_feat_non_null(vlayer, ft):
         vlayer.updateExtents()
 def get_layer(layer_id):
     return QgsProject.instance().mapLayer(layer_id)
+def get_customProperty_str(qnode, key):
+    return str(QProps.getProperty(qnode,key))
+
 def get_conn_info_from_layer(layer_id):
     vlayer = get_layer(layer_id)
     if vlayer is None: return
-    conn_info = vlayer.customProperty("xyz-hub-conn")
+    conn_info = get_customProperty_str(vlayer, QProps.CONN_INFO)
     conn_info = json.loads(conn_info)
     conn_info = SpaceConnectionInfo.from_dict(conn_info)
     return conn_info
-    
-def is_root_node(qnode):
-    return qnode.parent() is None
+
+def updated_xyz_node(qnode):
+    QProps.updatePropsVersion(qnode)
+    return qnode
 def is_xyz_supported_node(qnode):
-    meta = qnode.customProperty("xyz-hub")
+    meta = get_customProperty_str(qnode, QProps.LAYER_META)
     flag = isinstance(meta, str) and is_valid_json(meta)
     return flag
-def get_group_node(qnode):
-    p = qnode.parent()
-    a = qnode if p.parent() is None else get_group_node(p)
-    # print(a, qnode, p)
-    return a
-def is_xyz_supported_node_recursive(qnode):
-    if not qnode: return False
-    group = get_group_node(qnode)
-    return (is_xyz_supported_node(qnode) 
-        or is_xyz_supported_node(group))
 def is_xyz_supported_layer(vlayer):
     return is_xyz_supported_node(vlayer)
+def iter_group_node(root):
+    for g in root.findGroups():
+        yield g
+        for gg in iter_group_node(g):
+            yield gg

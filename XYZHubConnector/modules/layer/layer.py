@@ -15,13 +15,14 @@ import json
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
                        QgsCoordinateTransform, QgsWkbTypes)
-
+                
 from qgis.utils import iface
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser, render
-from .layer_utils import get_feat_cnt_from_src
+from .layer_props import QProps
+from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_json_none
 from ...models.space_model import parse_copyright
 from ...models import SpaceConnectionInfo
 from ...utils import make_unique_full_path, make_fixed_full_path
@@ -29,8 +30,6 @@ from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer")
-
-
 
 class XYZLayer(object):
     """ XYZ Layer is created in 2 scenarios:
@@ -42,13 +41,15 @@ class XYZLayer(object):
     for i,k in enumerate(["Point","Line","Polygon", "Unknown geometry", NO_GEOM]))
     # https://qgis.org/api/qgswkbtypes_8cpp_source.html#l00129 
 
-    def __init__(self, conn_info, meta, tags="", unique=None, group_name="XYZ Hub Layer", ext="gpkg"):
+    def __init__(self, conn_info, meta, tags="", unique:str=None, loader_params:dict=None, group_name="XYZ Hub Layer", ext="gpkg"):
         super().__init__()
         self.ext = ext
         self.conn_info = conn_info
         self.meta = meta
         self.tags = tags
-        self.unique = unique or int(time.time() * 10)
+        self.unique = str(unique or int(time.time() * 10))
+        self.loader_params = loader_params or dict()
+
         self._group_name = group_name
 
         self.map_vlayer = dict()
@@ -57,16 +58,18 @@ class XYZLayer(object):
 
     @classmethod
     def load_from_qnode(cls, qnode):
-        meta = qnode.customProperty("xyz-hub")
-        conn_info = qnode.customProperty("xyz-hub-conn")
-        tags = qnode.customProperty("xyz-hub-tags")
-        unique = qnode.customProperty("xyz-hub-id")
+        meta = get_customProperty_str(qnode, QProps.LAYER_META)
+        conn_info = get_customProperty_str(qnode, QProps.CONN_INFO)
+        tags = get_customProperty_str(qnode, QProps.TAGS)
+        unique = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        loader_params = get_customProperty_str(qnode, QProps.LOADER_PARAMS)
         name = qnode.name()
         meta = json.loads(meta)
         conn_info = json.loads(conn_info)
         conn_info = SpaceConnectionInfo.from_dict(conn_info)
+        loader_params = load_json_none(loader_params)
 
-        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name)
+        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
         obj.qgroups["main"] = qnode
         for g in qnode.findGroups():
             obj.qgroups[g.name()] = g
@@ -75,15 +78,19 @@ class XYZLayer(object):
                 geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
                 obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
                 obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
-                
+                obj._save_meta(vlayer)
         return obj
 
-    def _save_meta_node(self, qnode):
-        qnode.setCustomProperty("xyz-hub", json.dumps(self.meta, ensure_ascii=False))
-        qnode.setCustomProperty("xyz-hub-conn", json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
-        qnode.setCustomProperty("xyz-hub-tags", self.tags)
-        qnode.setCustomProperty("xyz-hub-id", self.get_id())
+    def save_params_to_node(self, qnode):
+        qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.TAGS, self.tags)
 
+    def _save_meta_node(self, qnode):
+        qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))
+        qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
+        self.save_params_to_node(qnode)
+        
     def _save_meta(self, vlayer):
         self._save_meta_node(vlayer)
 
@@ -107,6 +114,8 @@ class XYZLayer(object):
             geom_str in self.map_vlayer and 
             idx < len(self.map_vlayer[geom_str])
             )
+    def get_loader_params(self) -> dict:
+        return self.loader_params or dict()
     def get_layer(self, geom_str, idx):
         return self.map_vlayer[geom_str][idx]
     def get_name(self):
