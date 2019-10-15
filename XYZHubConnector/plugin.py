@@ -36,9 +36,11 @@ from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerC
 from .modules.layer.edit_buffer import EditBuffer
 from .modules.layer import bbox_utils
 from .modules.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
-    is_xyz_supported_node, get_customProperty_str, iter_group_node)
+    is_xyz_supported_node, get_customProperty_str, iter_group_node, updated_xyz_node)
     
-from .modules.layer import tile_utils, XYZLayer, layer_props as QProps
+from .modules.layer import tile_utils, XYZLayer
+from .modules.layer.layer_props import QProps
+
 
 from .modules.network import NetManager, net_handler
 
@@ -284,6 +286,9 @@ class XYZHubConnector(object):
             "Error", repr(err),
             Qgis.Warning, 3
         )
+        self.log_err_traceback(err)
+
+    def log_err_traceback(self, err):
         msg = format_traceback(err)
         QgsMessageLog.logMessage( msg, config.TAG_PLUGIN, Qgis.Warning)
 
@@ -500,7 +505,7 @@ class XYZHubConnector(object):
         cnt = 0
         for qnode in (
             g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
-            if is_xyz_supported_node(g)
+            if is_xyz_supported_node(updated_xyz_node(g))
         ):
             try: 
                 layer = XYZLayer.load_from_qnode(qnode)
@@ -512,8 +517,9 @@ class XYZHubConnector(object):
                 con_load.signal.error.connect( self.cb_handle_error_msg )
 
                 cnt += 1
-            except:
-                pass
+            except Exception as e:
+                self.show_err_msgbar(e)
+                
 
         # print_qgis(self.con_man._layer_ptr)
         self.cb_success_msg("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)

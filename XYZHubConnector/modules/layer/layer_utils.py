@@ -15,7 +15,8 @@ from qgis.PyQt.QtCore import QVariant
 
 from ...models import SpaceConnectionInfo
 from ..controller import make_qt_args
-from . import parser, layer_props as QProps
+from . import parser
+from .layer_props import QProps
 
 
 def is_valid_json(txt):
@@ -24,6 +25,13 @@ def is_valid_json(txt):
     except ValueError as e:
         return False
     return True
+def load_json_none(txt):
+    obj = None
+    try:
+        obj = json.loads(txt)
+    except ValueError as e:
+        pass
+    return obj
 
 def get_feat_iter(vlayer):
     # assert isinstance(vlayer, QgsVectorLayer)
@@ -125,7 +133,7 @@ def update_feat_non_null(vlayer, ft):
 def get_layer(layer_id):
     return QgsProject.instance().mapLayer(layer_id)
 def get_customProperty_str(qnode, key):
-    return str(qnode.customProperty(key))
+    return str(QProps.getProperty(qnode,key))
 
 def get_conn_info_from_layer(layer_id):
     vlayer = get_layer(layer_id)
@@ -134,12 +142,17 @@ def get_conn_info_from_layer(layer_id):
     conn_info = json.loads(conn_info)
     conn_info = SpaceConnectionInfo.from_dict(conn_info)
     return conn_info
-    
+
+def updated_xyz_node(qnode):
+    QProps.updatePropsVersion(qnode)
+    return qnode
 def is_xyz_supported_node(qnode):
     meta = get_customProperty_str(qnode, QProps.LAYER_META)
     flag = isinstance(meta, str) and is_valid_json(meta)
+    # print( meta[:10], type(meta), flag)
     return flag
 def is_xyz_supported_layer(vlayer):
+    # print("layer", end=", ")
     return is_xyz_supported_node(vlayer)
 def iter_group_node(root):
     for g in root.findGroups():

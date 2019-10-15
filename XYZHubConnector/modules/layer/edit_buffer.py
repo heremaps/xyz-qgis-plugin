@@ -11,7 +11,8 @@
 from qgis.core import QgsVectorLayer
 from qgis.PyQt.QtCore import Qt
 
-from . import parser, layer_props as QProps
+from . import parser
+from .layer_props import QProps
 from .layer_utils import (get_feat_upload_from_iter, is_layer_committed,
                           is_xyz_supported_layer, make_xyz_id_map_from_src,
                           update_feat_non_null, get_conn_info_from_layer,
