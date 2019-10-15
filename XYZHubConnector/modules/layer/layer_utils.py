@@ -149,10 +149,8 @@ def updated_xyz_node(qnode):
 def is_xyz_supported_node(qnode):
     meta = get_customProperty_str(qnode, QProps.LAYER_META)
     flag = isinstance(meta, str) and is_valid_json(meta)
-    # print( meta[:10], type(meta), flag)
     return flag
 def is_xyz_supported_layer(vlayer):
-    # print("layer", end=", ")
     return is_xyz_supported_node(vlayer)
 def iter_group_node(root):
     for g in root.findGroups():

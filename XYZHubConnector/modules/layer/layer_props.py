@@ -32,16 +32,8 @@ class QProps():
         
     @classmethod
     def updatePropsVersion(cls,qnode):
-        # print(qnode.customProperties()
-        #     if hasattr(qnode, "customProperties")
-        #     else qnode.customPropertyKeys())
         for key in cls.v0.keys():
             cls._getOldProperty(qnode, key)
-        # print("after")
-        # print(qnode.customProperties()
-        #     if hasattr(qnode, "customProperties")
-        #     else qnode.customPropertyKeys())
-        # print()
 
     @classmethod
     def _getOldProperty(cls,qnode,key):
