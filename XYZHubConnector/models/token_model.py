@@ -12,6 +12,8 @@
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 
 class TokenModel(QStandardItemModel):
+    """ Simple version of token model, in sync with a simple line config file
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ini = ""
@@ -49,7 +51,6 @@ class TokenModel(QStandardItemModel):
         with open(self.ini,"r+") as f:
             new_lines = [line for line in f.readlines() if not token == line.strip() and len(line.strip()) > 0] # remove blackline as well
             f.seek(0)
-            print(new_lines)
             f.writelines(new_lines)
             f.truncate()
     def _cb_append_token_to_file(self, root, i0, i1):
@@ -57,7 +58,6 @@ class TokenModel(QStandardItemModel):
         token = self.item(i0).text()
         with open(self.ini,"a") as f:
             f.write("\n")
-            print(token,i0,i1)
             f.write(token)
     def _is_valid_single_selection(self, i0, i1):
         return i0 > 0 and i0 == i1
@@ -66,6 +66,8 @@ from .connection import SpaceConnectionInfo
 import configparser
 
 class GroupTokenModel(TokenModel):
+    """ Server-group token model, in sync with a ini config file (with sections)
+    """
     SERVERS = [SpaceConnectionInfo.PRD, SpaceConnectionInfo.CIT, SpaceConnectionInfo.SIT]
     
     def __init__(self, parent=None):
