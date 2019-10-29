@@ -81,7 +81,7 @@ class GroupTokenModel(TokenModel):
 
         self.clear()
         it = self.invisibleRootItem()
-        it.appendRow(QStandardItem())
+        # it.appendRow(QStandardItem())
         it.appendRows([
             QStandardItem(t) for t in tokens
             if len(t) > 0

@@ -38,6 +38,8 @@ class ServerUX(UXDecorator):
     def mouseDoubleClickEvent(self, event):
         self._check_secret()
 
+from ...models.token_model import GroupTokenModel
+
 class TokenUX(ServerUX):
     signal_use_token = pyqtSignal(object)
     def __init__(self):
@@ -49,7 +51,7 @@ class TokenUX(ServerUX):
         self.conn_info = None
         #
         self.used_token_idx = 0
-    def config(self, token_model):
+    def config(self, token_model: GroupTokenModel):
         self.conn_info = SpaceConnectionInfo()
         
         self.used_token_idx = 0
@@ -58,9 +60,9 @@ class TokenUX(ServerUX):
         self.comboBox_token.setInsertPolicy(self.comboBox_token.NoInsert)
         self.comboBox_token.setDuplicatesEnabled(False)
 
-        self.comboBox_token.currentIndexChanged[int].connect(self.cb_comboxBox_token_selected)
+        # self.comboBox_token.currentIndexChanged[int].connect(self.cb_comboxBox_token_selected)
         self.comboBox_token.currentIndexChanged[int].connect(self.ui_valid_input)
-        self.comboBox_token.editTextChanged.connect(self.ui_valid_input)
+        # self.comboBox_token.editTextChanged.connect(self.ui_valid_input)
 
         self.btn_use.clicked.connect(self.cb_token_used)
         self.btn_clear_token.clicked.connect(self.cb_clear_token)
@@ -97,28 +99,6 @@ class TokenUX(ServerUX):
         self.comboBox_token.setCurrentIndex(0)
     def get_input_token(self):
         return self.comboBox_token.currentText().strip()
-        
-    def insert_new_valid_token(self):
-        self.ui_valid_token()
-
-        ### find duplicate
-        # print("current token index: %s"% self.comboBox_token.currentIndex())
-        # if self.comboBox_token.currentIndex() > 0: return
-        # https://github.com/radekp/qt/blob/master/src/gui/widgets/qcombobox.cpp#L1151
-        
-        token, space_id = self.conn_info.get_xyz_space()
-
-        idx = self.comboBox_token.findText(token)
-        if idx == -1: # no duplicate
-            # idx=1; self.comboBox_token.insertItem(idx,token)
-            self.comboBox_token.addItem(token)
-            idx = self.comboBox_token.count() - 1
-            # self.append_to_file( token)
-        self.comboBox_token.setCurrentIndex(idx)
-        
-        # explicit + forced ui_valid_input (in case idx already = currentIndex)
-        self.used_token_idx = self.comboBox_token.currentIndex()
-        self.ui_valid_input() # valid_input initially
     def cb_enable_token_ui(self,flag=True):
         txt_clicked = "Checking.."
         txt0 = "Use"
@@ -141,12 +121,9 @@ class TokenUX(ServerUX):
         self.conn_info.set_(token=token)
         conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_use_token.emit( make_qt_args(conn_info) )
-        
-
     def cb_comboxBox_token_selected(self, index):
         flag_edit = True if index == 0 else False
         self.comboBox_token.setEditable(flag_edit)
-
 
     def ui_valid_token(self, *a):
         """ Return true when token is used and shows Ok!

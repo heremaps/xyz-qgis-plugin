@@ -61,7 +61,6 @@ class SpaceUX(TokenUX):
     def cb_display_spaces(self, obj, *a, **kw):
         # this function can be put into dialog
         # self.ui_valid_token()
-        self.insert_new_valid_token()
         conn_info = SpaceConnectionInfo(self.conn_info)
         lst_id = self.ui_display_spaces(obj)
         if lst_id is not None:
