@@ -29,7 +29,15 @@ class TokenDialog(QDialog, TokenUI):
     def config(self, token_model: GroupTokenInfoModel):
         
         self.token_model = token_model
+
         self.tableView.setModel( token_model)
+        self.tableView.setSelectionMode(self.tableView.SingleSelection)
+        self.tableView.setSelectionBehavior(self.tableView.SelectRows)
+        self.tableView.setEditTriggers(self.tableView.NoEditTriggers)
+
+        header = self.tableView.horizontalHeader()
+        header.setSectionResizeMode(header.ResizeToContents)
+
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
         self.btn_delete.clicked.connect( self.ui_delete_token)
