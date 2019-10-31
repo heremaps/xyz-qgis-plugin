@@ -123,12 +123,6 @@ class GroupTokenInfoModel(GroupTokenModel):
     INFO_KEYS = ["name","token"]
     SERIALIZE_KEYS = ["token","name"]
     DELIM = ","
-    def __init__(self, parent=None):
-        super().__init__()
-        ncols = len(self.INFO_KEYS)
-        QStandardItemModel.__init__(self, 0, ncols, self)
-        self.server = SpaceConnectionInfo.PRD
-        
     def cb_set_server(self, server):
         self.server = server
 
