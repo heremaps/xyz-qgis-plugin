@@ -10,6 +10,7 @@
 
 
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
+from qgis.PyQt.QtCore import QIdentityProxyModel, Qt
 
 class TokenModel(QStandardItemModel):
     """ Simple version of token model, in sync with a simple line config file
@@ -119,7 +120,7 @@ class GroupTokenModel(TokenModel):
             self._write_to_file()
 
 class GroupTokenInfoModel(GroupTokenModel):
-    INFO_KEYS = ["name", "token"]
+    INFO_KEYS = ["name","token"]
     SERIALIZE_KEYS = ["token","name"]
     DELIM = ","
     def __init__(self, parent=None):
@@ -146,11 +147,13 @@ class GroupTokenInfoModel(GroupTokenModel):
         
         for line in tokens:
             if not line: continue
-            it.appendRow([
-                QStandardItem(t)  
+            token_info = self.deserialize_line(line)
+            if not token_info.get("token"): continue
+            it.appendRow([ QStandardItem(t)  
                 for t in self.items_from_token_info(
-                    self.deserialize_line(line))
-                ])
+                self.fill_missing_name(token_info)
+                )
+            ])
 
     def get_text(self, row, col):
         it = self.item(row, col)
@@ -161,6 +164,11 @@ class GroupTokenInfoModel(GroupTokenModel):
             [k, self.get_text(row, col)]
             for col, k in enumerate(self.INFO_KEYS)
         )
+        
+    def fill_missing_name(self, token_info: dict):
+        # if not token_info.get("name",""):
+        #     token_info["name"] = token_info["token"]
+        return token_info
 
     def items_from_token_info(self, token_info: dict):
         return [token_info.get(k,"") for k in self.INFO_KEYS]
@@ -170,9 +178,11 @@ class GroupTokenInfoModel(GroupTokenModel):
         return dict(zip(self.SERIALIZE_KEYS, infos))
 
     def serialize_token_info(self, row):
-        return self.DELIM.join(self.get_text(row, col)
-            for col in self.SERIALIZE_KEYS_IDX
-            )
+        token_info = self.get_token_info(row)
+        # if token_info.get("name","") == token_info.get("token",""):
+        #     token_info["name"] = ""
+        lst_txt = [token_info.get(k,"") for k in self.SERIALIZE_KEYS]
+        return self.DELIM.join(lst_txt)
 
     def _cb_remove_token_from_file(self, root, i0, i1):
         if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
@@ -187,3 +197,20 @@ class GroupTokenInfoModel(GroupTokenModel):
         if not self.token_groups.has_option(self.server, token):
             self.token_groups.set(self.server, token)
             self._write_to_file()
+
+class ComboBoxProxyModel(QIdentityProxyModel):
+    COL_TOKEN = 0 # GroupTokenInfoModel.INFO_KEYS.index("token")
+    def set_keys(self, keys):
+        self.keys = keys
+        self.col_name = self.get_key_index("name")
+        self.col_token = self.get_key_index("token")
+    def get_key_index(self, key):
+        return self.keys.index(key)
+    def get_value(self, row, col, role):
+        return self.sourceModel().item(row, col).data(role)
+    def data(self, index, role):
+        val = super().data(index, role)
+        if role == Qt.DisplayRole:
+            if self.col_name == index.column() and not val:
+                return self.get_value(index.row(), self.col_token, role)
+        return val

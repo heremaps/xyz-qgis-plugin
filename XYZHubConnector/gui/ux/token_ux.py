@@ -12,11 +12,12 @@
 from qgis.PyQt.QtCore import pyqtSignal
 
 from ...models import SpaceConnectionInfo
-from ...models.token_model import GroupTokenModel
+from ...models.token_model import GroupTokenModel, ComboBoxProxyModel
 from ...modules.controller import make_qt_args
 from ..token_dialog import TokenDialog
 from ..util_dialog import ConfirmDialog
 from .ux import UXDecorator
+from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 
 class ServerUX(UXDecorator):
     def __init__(self):
@@ -56,11 +57,14 @@ class TokenUX(ServerUX):
         
         self.used_token_idx = 0
 
-        self.comboBox_token.setModel( token_model)
+        proxy_model = ComboBoxProxyModel()
+        proxy_model.setSourceModel( token_model)
+        proxy_model.set_keys(token_model.INFO_KEYS)
+
+        self.comboBox_token.setModel( proxy_model)
         self.comboBox_token.setInsertPolicy(self.comboBox_token.NoInsert)
         self.comboBox_token.setDuplicatesEnabled(False)
 
-        
         self.token_dialog = TokenDialog(self)
         self.token_dialog.config(token_model)
 
