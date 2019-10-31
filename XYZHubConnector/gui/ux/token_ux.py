@@ -107,7 +107,8 @@ class TokenUX(ServerUX):
         self.used_token_idx = 0
         self.comboBox_token.setCurrentIndex(0)
     def get_input_token(self):
-        return self.comboBox_token.currentText().strip()
+        proxy_model = self.comboBox_token.model()
+        return proxy_model.get_token(self.comboBox_token.currentIndex())
     def cb_enable_token_ui(self,flag=True):
         txt_clicked = "Checking.."
         txt0 = "Use"

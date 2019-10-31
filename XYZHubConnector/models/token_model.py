@@ -194,6 +194,9 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         return self.keys.index(key)
     def get_value(self, row, col, role):
         return self.sourceModel().item(row, col).data(role)
+    def get_token(self, row):
+        it = self.sourceModel().item(row, self.col_token)
+        return it.text().strip() if it else ""
     def data(self, index, role):
         val = super().data(index, role)
         if role == Qt.DisplayRole:
