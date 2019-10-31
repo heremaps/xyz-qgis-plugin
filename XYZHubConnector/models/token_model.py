@@ -124,15 +124,9 @@ class GroupTokenInfoModel(GroupTokenModel):
     SERIALIZE_KEYS = ["token","name"]
     DELIM = ","
     def __init__(self, parent=None):
-        self.SERIALIZE_KEYS_IDX = [
-            self.INFO_KEYS.index(k) 
-            for k in self.SERIALIZE_KEYS]
-        self.DESERIALIZE_KEYS_IDX = [
-            self.SERIALIZE_KEYS.index(k) 
-            for k in self.INFO_KEYS]
-        self.N_INFO = len(self.INFO_KEYS)
         super().__init__()
-        QStandardItemModel.__init__(self, 0, self.N_INFO, self)
+        ncols = len(self.INFO_KEYS)
+        QStandardItemModel.__init__(self, 0, ncols, self)
         self.server = SpaceConnectionInfo.PRD
         
     def cb_set_server(self, server):
@@ -149,9 +143,9 @@ class GroupTokenInfoModel(GroupTokenModel):
             if not line: continue
             token_info = self.deserialize_line(line)
             if not token_info.get("token"): continue
-            it.appendRow([ QStandardItem(t)  
+            it.appendRow([QStandardItem(t)  
                 for t in self.items_from_token_info(
-                self.fill_missing_name(token_info)
+                    token_info
                 )
             ])
 
@@ -164,11 +158,6 @@ class GroupTokenInfoModel(GroupTokenModel):
             [k, self.get_text(row, col)]
             for col, k in enumerate(self.INFO_KEYS)
         )
-        
-    def fill_missing_name(self, token_info: dict):
-        # if not token_info.get("name",""):
-        #     token_info["name"] = token_info["token"]
-        return token_info
 
     def items_from_token_info(self, token_info: dict):
         return [token_info.get(k,"") for k in self.INFO_KEYS]
@@ -179,8 +168,6 @@ class GroupTokenInfoModel(GroupTokenModel):
 
     def serialize_token_info(self, row):
         token_info = self.get_token_info(row)
-        # if token_info.get("name","") == token_info.get("token",""):
-        #     token_info["name"] = ""
         lst_txt = [token_info.get(k,"") for k in self.SERIALIZE_KEYS]
         return self.DELIM.join(lst_txt)
 
@@ -199,7 +186,6 @@ class GroupTokenInfoModel(GroupTokenModel):
             self._write_to_file()
 
 class ComboBoxProxyModel(QIdentityProxyModel):
-    COL_TOKEN = 0 # GroupTokenInfoModel.INFO_KEYS.index("token")
     def set_keys(self, keys):
         self.keys = keys
         self.col_name = self.get_key_index("name")
