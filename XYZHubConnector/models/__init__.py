@@ -9,5 +9,5 @@
 ###############################################################################
 
 from .space_model import XYZSpaceModel 
-from .token_model import TokenModel, GroupTokenModel
+from .token_model import TokenModel, GroupTokenInfoModel
 from .connection import SpaceConnectionInfo

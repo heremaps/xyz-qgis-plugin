@@ -12,7 +12,9 @@
 from qgis.PyQt.QtCore import pyqtSignal
 
 from ...models import SpaceConnectionInfo
+from ...models.token_model import GroupTokenModel
 from ...modules.controller import make_qt_args
+from ..token_dialog import TokenDialog
 from ..util_dialog import ConfirmDialog
 from .ux import UXDecorator
 
@@ -38,8 +40,6 @@ class ServerUX(UXDecorator):
     def mouseDoubleClickEvent(self, event):
         self._check_secret()
 
-from ...models.token_model import GroupTokenModel
-
 class TokenUX(ServerUX):
     signal_use_token = pyqtSignal(object)
     def __init__(self):
@@ -60,11 +60,16 @@ class TokenUX(ServerUX):
         self.comboBox_token.setInsertPolicy(self.comboBox_token.NoInsert)
         self.comboBox_token.setDuplicatesEnabled(False)
 
+        
+        self.token_dialog = TokenDialog(self)
+        self.token_dialog.config(token_model)
+
         # self.comboBox_token.currentIndexChanged[int].connect(self.cb_comboxBox_token_selected)
         self.comboBox_token.currentIndexChanged[int].connect(self.ui_valid_input)
         # self.comboBox_token.editTextChanged.connect(self.ui_valid_input)
 
         self.btn_use.clicked.connect(self.cb_token_used)
+        self.btn_token.clicked.connect(self.token_dialog.exec_)
         self.btn_clear_token.clicked.connect(self.cb_clear_token)
         self.btn_clear_token.clicked.connect(self.ui_valid_input)
 

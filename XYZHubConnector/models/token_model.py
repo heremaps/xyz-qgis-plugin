@@ -117,3 +117,73 @@ class GroupTokenModel(TokenModel):
         if not self.token_groups.has_option(self.server, token):
             self.token_groups.set(self.server, token)
             self._write_to_file()
+
+class GroupTokenInfoModel(GroupTokenModel):
+    INFO_KEYS = ["name", "token"]
+    SERIALIZE_KEYS = ["token","name"]
+    DELIM = ","
+    def __init__(self, parent=None):
+        self.SERIALIZE_KEYS_IDX = [
+            self.INFO_KEYS.index(k) 
+            for k in self.SERIALIZE_KEYS]
+        self.DESERIALIZE_KEYS_IDX = [
+            self.SERIALIZE_KEYS.index(k) 
+            for k in self.INFO_KEYS]
+        self.N_INFO = len(self.INFO_KEYS)
+        super().__init__()
+        QStandardItemModel.__init__(self, 0, self.N_INFO, self)
+        self.server = SpaceConnectionInfo.PRD
+        
+    def cb_set_server(self, server):
+        self.server = server
+
+        tokens = self.token_groups.options(server)
+
+        self.clear()
+        self.setHorizontalHeaderLabels(self.INFO_KEYS)
+        it = self.invisibleRootItem()
+        # it.appendRow(QStandardItem())
+        
+        for line in tokens:
+            if not line: continue
+            it.appendRow([
+                QStandardItem(t)  
+                for t in self.items_from_token_info(
+                    self.deserialize_line(line))
+                ])
+
+    def get_text(self, row, col):
+        it = self.item(row, col)
+        return it.text().strip() if it else None
+
+    def get_token_info(self, row):
+        return dict(
+            [k, self.get_text(row, col)]
+            for col, k in enumerate(self.INFO_KEYS)
+        )
+
+    def items_from_token_info(self, token_info: dict):
+        return [token_info.get(k,"") for k in self.INFO_KEYS]
+
+    def deserialize_line(self, line):
+        infos = line.split(self.DELIM,maxsplit=1)
+        return dict(zip(self.SERIALIZE_KEYS, infos))
+
+    def serialize_token_info(self, row):
+        return self.DELIM.join(self.get_text(row, col)
+            for col in self.SERIALIZE_KEYS_IDX
+            )
+
+    def _cb_remove_token_from_file(self, root, i0, i1):
+        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
+        token = self.serialize_token_info(i0)
+        if self.token_groups.has_option(self.server, token):
+            self.token_groups.remove_option(self.server, token)
+            self._write_to_file()
+        
+    def _cb_append_token_to_file(self, root, i0, i1):
+        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
+        token = self.serialize_token_info(i0)
+        if not self.token_groups.has_option(self.server, token):
+            self.token_groups.set(self.server, token)
+            self._write_to_file()
