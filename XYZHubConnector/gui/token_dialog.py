@@ -41,8 +41,8 @@ class TokenDialog(QDialog, TokenUI):
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
         self.btn_delete.clicked.connect( self.ui_delete_token)
-        # self.btn_up.clicked.connect()
-        # self.btn_down.clicked.connect()
+        self.btn_up.clicked.connect( self.ui_move_token_up)
+        self.btn_down.clicked.connect( self.ui_move_token_down)
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
         return self.token_model.get_token_info(row)
@@ -70,7 +70,21 @@ class TokenDialog(QDialog, TokenUI):
         if ret != dialog.Ok: return
 
         self.token_model.takeRow(row)
-        
+
+    def ui_move_token_up(self):
+        row = self.tableView.currentIndex().row()
+        it = self.token_model.takeRow(row)
+        row = max(row-1,0)
+        self.token_model.insertRow(max(row,0), it)
+        self.tableView.selectRow(row)
+
+    def ui_move_token_down(self):
+        row = self.tableView.currentIndex().row()
+        it = self.token_model.takeRow(row)
+        row = min(row+1, self.token_model.rowCount())
+        self.token_model.insertRow(row, it)
+        self.tableView.selectRow(row)
+
     def _add_token(self, token_info: dict):
         self.token_model.appendRow([
             QStandardItem(token_info["name"]),
@@ -79,7 +93,9 @@ class TokenDialog(QDialog, TokenUI):
     
     def _edit_token(self, token_info: dict):
         row = self.tableView.currentIndex().row()
-        self.token_model.setItem(row, 0,
-        QStandardItem(token_info["name"]))
-        self.token_model.setItem(row, 1,
-        QStandardItem(token_info["token"]))
+        for k in ["name","token"]:
+            self.token_model.setItem(
+                row, self.token_model.INFO_KEYS.index(k),
+                QStandardItem(token_info[k])
+                )
+
