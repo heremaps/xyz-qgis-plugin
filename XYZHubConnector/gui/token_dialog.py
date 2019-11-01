@@ -41,8 +41,10 @@ class TokenDialog(QDialog, TokenUI):
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
         self.btn_delete.clicked.connect( self.ui_delete_token)
-        self.btn_up.clicked.connect( self.ui_move_token_up)
-        self.btn_down.clicked.connect( self.ui_move_token_down)
+        self.btn_up.setVisible(False)
+        self.btn_down.setVisible(False)
+        # self.btn_up.clicked.connect( self.ui_move_token_up)
+        # self.btn_down.clicked.connect( self.ui_move_token_down)
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
         return self.token_model.get_token_info(row)
@@ -55,7 +57,8 @@ class TokenDialog(QDialog, TokenUI):
 
     def ui_edit_token(self):
         dialog = EditTokenInfoDialog(self)
-        dialog.set_token_info(self._get_current_token_info())
+        token_info = self._get_current_token_info()
+        dialog.set_token_info(token_info)
         dialog.accepted.connect(lambda: self._edit_token(
             dialog.get_token_info()
         ))

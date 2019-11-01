@@ -179,6 +179,26 @@ class GroupTokenInfoModel(GroupTokenModel):
             self.token_groups.set(self.server, token)
             self._write_to_file()
 
+class EditableGroupTokenInfoModel(GroupTokenInfoModel):
+    def _config_callback(self):
+        super()._config_callback()
+        try: self.itemChanged.disconnect()
+        except TypeError: pass
+        # self.rowsMoved.connect(print)
+        self.dataChanged.connect(self._cb_changed_token_to_file)
+
+    def _cb_changed_token_to_file(self, idx_top_left, idx_bot_right):
+        row = idx_top_left.row()
+        token = self.serialize_token_info(row)
+
+        tokens = self.token_groups.options(self.server)
+        old_token = tokens[row]
+        self.token_groups.remove_option(self.server, old_token)
+        
+        if not self.token_groups.has_option(self.server, token):
+            self.token_groups.set(self.server, token)
+
+
 class ComboBoxProxyModel(QIdentityProxyModel):
     def set_keys(self, keys):
         self.keys = keys
