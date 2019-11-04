@@ -45,6 +45,9 @@ class TokenDialog(QDialog, TokenUI):
         self.btn_down.setVisible(False)
         # self.btn_up.clicked.connect( self.ui_move_token_up)
         # self.btn_down.clicked.connect( self.ui_move_token_down)
+
+        self.finished.connect( token_model.cb_write_token)
+        
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
         return self.token_model.get_token_info(row)

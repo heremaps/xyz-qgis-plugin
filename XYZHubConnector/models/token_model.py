@@ -63,6 +63,8 @@ class TokenModel(QStandardItemModel):
             f.write("\n")
             f.write(token)
     def _is_valid_single_selection(self, i0, i1):
+        """ check for valid single selection, assume index 0 is not valid (text input)
+        """
         return i0 > 0 and i0 == i1
 
 from .connection import SpaceConnectionInfo
@@ -83,7 +85,6 @@ class GroupTokenModel(TokenModel):
 
     def _refresh_token(self):
         tokens = self.token_groups.options(self.server)
-
         self.clear()
         it = self.invisibleRootItem()
         # it.appendRow(QStandardItem())
@@ -127,10 +128,11 @@ class GroupTokenInfoModel(GroupTokenModel):
     INFO_KEYS = ["name","token"]
     SERIALIZE_KEYS = ["token","name"]
     DELIM = ","
+    
     def _refresh_token(self):
         tokens = self.token_groups.options(self.server)
-
         self.clear()
+        
         self.setHorizontalHeaderLabels(self.INFO_KEYS)
         it = self.invisibleRootItem()
         # it.appendRow(QStandardItem())
@@ -180,8 +182,14 @@ class GroupTokenInfoModel(GroupTokenModel):
         if not self.token_groups.has_option(self.server, token):
             self.token_groups.set(self.server, token)
             self._write_to_file()
+    def cb_write_token(self):
+        pass
 
 class EditableGroupTokenInfoModel(GroupTokenInfoModel):
+    
+    def _refresh_token(self):
+        self.cache_tokens = list()
+        super()._refresh_token()
 
     def _config_callback(self):
         super()._config_callback()
@@ -190,31 +198,41 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
         # self.rowsMoved.connect(print)
         self.dataChanged.connect(self._cb_changed_token_to_file)
 
-    def _cb_remove_token_from_file(self, root, i0, i1):
-        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
-        token = self.serialize_token_info(i0)
-        if self.token_groups.has_option(self.server, token):
-            self.token_groups.remove_option(self.server, token)
-            self._write_to_file()
-        
-    def _cb_append_token_to_file(self, root, i0, i1):
-        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
-        token = self.serialize_token_info(i0)
-        if not self.token_groups.has_option(self.server, token):
+    def cb_write_token(self):
+        self.token_groups.remove_section(self.server)
+        self.token_groups.add_section(self.server)
+        tokens = self.token_groups.options(self.server)
+        print(len(tokens), tokens)
+        for token in self.cache_tokens:
             self.token_groups.set(self.server, token)
-            self._write_to_file()
+        tokens = self.token_groups.options(self.server)
+        print(len(tokens), tokens)
+
+        self._write_to_file()
+
+    def _cb_remove_token_from_file(self, root, i0, i1):
+        if not self._is_valid_single_selection(i0, i1): return
+        token = self.cache_tokens.pop(i0)
+        print("remove",self.cache_tokens)
+
+    def _cb_append_token_to_file(self, root, i0, i1):
+        print("append",i0,i1)
+        if not self._is_valid_single_selection(i0, i1): return
+        token = self.serialize_token_info(i0)
+        self.cache_tokens.append(token)
+        print("append",self.cache_tokens)
 
     def _cb_changed_token_to_file(self, idx_top_left, idx_bot_right):
-        row = idx_top_left.row()
-        token = self.serialize_token_info(row)
-
-        tokens = self.token_groups.options(self.server)
-        old_token = tokens[row]
-        self.token_groups.remove_option(self.server, old_token)
+        i0 = idx_top_left.row()
+        i1 = idx_bot_right.row()
+        if not self._is_valid_single_selection(i0, i1): return
+        token = self.serialize_token_info(i0)
+        self.cache_tokens[i0] = token
         
-        if not self.token_groups.has_option(self.server, token):
-            self.token_groups.set(self.server, token)
-
+    def _is_valid_single_selection(self, i0, i1):
+        """ check for valid single selection (no text input)
+        """
+        return i0 == i1
 
 class ComboBoxProxyModel(QIdentityProxyModel):
     def set_keys(self, keys):
