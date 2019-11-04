@@ -1,5 +1,9 @@
 # Changelog 
 
+## version 1.7.5 (2019-11-08)
+
+* bug fixes: import XYZ layer from saved project
+
 ## version 1.7.4 (2019-09-11)
 
 * bug fixes: updates in API 1.4
