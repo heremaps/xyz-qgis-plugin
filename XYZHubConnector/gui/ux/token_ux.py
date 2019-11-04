@@ -77,17 +77,17 @@ class TokenUX(ServerUX):
         self.btn_clear_token.clicked.connect(self.cb_clear_token)
         self.btn_clear_token.clicked.connect(self.ui_valid_input)
 
-        self.comboBox_server.currentIndexChanged[str].connect(token_model.cb_set_server)
-        self.comboBox_server.currentIndexChanged[str].connect(self.cb_set_server)
+        self.comboBox_server.currentIndexChanged[str].connect(token_model.set_server)
+        self.comboBox_server.currentIndexChanged[str].connect(self.set_server)
         self.comboBox_server.currentIndexChanged[str].connect(self.ui_valid_input)
 
-        token_model.cb_set_server(self.comboBox_server.currentText())
+        token_model.set_server(self.comboBox_server.currentText())
         self.conn_info.set_server(self.comboBox_server.currentText())
 
         self.comboBox_token.setCurrentIndex(0)
         self.ui_valid_input() # valid_input initially (explicit)
 
-    def cb_set_server(self,server):
+    def set_server(self,server):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
     def cb_clear_token(self):

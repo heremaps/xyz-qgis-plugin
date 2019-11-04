@@ -22,10 +22,12 @@ class TokenModel(QStandardItemModel):
     def load_ini(self, ini):
         self._load_ini(ini)
         self.ini = ini # must be after loaded
+        self._refresh_token()
+        
     def get_ini(self):
         return self.ini
     
-    def cb_set_server(self, server):
+    def _refresh_token(self):
         pass
 
     def _load_ini(self, ini):
@@ -75,10 +77,12 @@ class GroupTokenModel(TokenModel):
         super().__init__(parent)
         self.server = SpaceConnectionInfo.PRD
         
-    def cb_set_server(self, server):
+    def set_server(self, server):
         self.server = server
+        self._refresh_token()
 
-        tokens = self.token_groups.options(server)
+    def _refresh_token(self):
+        tokens = self.token_groups.options(self.server)
 
         self.clear()
         it = self.invisibleRootItem()
@@ -123,10 +127,8 @@ class GroupTokenInfoModel(GroupTokenModel):
     INFO_KEYS = ["name","token"]
     SERIALIZE_KEYS = ["token","name"]
     DELIM = ","
-    def cb_set_server(self, server):
-        self.server = server
-
-        tokens = self.token_groups.options(server)
+    def _refresh_token(self):
+        tokens = self.token_groups.options(self.server)
 
         self.clear()
         self.setHorizontalHeaderLabels(self.INFO_KEYS)
@@ -180,12 +182,27 @@ class GroupTokenInfoModel(GroupTokenModel):
             self._write_to_file()
 
 class EditableGroupTokenInfoModel(GroupTokenInfoModel):
+
     def _config_callback(self):
         super()._config_callback()
         try: self.itemChanged.disconnect()
         except TypeError: pass
         # self.rowsMoved.connect(print)
         self.dataChanged.connect(self._cb_changed_token_to_file)
+
+    def _cb_remove_token_from_file(self, root, i0, i1):
+        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
+        token = self.serialize_token_info(i0)
+        if self.token_groups.has_option(self.server, token):
+            self.token_groups.remove_option(self.server, token)
+            self._write_to_file()
+        
+    def _cb_append_token_to_file(self, root, i0, i1):
+        if not self._is_valid_single_selection(i0, i1): return # do not write multiple added items appendRows
+        token = self.serialize_token_info(i0)
+        if not self.token_groups.has_option(self.server, token):
+            self.token_groups.set(self.server, token)
+            self._write_to_file()
 
     def _cb_changed_token_to_file(self, idx_top_left, idx_bot_right):
         row = idx_top_left.row()
