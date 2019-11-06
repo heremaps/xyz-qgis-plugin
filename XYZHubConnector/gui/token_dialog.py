@@ -91,15 +91,14 @@ class TokenDialog(QDialog, TokenUI):
 
     def _add_token(self, token_info: dict):
         self.token_model.appendRow([
-            QStandardItem(token_info["name"]),
-            QStandardItem(token_info["token"])
+            QStandardItem(token_info[k])
+            for k in ["name", "token"]
         ])
     
     def _edit_token(self, token_info: dict):
         row = self.tableView.currentIndex().row()
-        for k in ["name","token"]:
-            self.token_model.setItem(
-                row, self.token_model.INFO_KEYS.index(k),
-                QStandardItem(token_info[k])
-                )
-
+        self.token_model.insertRow(row+1, [
+            QStandardItem(token_info[k])
+            for k in ["name", "token"]
+        ])
+        it = self.token_model.takeRow(row)
