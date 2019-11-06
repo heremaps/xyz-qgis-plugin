@@ -219,7 +219,7 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
         print("append",i0,i1)
         if not self._is_valid_single_selection(i0, i1): return
         token = self.serialize_token_info(i0)
-        self.cache_tokens.append(token)
+        self.cache_tokens.insert(i0,token)
         print("append",self.cache_tokens)
 
     def _cb_changed_token_to_file(self, idx_top_left, idx_bot_right):
@@ -228,7 +228,7 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
         if not self._is_valid_single_selection(i0, i1): return
         token = self.serialize_token_info(i0)
         self.cache_tokens[i0] = token
-        
+
     def _is_valid_single_selection(self, i0, i1):
         """ check for valid single selection (no text input)
         """

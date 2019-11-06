@@ -41,10 +41,8 @@ class TokenDialog(QDialog, TokenUI):
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
         self.btn_delete.clicked.connect( self.ui_delete_token)
-        self.btn_up.setVisible(False)
-        self.btn_down.setVisible(False)
-        # self.btn_up.clicked.connect( self.ui_move_token_up)
-        # self.btn_down.clicked.connect( self.ui_move_token_down)
+        self.btn_up.clicked.connect( self.ui_move_token_up)
+        self.btn_down.clicked.connect( self.ui_move_token_down)
 
         self.finished.connect( token_model.cb_write_token)
         
