@@ -187,6 +187,9 @@ class GroupTokenInfoModel(GroupTokenModel):
 
 class EditableGroupTokenInfoModel(GroupTokenInfoModel):
     
+    def cb_refresh_token(self):
+        self._refresh_token()
+        
     def _refresh_token(self):
         self.cache_tokens = list()
         super()._refresh_token()

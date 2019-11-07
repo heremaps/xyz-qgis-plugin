@@ -68,6 +68,16 @@
         </property>
        </spacer>
       </item>
+      <item>
+        <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="orientation">
+            <enum>Qt::Vertical</enum>
+          </property>
+          <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+          </property>
+        </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -82,5 +92,18 @@
   <tabstop>btn_down</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+  </connection>
+ </connections>
 </ui>
