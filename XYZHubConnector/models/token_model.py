@@ -10,7 +10,7 @@
 
 
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
-from qgis.PyQt.QtCore import QIdentityProxyModel, Qt
+from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
 
 class TokenModel(QStandardItemModel):
     """ Simple version of token model, in sync with a simple line config file
@@ -189,7 +189,7 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
     
     def cb_refresh_token(self):
         self._refresh_token()
-        
+
     def _refresh_token(self):
         self.cache_tokens = list()
         super()._refresh_token()
@@ -239,6 +239,8 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
 
 class ComboBoxProxyModel(QIdentityProxyModel):
     def set_keys(self, keys):
+        """ set header keys
+        """
         self.keys = keys
         self.col_name = self.get_key_index("name")
         self.col_token = self.get_key_index("token")
@@ -246,12 +248,17 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         return self.keys.index(key)
     def get_value(self, row, col, role):
         return self.sourceModel().item(row, col).data(role)
+    def get_text(self, row, col):
+        return self.sourceModel().item(row, col).text().strip()
     def get_token(self, row):
         it = self.sourceModel().item(row, self.col_token)
         return it.text().strip() if it else ""
     def data(self, index, role):
         val = super().data(index, role)
         if role == Qt.DisplayRole:
-            if self.col_name == index.column() and not val:
-                return self.get_value(index.row(), self.col_token, role)
+            name = self.get_text(index.row(), self.col_name)
+            token = self.get_text(index.row(), self.col_token)
+            if token:
+                msg = name if name else "<noname token>"
+                return QVariant(msg)
         return val
