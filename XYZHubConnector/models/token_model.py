@@ -205,25 +205,20 @@ class EditableGroupTokenInfoModel(GroupTokenInfoModel):
         self.token_groups.remove_section(self.server)
         self.token_groups.add_section(self.server)
         tokens = self.token_groups.options(self.server)
-        print(len(tokens), tokens)
         for token in self.cache_tokens:
             self.token_groups.set(self.server, token)
         tokens = self.token_groups.options(self.server)
-        print(len(tokens), tokens)
 
         self._write_to_file()
 
     def _cb_remove_token_from_file(self, root, i0, i1):
         if not self._is_valid_single_selection(i0, i1): return
         token = self.cache_tokens.pop(i0)
-        print("remove",self.cache_tokens)
 
     def _cb_append_token_to_file(self, root, i0, i1):
-        print("append",i0,i1)
         if not self._is_valid_single_selection(i0, i1): return
         token = self.serialize_token_info(i0)
         self.cache_tokens.insert(i0,token)
-        print("append",self.cache_tokens)
 
     def _cb_changed_token_to_file(self, idx_top_left, idx_bot_right):
         i0 = idx_top_left.row()
