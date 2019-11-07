@@ -65,6 +65,13 @@ class TokenUX(ServerUX):
         self.comboBox_token.setInsertPolicy(self.comboBox_token.NoInsert)
         self.comboBox_token.setDuplicatesEnabled(False)
 
+        self.comboBox_server.currentIndexChanged[str].connect(token_model.set_server)
+        self.comboBox_server.currentIndexChanged[str].connect(self.set_server)
+        self.comboBox_server.currentIndexChanged[str].connect(self.ui_valid_input)
+
+        token_model.set_server(self.comboBox_server.currentText())
+        self.conn_info.set_server(self.comboBox_server.currentText())
+
         self.token_dialog = TokenDialog(self)
         self.token_dialog.config(token_model)
 
@@ -76,13 +83,6 @@ class TokenUX(ServerUX):
         self.btn_token.clicked.connect(self.token_dialog.exec_)
         self.btn_clear_token.clicked.connect(self.cb_clear_token)
         self.btn_clear_token.clicked.connect(self.ui_valid_input)
-
-        self.comboBox_server.currentIndexChanged[str].connect(token_model.set_server)
-        self.comboBox_server.currentIndexChanged[str].connect(self.set_server)
-        self.comboBox_server.currentIndexChanged[str].connect(self.ui_valid_input)
-
-        token_model.set_server(self.comboBox_server.currentText())
-        self.conn_info.set_server(self.comboBox_server.currentText())
 
         self.comboBox_token.setCurrentIndex(0)
         self.ui_valid_input() # valid_input initially (explicit)

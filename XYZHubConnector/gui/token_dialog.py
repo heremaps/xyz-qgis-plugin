@@ -36,7 +36,7 @@ class TokenDialog(QDialog, TokenUI):
         self.tableView.setEditTriggers(self.tableView.NoEditTriggers)
 
         header = self.tableView.horizontalHeader()
-        header.setSectionResizeMode(header.ResizeToContents)
+        self.tableView.resizeColumnsToContents()
 
         # dont use pressed, activated
         self.tableView.selectionModel().currentRowChanged.connect(self.ui_enable_btn)
