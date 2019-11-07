@@ -83,7 +83,10 @@ class SpaceInfoTokenDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
         self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
         self.ui_enable_btn()
     def ui_enable_btn(self):
-        flag = (len(self.lineEdit_title.text()) > 0 and len(self.plainTextEdit_description.toPlainText()) > 0)
+        flag = all([
+            self.lineEdit_title.text().strip(),
+            self.plainTextEdit_description.toPlainText()
+            ])
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
