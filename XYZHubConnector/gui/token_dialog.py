@@ -38,6 +38,10 @@ class TokenDialog(QDialog, TokenUI):
         header = self.tableView.horizontalHeader()
         header.setSectionResizeMode(header.ResizeToContents)
 
+        # dont use pressed, activated
+        self.tableView.selectionModel().currentRowChanged.connect(self.ui_enable_btn)
+        self.ui_enable_btn()
+
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
         self.btn_delete.clicked.connect( self.ui_delete_token)
@@ -47,7 +51,17 @@ class TokenDialog(QDialog, TokenUI):
         self.accepted.connect( token_model.cb_write_token)
         self.rejected.connect( token_model.cb_refresh_token)
         
-        
+    def ui_enable_btn(self, *a):
+        index =  self.tableView.currentIndex()
+        flag = index.isValid()
+        for btn in [
+            self.btn_edit,
+            self.btn_delete,
+            self.btn_up,
+            self.btn_down,
+        ]:
+            btn.setEnabled(flag)
+
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
         return self.token_model.get_token_info(row)

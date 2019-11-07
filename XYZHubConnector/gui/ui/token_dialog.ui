@@ -84,8 +84,8 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>tableView</tabstop>
   <tabstop>btn_add</tabstop>
+  <tabstop>tableView</tabstop>
   <tabstop>btn_edit</tabstop>
   <tabstop>btn_delete</tabstop>
   <tabstop>btn_up</tabstop>
