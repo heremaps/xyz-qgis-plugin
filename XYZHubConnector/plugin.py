@@ -471,7 +471,7 @@ class XYZHubConnector(object):
             if is_xyz_supported_layer(vl)
             ] + [
             g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
-            if len(g.children()) == 0 and g.isVisible() 
+            if len(g.findLayers()) == 0 and g.isVisible() 
             and is_xyz_supported_node(g)
         ]:
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
