@@ -25,8 +25,8 @@ def is_valid_json(txt):
     except ValueError as e:
         return False
     return True
-def load_json_none(txt):
-    obj = None
+def load_json_default(txt, default=None):
+    obj = default
     try:
         obj = json.loads(txt)
     except ValueError as e:
