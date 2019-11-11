@@ -47,7 +47,7 @@ class TokenUX(ServerUX):
         # these are like abstract variables
         self.comboBox_token = None
         self.btn_use = None
-        self.btn_clear_token = None
+        self.btn_token = None
         self.comboBox_server = None
         self.conn_info = None
         #
@@ -81,8 +81,6 @@ class TokenUX(ServerUX):
 
         self.btn_use.clicked.connect(self.cb_token_used)
         self.btn_token.clicked.connect(self.token_dialog.exec_)
-        self.btn_clear_token.clicked.connect(self.cb_clear_token)
-        self.btn_clear_token.clicked.connect(self.ui_valid_input)
 
         self.comboBox_token.setCurrentIndex(0)
         self.ui_valid_input() # valid_input initially (explicit)
@@ -90,22 +88,7 @@ class TokenUX(ServerUX):
     def set_server(self,server):
         self.conn_info.set_server(server)
         self.used_token_idx = 0
-    def cb_clear_token(self):
-        dialog = ConfirmDialog("Do you want to Remove token: %s ?"%(self.get_input_token()))
-        ret = dialog.exec_()
-        if ret != dialog.Ok: return
 
-        idx = self.comboBox_token.currentIndex()
-        if idx > 0:
-            self.comboBox_token.removeItem(idx)
-        else:
-            self.comboBox_token.clearEditText()
-
-        if self.used_token_idx == idx:
-            self._after_clear_token()
-    def _after_clear_token(self):
-        self.used_token_idx = 0
-        self.comboBox_token.setCurrentIndex(0)
     def get_input_token(self):
         proxy_model = self.comboBox_token.model()
         return proxy_model.get_token(self.comboBox_token.currentIndex())
@@ -117,7 +100,6 @@ class TokenUX(ServerUX):
         elif self.btn_use.text() == txt_clicked:
             self.btn_use.setText(txt0)
         self.btn_use.setEnabled(flag)
-        self.btn_clear_token.setEnabled(flag)
         self.comboBox_server.setEnabled(flag)
         self.comboBox_token.setEnabled(flag)
     def cb_token_used(self):
