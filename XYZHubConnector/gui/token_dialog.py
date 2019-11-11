@@ -35,12 +35,9 @@ class TokenDialog(QDialog, TokenUI):
         self.tableView.setSelectionBehavior(self.tableView.SelectRows)
         self.tableView.setEditTriggers(self.tableView.NoEditTriggers)
 
-        header = self.tableView.horizontalHeader()
-        self.tableView.resizeColumnsToContents()
 
         # dont use pressed, activated
-        self.tableView.selectionModel().currentRowChanged.connect(self.ui_enable_btn)
-        self.ui_enable_btn()
+        self.tableView.selectionModel().currentChanged.connect(self.ui_enable_btn)
 
         self.btn_add.clicked.connect( self.ui_add_token)
         self.btn_edit.clicked.connect( self.ui_edit_token)
@@ -51,6 +48,12 @@ class TokenDialog(QDialog, TokenUI):
         self.accepted.connect( token_model.cb_write_token)
         self.rejected.connect( token_model.cb_refresh_token)
         
+    def exec_(self):
+        # self.tableView.resizeColumnsToContents()
+        self.tableView.clearFocus()
+        self.ui_enable_btn()
+        super().exec_()
+
     def ui_enable_btn(self, *a):
         index =  self.tableView.currentIndex()
         flag = index.isValid()
@@ -65,6 +68,7 @@ class TokenDialog(QDialog, TokenUI):
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
         return self.token_model.get_token_info(row)
+
     def ui_add_token(self):
         dialog = NewTokenInfoDialog(self)
         dialog.accepted.connect(lambda: self._add_token(
