@@ -454,6 +454,40 @@ class XYZHubConnector(object):
 
         con_load.start_args( make_qt_args(*a, **kw))
 
+    def iter_checked_xyz_subnode(self):
+        """ iterate through visible xyz nodes (vector layer and group node)
+        """
+        root = QgsProject.instance().layerTreeRoot()
+        for vl in root.checkedLayers():
+            if is_xyz_supported_layer(vl):
+                yield vl
+        for g in iter_group_node(root):
+            if (len(g.findLayers()) == 0 
+                and g.isVisible()
+                and is_xyz_supported_node(g)):
+                yield g
+
+    def iter_all_xyz_node(self):
+        """ iterate through xyz group nodes
+        """
+        for qnode in self._iter_all_xyz_node():
+            yield qnode
+
+    def iter_update_all_xyz_node(self):
+        """ iterate through xyz group nodes, with meta version check and updated.
+        """
+        for qnode in self._iter_all_xyz_node(fn_node=updated_xyz_node):
+            yield qnode
+
+    def _iter_all_xyz_node(self, fn_node=lambda a: None):
+        """ iterate through xyz group nodes, with custom function fn_node applied to every node
+        """
+        root = QgsProject.instance().layerTreeRoot()
+        for g in iter_group_node(root):
+            fn_node(g)
+            if is_xyz_supported_node(g):
+                yield g
+
     def reload_tile(self):
         canvas = self.iface.mapCanvas()
         rect = bbox_utils.extend_to_rect(
@@ -466,14 +500,7 @@ class XYZHubConnector(object):
 
         unique_con = set()
         lst_con = list()
-        for qnode in [
-            vl for vl in QgsProject.instance().layerTreeRoot().checkedLayers()
-            if is_xyz_supported_layer(vl)
-            ] + [
-            g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
-            if len(g.findLayers()) == 0 and g.isVisible() 
-            and is_xyz_supported_node(g)
-        ]:
+        for qnode in self.iter_checked_xyz_subnode():
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
             con = self.con_man.get_from_xyz_layer(xlayer_id)
             if con is None: continue
@@ -499,23 +526,25 @@ class XYZHubConnector(object):
     ###############
 
     def import_project(self):
-        self.init_tile_loader()
+        self.init_all_tile_loader()
+    def init_tile_loader(self, qnode):
+        layer = XYZLayer.load_from_qnode(qnode)
+        con_load = TileLayerLoader(self.network, n_parallel=1, layer=layer)
+        ptr = self.con_man.add_layer(con_load)
+        # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
+        con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
+        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
+        con_load.signal.error.connect( self.cb_handle_error_msg )
+        return con_load
 
-    def init_tile_loader(self):
+    def init_all_tile_loader(self):
         cnt = 0
-        for qnode in (
-            g for g in iter_group_node(QgsProject.instance().layerTreeRoot())
-            if is_xyz_supported_node(updated_xyz_node(g))
-        ):
+        for qnode in self.iter_update_all_xyz_node():
+            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+            con = self.con_man.get_from_xyz_layer(xlayer_id)
+            if con: continue
             try: 
-                layer = XYZLayer.load_from_qnode(qnode)
-                con_load = TileLayerLoader(self.network, n_parallel=1, layer=layer)
-                ptr = self.con_man.add_layer(con_load)
-                # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
-                con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
-                # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
-                con_load.signal.error.connect( self.cb_handle_error_msg )
-
+                con = self.init_tile_loader(qnode)
                 cnt += 1
             except Exception as e:
                 self.show_err_msgbar(e)
