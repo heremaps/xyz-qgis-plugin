@@ -43,6 +43,7 @@ class ServerUX(UXDecorator):
 
 class TokenUX(ServerUX):
     signal_use_token = pyqtSignal(object)
+    INVALID_TOKEN_IDX = -1
     def __init__(self):
         # these are like abstract variables
         self.comboBox_token = None
@@ -51,11 +52,11 @@ class TokenUX(ServerUX):
         self.comboBox_server = None
         self.conn_info = None
         #
-        self.used_token_idx = 0
+        self.used_token_idx = self.INVALID_TOKEN_IDX
     def config(self, token_model: GroupTokenModel):
         self.conn_info = SpaceConnectionInfo()
         
-        self.used_token_idx = 0
+        self.used_token_idx = self.INVALID_TOKEN_IDX
 
         proxy_model = ComboBoxProxyModel()
         proxy_model.setSourceModel( token_model)
@@ -87,7 +88,7 @@ class TokenUX(ServerUX):
 
     def set_server(self,server):
         self.conn_info.set_server(server)
-        self.used_token_idx = 0
+        self.used_token_idx = self.INVALID_TOKEN_IDX
 
     def get_input_token(self):
         proxy_model = self.comboBox_token.model()
@@ -124,7 +125,7 @@ class TokenUX(ServerUX):
         self.btn_use.setEnabled(flag_token)
         # self.btn_clear_token.setEnabled(flag_token)
 
-        flag = self.comboBox_token.currentIndex() > 0 and self.used_token_idx == self.comboBox_token.currentIndex()
+        flag = self.comboBox_token.currentIndex() != self.INVALID_TOKEN_IDX and self.used_token_idx == self.comboBox_token.currentIndex()
         txt = "Ok!" if flag else "Use"
         self.btn_use.setText(txt)
         return flag

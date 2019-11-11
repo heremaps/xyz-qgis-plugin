@@ -342,6 +342,7 @@ class XYZHubConnector(object):
         con.signal.error.connect( self.cb_handle_error_msg )
         con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
         con.signal.finished.connect( dialog.cb_enable_token_ui )
+        con.signal.finished.connect( dialog.ui_valid_token )
 
         con = self.con_man.make_con("edit")
         con.signal.finished.connect( dialog.btn_use.clicked.emit )
