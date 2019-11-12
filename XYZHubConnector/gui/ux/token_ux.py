@@ -80,10 +80,14 @@ class TokenUX(ServerUX):
         # self.comboBox_token.editTextChanged.connect(self.ui_valid_input)
 
         self.btn_use.clicked.connect(self.cb_token_used)
-        self.btn_token.clicked.connect(self.token_dialog.exec_)
+        self.btn_token.clicked.connect(self.open_token_dialog)
 
         self.comboBox_token.setCurrentIndex(0)
         self.ui_valid_input() # valid_input initially (explicit)
+
+    def open_token_dialog(self):
+        self.token_dialog.exec_()
+        return self.token_dialog.is_current_token_changed
 
     def set_server(self,server):
         self.conn_info.set_server(server)

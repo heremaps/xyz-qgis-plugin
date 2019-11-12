@@ -26,6 +26,7 @@ class TokenDialog(QDialog, TokenUI):
         TokenUI.setupUi(self, self)
         self.setWindowTitle(self.title)
 
+        self.is_current_token_changed = False
     def config(self, token_model: GroupTokenInfoModel):
         
         self.token_model = token_model
@@ -52,7 +53,11 @@ class TokenDialog(QDialog, TokenUI):
         # self.tableView.resizeColumnsToContents()
         self.tableView.clearFocus()
         self.ui_enable_btn()
-        super().exec_()
+        self.is_current_token_changed = False
+        ret = super().exec_()
+        if ret == self.Rejected:
+            self.is_current_token_changed = False
+        return ret
 
     def ui_enable_btn(self, *a):
         index =  self.tableView.currentIndex()
@@ -94,20 +99,27 @@ class TokenDialog(QDialog, TokenUI):
         if ret != dialog.Ok: return
 
         self.token_model.takeRow(row)
+        self.check_current_token_changed(row)
 
     def ui_move_token_up(self):
         row = self.tableView.currentIndex().row()
         it = self.token_model.takeRow(row)
+        self.check_current_token_changed(row)
+
         row = max(row-1,0)
         self.token_model.insertRow(max(row,0), it)
         self.tableView.selectRow(row)
+        self.check_current_token_changed(row)
 
     def ui_move_token_down(self):
         row = self.tableView.currentIndex().row()
         it = self.token_model.takeRow(row)
+        self.check_current_token_changed(row)
+
         row = min(row+1, self.token_model.rowCount())
         self.token_model.insertRow(row, it)
         self.tableView.selectRow(row)
+        self.check_current_token_changed(row)
 
     def _add_token(self, token_info: dict):
         self.token_model.appendRow([
@@ -122,3 +134,8 @@ class TokenDialog(QDialog, TokenUI):
             for k in ["name", "token"]
         ])
         it = self.token_model.takeRow(row)
+        self.check_current_token_changed(row)
+        
+    def check_current_token_changed(self, idx):
+        flag = idx == self.token_model.get_used_token_idx()
+        self.is_current_token_changed = self.is_current_token_changed or flag

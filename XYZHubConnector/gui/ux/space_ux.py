@@ -48,10 +48,15 @@ class SpaceUX(TokenUX):
     def _get_current_index(self):
         index =  self.tableView_space.currentIndex()
         return self._get_proxy_model().mapToSource(index)
-    def _after_clear_token(self):
-        TokenUX._after_clear_token(self)
-        self._get_space_model().reset()
         
+    def open_token_dialog(self):
+        is_current_token_changed = super().open_token_dialog()
+        if not is_current_token_changed: return
+
+        self._get_space_model().reset()
+        self.token_model.reset_used_token_idx()
+        self.ui_valid_input()
+
     ##### CALLBACK
     def cb_table_row_selected(self, index):
         # pending token -> gui
