@@ -26,7 +26,8 @@ class TokenDialog(QDialog, TokenUI):
         TokenUI.setupUi(self, self)
         self.setWindowTitle(self.title)
 
-        self.is_current_token_changed = False
+        self.is_used_token_changed = False
+        self.current_idx = -1
     def config(self, token_model: GroupTokenInfoModel):
         
         self.token_model = token_model
@@ -51,14 +52,16 @@ class TokenDialog(QDialog, TokenUI):
         
     def exec_(self):
         # self.tableView.resizeColumnsToContents()
-        self.tableView.clearFocus()
+        # self.tableView.clearFocus()
+        self.tableView.selectRow(self.current_idx)
         self.ui_enable_btn()
-        self.is_current_token_changed = False
+        self.is_used_token_changed = False
         ret = super().exec_()
         if ret == self.Rejected:
-            self.is_current_token_changed = False
+            self.is_used_token_changed = False
         return ret
-
+    def set_current_idx(self,idx):
+        self.current_idx = idx
     def ui_enable_btn(self, *a):
         index =  self.tableView.currentIndex()
         flag = index.isValid()
@@ -99,27 +102,27 @@ class TokenDialog(QDialog, TokenUI):
         if ret != dialog.Ok: return
 
         self.token_model.takeRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
 
     def ui_move_token_up(self):
         row = self.tableView.currentIndex().row()
         it = self.token_model.takeRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
 
         row = max(row-1,0)
         self.token_model.insertRow(max(row,0), it)
         self.tableView.selectRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
 
     def ui_move_token_down(self):
         row = self.tableView.currentIndex().row()
         it = self.token_model.takeRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
 
         row = min(row+1, self.token_model.rowCount())
         self.token_model.insertRow(row, it)
         self.tableView.selectRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
 
     def _add_token(self, token_info: dict):
         self.token_model.appendRow([
@@ -134,8 +137,8 @@ class TokenDialog(QDialog, TokenUI):
             for k in ["name", "token"]
         ])
         it = self.token_model.takeRow(row)
-        self.check_current_token_changed(row)
+        self.check_used_token_changed(row)
         
-    def check_current_token_changed(self, idx):
+    def check_used_token_changed(self, idx):
         flag = idx == self.token_model.get_used_token_idx()
-        self.is_current_token_changed = self.is_current_token_changed or flag
+        self.is_used_token_changed = self.is_used_token_changed or flag

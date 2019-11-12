@@ -50,8 +50,8 @@ class SpaceUX(TokenUX):
         return self._get_proxy_model().mapToSource(index)
         
     def open_token_dialog(self):
-        is_current_token_changed = super().open_token_dialog()
-        if not is_current_token_changed: return
+        is_used_token_changed = super().open_token_dialog()
+        if not is_used_token_changed: return
 
         self._get_space_model().reset()
         self.token_model.reset_used_token_idx()

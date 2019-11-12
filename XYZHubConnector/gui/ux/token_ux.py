@@ -86,8 +86,11 @@ class TokenUX(ServerUX):
         self.ui_valid_input() # valid_input initially (explicit)
 
     def open_token_dialog(self):
+        idx = self.comboBox_token.currentIndex()
+        self.token_dialog.set_current_idx(idx)
         self.token_dialog.exec_()
-        return self.token_dialog.is_current_token_changed
+        self.comboBox_token.setCurrentIndex(idx)
+        return self.token_dialog.is_used_token_changed
 
     def set_server(self,server):
         self.conn_info.set_server(server)
