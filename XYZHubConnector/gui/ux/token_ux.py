@@ -43,7 +43,6 @@ class ServerUX(UXDecorator):
 
 class TokenUX(ServerUX):
     signal_use_token = pyqtSignal(object)
-    INVALID_TOKEN_IDX = -1
     def __init__(self):
         # these are like abstract variables
         self.comboBox_token = None
@@ -52,11 +51,11 @@ class TokenUX(ServerUX):
         self.comboBox_server = None
         self.conn_info = None
         #
-        self.used_token_idx = self.INVALID_TOKEN_IDX
     def config(self, token_model: GroupTokenModel):
         self.conn_info = SpaceConnectionInfo()
-        
-        self.used_token_idx = self.INVALID_TOKEN_IDX
+
+        self.token_model = token_model
+        token_model.set_invalid_token_idx(-1)
 
         proxy_model = ComboBoxProxyModel()
         proxy_model.setSourceModel( token_model)
@@ -88,7 +87,7 @@ class TokenUX(ServerUX):
 
     def set_server(self,server):
         self.conn_info.set_server(server)
-        self.used_token_idx = self.INVALID_TOKEN_IDX
+        self.token_model.reset_used_token_idx()
 
     def get_input_token(self):
         proxy_model = self.comboBox_token.model()
@@ -110,7 +109,7 @@ class TokenUX(ServerUX):
         # disable button
         self.cb_enable_token_ui(False)
         # gui -> pending token
-        self.used_token_idx = self.comboBox_token.currentIndex()
+        self.token_model.set_used_token_idx(self.comboBox_token.currentIndex())
         self.conn_info.set_(token=token)
         conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_use_token.emit( make_qt_args(conn_info) )
@@ -124,8 +123,11 @@ class TokenUX(ServerUX):
         flag_token = len(self.get_input_token()) > 0
         self.btn_use.setEnabled(flag_token)
         # self.btn_clear_token.setEnabled(flag_token)
-
-        flag = self.comboBox_token.currentIndex() != self.INVALID_TOKEN_IDX and self.used_token_idx == self.comboBox_token.currentIndex()
+        idx = self.comboBox_token.currentIndex()
+        flag = (
+            idx != self.token_model.get_invalid_token_idx()
+            and idx == self.token_model.get_used_token_idx()
+        )
         txt = "Ok!" if flag else "Use"
         self.btn_use.setText(txt)
         return flag

@@ -12,11 +12,27 @@
 from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
 from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
 
-class TokenModel(QStandardItemModel):
+class UsedToken():
+    def __init__(self):
+        self.set_invalid_token_idx(0)
+    def set_invalid_token_idx(self, invalid_idx):
+        self.invalid_idx = invalid_idx
+        self.reset_used_token_idx()
+    def get_invalid_token_idx(self):
+        return self.invalid_idx
+    def set_used_token_idx(self, idx):
+        self.used_token_idx = idx
+    def get_used_token_idx(self):
+        return self.used_token_idx
+    def reset_used_token_idx(self):
+        self.used_token_idx = self.invalid_idx
+
+class TokenModel(QStandardItemModel, UsedToken):
     """ Simple version of token model, in sync with a simple line config file
     """
     def __init__(self, parent=None):
         super().__init__(parent)
+        UsedToken.__init__(self)
         self.ini = ""
         self._config_callback() # persistant_cange (Experimental)
     def load_ini(self, ini):

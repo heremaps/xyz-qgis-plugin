@@ -55,7 +55,7 @@ class SpaceUX(TokenUX):
     ##### CALLBACK
     def cb_table_row_selected(self, index):
         # pending token -> gui
-        self.comboBox_token.setCurrentIndex(self.used_token_idx)
+        self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
         self.ui_valid_input()
 
     def cb_display_spaces(self, obj, *a, **kw):
