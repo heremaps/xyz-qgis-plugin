@@ -270,6 +270,6 @@ class ComboBoxProxyModel(QIdentityProxyModel):
             name = self.get_text(index.row(), self.col_name)
             token = self.get_text(index.row(), self.col_token)
             if token:
-                msg = name if name else "<noname token>"
+                msg = name if name else "<noname token> %s"%token
                 return QVariant(msg)
         return val
