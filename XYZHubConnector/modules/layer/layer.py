@@ -22,7 +22,7 @@ from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser, render
 from .layer_props import QProps
-from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_json_none
+from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_json_default
 from ...models.space_model import parse_copyright
 from ...models import SpaceConnectionInfo
 from ...utils import make_unique_full_path, make_fixed_full_path
@@ -64,10 +64,10 @@ class XYZLayer(object):
         unique = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         loader_params = get_customProperty_str(qnode, QProps.LOADER_PARAMS)
         name = qnode.name()
-        meta = json.loads(meta)
-        conn_info = json.loads(conn_info)
+        meta = load_json_default(meta, default=dict())
+        conn_info = load_json_default(conn_info, default=dict())
         conn_info = SpaceConnectionInfo.from_dict(conn_info)
-        loader_params = load_json_none(loader_params)
+        loader_params = load_json_default(loader_params, default=None)
 
         obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
         obj.qgroups["main"] = qnode
