@@ -48,20 +48,24 @@ class SpaceUX(TokenUX):
     def _get_current_index(self):
         index =  self.tableView_space.currentIndex()
         return self._get_proxy_model().mapToSource(index)
-    def _after_clear_token(self):
-        TokenUX._after_clear_token(self)
-        self._get_space_model().reset()
         
+    def open_token_dialog(self):
+        is_used_token_changed = super().open_token_dialog()
+        if not is_used_token_changed: return
+
+        self._get_space_model().reset()
+        self.token_model.reset_used_token_idx()
+        self.ui_valid_input()
+
     ##### CALLBACK
     def cb_table_row_selected(self, index):
         # pending token -> gui
-        self.comboBox_token.setCurrentIndex(self.used_token_idx)
+        self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
         self.ui_valid_input()
 
     def cb_display_spaces(self, obj, *a, **kw):
         # this function can be put into dialog
         # self.ui_valid_token()
-        self.insert_new_valid_token()
         conn_info = SpaceConnectionInfo(self.conn_info)
         lst_id = self.ui_display_spaces(obj)
         if lst_id is not None:

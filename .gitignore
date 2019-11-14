@@ -14,8 +14,9 @@ env.sh
 ### draft
 old/
 draft/
-#*.old*
 tmp*/
+*.old*
+*.bak*
 
 ### test cases
 input/
