@@ -1,5 +1,11 @@
 # Changelog 
 
+## version 1.7.6 (2019-11-28)
+
+* Token manager: assigned name to token, add/edit/delete/ordering
+* Stability improvement 
+    * XYZ layer detection
+
 ## version 1.7.5 (2019-11-08)
 
 * bug fixes: import XYZ layer from saved project
