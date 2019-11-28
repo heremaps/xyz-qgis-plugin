@@ -89,6 +89,7 @@ class TokenUX(ServerUX):
         idx = self.comboBox_token.currentIndex()
         self.token_dialog.set_current_idx(idx)
         self.token_dialog.exec_()
+        idx = self.token_dialog.current_idx
         self.comboBox_token.setCurrentIndex(idx)
         return self.token_dialog.is_used_token_changed
 

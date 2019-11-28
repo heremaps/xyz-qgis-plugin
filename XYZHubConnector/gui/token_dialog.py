@@ -57,13 +57,15 @@ class TokenDialog(QDialog, TokenUI):
         self.ui_enable_btn()
         self.is_used_token_changed = False
         ret = super().exec_()
-        if ret == self.Rejected:
-            self.is_used_token_changed = False
+        if ret == self.Accepted:
+            self.is_used_token_changed = True
+            idx = self.tableView.currentIndex().row()
+            self.set_current_idx(idx)
         return ret
     def set_current_idx(self,idx):
         self.current_idx = idx
     def ui_enable_btn(self, *a):
-        index =  self.tableView.currentIndex()
+        index = self.tableView.currentIndex()
         flag = index.isValid()
         for btn in [
             self.btn_edit,
