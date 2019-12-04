@@ -143,8 +143,11 @@ class LoadLayerController(BaseLoader):
     def _run(self):
         conn_info = self.layer.conn_info
             
-        # if not self.params_queue.has_next():
-        #     self.params_queue.gen_params()
+        # TODO refactor methods
+        if not self.params_queue.has_next():
+            self.status = self.FINISHED
+            self._try_finish()
+            return
         params = self.params_queue.get_params()
         
         LoopController.start(self, conn_info, **params, **self.fixed_params)
