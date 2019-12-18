@@ -71,6 +71,7 @@ class LoadLayerController(BaseLoader):
     def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
         tags = kw.get("tags","")
         self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
+        self.layer.add_empty_group()
         return self._start(**kw)
 
     def _start(self, **kw):
@@ -310,7 +311,6 @@ class TileLayerLoader(LoadLayerController):
         else:
             e = chain_err
         if isinstance(e, EmptyXYZSpaceError):
-            self.layer.add_empty_group()
             return
 
         super()._handle_error(e)
