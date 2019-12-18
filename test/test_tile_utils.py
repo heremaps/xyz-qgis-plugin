@@ -12,7 +12,7 @@ import random
 import numpy as np
 
 from test.utils import (BaseTestAsync, TestFolder, format_long_args,
-                        len_of_struct, len_of_struct_unorder, flatten,
+                        len_of_struct, len_of_struct_sorted, flatten,
                         format_map_fields)
 
 from qgis.core import QgsFields, QgsVectorLayer
@@ -76,19 +76,20 @@ class TestTileUtils(BaseTestAsync):
             sorted(tile_utils.bboxToListColRow(*rect_upperR , 2)), 
             ['2_2_1', '2_3_1'])
 
-    def test_row_col(self):
+    # @unittest.skip("skip")
+    def test_coord_to_row_col(self):
         level=1
         for lon in [-180,-90,0,90,180]:
             for lat in [-90,-45,0,45,90]:
                 coord = [lon,lat]
                 rc = tile_utils.coord_to_row_col(coord, level)
-                print(level,coord,rc)
+                print(level,coord,"\t",rc)
         for schema in ["here","web"]:
             with self.subTest(schema=schema):
                 level = 20
                 coord = [8,50]
                 rc = tile_utils.coord_to_row_col(coord, level, schema)
-                print(level,coord,rc)
+                print(level,coord,rc,schema)
                 # self.assertEqual(list(reversed(rc)), [547589, 355619]) # from geotool # rc vs xy
                 self.assertEqual(list(reversed(rc)), [547589, 346478]) # 2^(n-1), reversed index # rc vs xy
 
@@ -96,7 +97,30 @@ class TestTileUtils(BaseTestAsync):
         # for coord in [[-136.7, -61.5],[-136.7, 61.5], [-92.9, -34.0]]:
         #     rc = tile_utils.coord_to_row_col(coord, level)
         #     print(level,coord,rc)
-        
+
+    def test_coord_from_percent(self):
+        level = 1
+        for r in [0, 0.5, 0.9]:
+            for c in [0, 0.5, 0.9]:
+                coord = tile_utils.coord_from_percent(r,c,level)
+                print(r,c,coord)
+
+    def test_row_col(self):
+        level = 1
+        for lon in [-180,-90,0,90,180]:
+            for lat in [-90,-45,0,45,90]:
+                coord = [lon,lat]
+                r,c = tile_utils.coord_to_row_col(coord, level)
+                extent = tile_utils.extent_from_row_col(r,c,level)
+                print(level,[r,c],"\t",coord,"\t",extent)
+                # self.assertEqual(coord, coord2, "not equal")
+
+    def test_coord_from_row_col(self):
+        level=1
+        for row in [0]:
+            for col in [0,1]:
+                coord = tile_utils.extent_from_row_col(row, col, level)
+                print(level,coord,"\t",row,col)
 
     @unittest.skip("skip")
     def test_bbox_to_tile(self):
