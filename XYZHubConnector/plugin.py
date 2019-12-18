@@ -170,6 +170,8 @@ class XYZHubConnector(object):
 
         self.iface.currentLayerChanged.connect( self.cb_layer_selected) # UNCOMMENT
 
+        canvas = self.iface.mapCanvas()
+        self.lastRect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
         self.iface.mapCanvas().extentsChanged.connect( self.reload_tile, Qt.QueuedConnection)
 
 
@@ -434,7 +436,7 @@ class XYZHubConnector(object):
         # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
     def start_load_tile(self, args):
         canvas = self.iface.mapCanvas()
-        rect = bbox_utils.extend_to_rect(
+        rect = bbox_utils.extent_to_rect(
             bbox_utils.get_bounding_box(canvas))
         level = tile_utils.get_zoom_for_current_map_scale(canvas)
         # rect = (-180,-90,180,90)
@@ -488,11 +490,28 @@ class XYZHubConnector(object):
             fn_node(g)
             if is_xyz_supported_node(g):
                 yield g
+    
+    def extent_action(self, rect0, rect1):
+        diff = [r0 - r1 for r0,r1 in zip(rect0,rect1)]
+        x_sign = diff[0] * diff[2]
+        y_sign = diff[1] * diff[3]
+        if x_sign >= 0 and y_sign >= 0: # same direction
+            return "pan"
+        elif x_sign < 0 and y_sign < 0:
+            return "zoom"
+        elif x_sign * y_sign == 0 and x_sign + y_sign < 0:
+            return "resize"
+        else:
+            return "unknown"
 
     def reload_tile(self):
         canvas = self.iface.mapCanvas()
-        rect = bbox_utils.extend_to_rect(
-            bbox_utils.get_bounding_box(canvas))
+        rect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
+        ext_action = self.extent_action(rect,self.lastRect)
+        print_qgis("Extent action: ", ext_action,rect)
+        self.lastRect = rect
+        if ext_action not in ["pan", "zoom"]: 
+            return
         level = tile_utils.get_zoom_for_current_map_scale(canvas)
         kw = dict()
         kw["tile_schema"] = "here"

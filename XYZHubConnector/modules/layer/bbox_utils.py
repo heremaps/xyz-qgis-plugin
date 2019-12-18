@@ -41,7 +41,7 @@ def get_bounding_box(canvas: QgsMapCanvas , crs="EPSG:4326"):
     geom_extent.transform(crs_transform)
     return geom_extent.boundingBox()
     
-def extend_to_rect(extent):
+def extent_to_rect(extent):
     y_min = extent.yMinimum()
     y_max = extent.yMaximum()
     x_min = extent.xMinimum()
@@ -53,7 +53,7 @@ def extend_to_rect(extent):
     return (x_min,y_min,x_max,y_max)
 
 def extend_to_bbox(extent):
-    (x_min,y_min,x_max,y_max) = extend_to_rect(extent)
+    (x_min,y_min,x_max,y_max) = extent_to_rect(extent)
     return rect_to_bbox(x_min,y_min,x_max,y_max)
 
 def rect_to_bbox(x_min,y_min,x_max,y_max):
