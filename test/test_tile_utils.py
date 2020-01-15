@@ -84,14 +84,17 @@ class TestTileUtils(BaseTestAsync):
                 coord = [lon,lat]
                 rc = tile_utils.coord_to_row_col(coord, level)
                 print(level,coord,"\t",rc)
-        for schema in ["here","web"]:
+        for schema, expected in [
+            ["here", [547589, 407779]],
+            ["web", [547589, 692956]]
+        ]:
             with self.subTest(schema=schema):
                 level = 20
                 coord = [8,50]
                 rc = tile_utils.coord_to_row_col(coord, level, schema)
                 print(level,coord,rc,schema)
                 # self.assertEqual(list(reversed(rc)), [547589, 355619]) # from geotool # rc vs xy
-                self.assertEqual(list(reversed(rc)), [547589, 346478]) # 2^(n-1), reversed index # rc vs xy
+                self.assertEqual(list(reversed(rc)), expected) # 2^(n-1), reversed index # rc vs xy
 
         # level=6
         # for coord in [[-136.7, -61.5],[-136.7, 61.5], [-92.9, -34.0]]:
@@ -99,13 +102,39 @@ class TestTileUtils(BaseTestAsync):
         #     print(level,coord,rc)
 
     def test_coord_from_percent(self):
+        avg = lambda lst: sum(x for x in lst)/len(lst)
+        abs_avg = lambda lst: sum(abs(x) for x in lst)/len(lst)
         level = 1
-        for r in [0, 0.5, 0.9]:
-            for c in [0, 0.5, 0.9]:
-                coord = tile_utils.coord_from_percent(r,c,level)
-                print(r,c,coord)
+        n_coord = 20
+        lst_percent = np.linspace(0,1,n_coord)
+        lst_x = [tile_utils.coord_from_percent(0,x,level)[0] for x in lst_percent]
+        max_x = 180
+        lst_y = [tile_utils.coord_from_percent(x,0,level)[1] for x in lst_percent]
+        max_y = 90
+        print(avg(lst_x), abs_avg(lst_x), avg(lst_y), abs_avg(lst_y))
+        try:
+            self.assertEqual(max(lst_x), max_x)
+            self.assertEqual(-max_x, min(lst_x))
+            self.assertEqual(max(lst_y), max_y)
+            self.assertEqual(-max_y, min(lst_y))
+            self.assertAlmostEqual(avg(lst_x), 0, 
+                msg="x coordinates not average to 0")
+            self.assertAlmostEqual(abs_avg(lst_x), max_x/2, delta=max_x*0.05, 
+                msg="abs x coordinates not average to %s"%(max_x/2))
+            self.assertAlmostEqual(avg(lst_y), 0, 
+                msg="y coordinates not average to 0")
+            self.assertAlmostEqual(abs_avg(lst_y), max_y/2, delta=max_y*0.05, 
+                msg="abs y coordinates not average to %s"%(max_y/2))
+        except Exception as e:
+            sep = "\n "
+            debug_coord = ("percent" + "\t" + "coord" + sep +
+                sep.join(map(lambda a: "{:.2f} \t{:.2f} {:.2f}".format(*a), 
+                zip(lst_percent, lst_x, lst_y)))
+                )
+            e.args = (e.args[0] + sep + debug_coord, *e.args[1:])
+            raise e
 
-    def test_row_col(self):
+    def test_extent_from_row_col(self):
         level = 1
         for lon in [-180,-90,0,90,180]:
             for lat in [-90,-45,0,45,90]:
@@ -114,13 +143,6 @@ class TestTileUtils(BaseTestAsync):
                 extent = tile_utils.extent_from_row_col(r,c,level)
                 print(level,[r,c],"\t",coord,"\t",extent)
                 # self.assertEqual(coord, coord2, "not equal")
-
-    def test_coord_from_row_col(self):
-        level=1
-        for row in [0]:
-            for col in [0,1]:
-                coord = tile_utils.extent_from_row_col(row, col, level)
-                print(level,coord,"\t",row,col)
 
     @unittest.skip("skip")
     def test_bbox_to_tile(self):
