@@ -23,7 +23,7 @@ from XYZHubConnector.modules.layer import tile_utils
 # import unittest
 class TestTileUtils(BaseTestAsync):
 
-    @unittest.skip("skip")
+    @unittest.skip("skip unused")
     def test_bbox_quad_key(self):
         rect= (-180,-90,180,90)
         lst = tile_utils.bboxToListQuadkey(*rect, 0)
@@ -96,11 +96,6 @@ class TestTileUtils(BaseTestAsync):
                 # self.assertEqual(list(reversed(rc)), [547589, 355619]) # from geotool # rc vs xy
                 self.assertEqual(list(reversed(rc)), expected) # 2^(n-1), reversed index # rc vs xy
 
-        # level=6
-        # for coord in [[-136.7, -61.5],[-136.7, 61.5], [-92.9, -34.0]]:
-        #     rc = tile_utils.coord_to_row_col(coord, level)
-        #     print(level,coord,rc)
-
     def test_coord_from_percent(self):
         avg = lambda lst: sum(x for x in lst)/len(lst)
         abs_avg = lambda lst: sum(abs(x) for x in lst)/len(lst)
@@ -144,12 +139,19 @@ class TestTileUtils(BaseTestAsync):
                 print(level,[r,c],"\t",coord,"\t",extent)
                 # self.assertEqual(coord, coord2, "not equal")
 
-    @unittest.skip("skip")
-    def test_bbox_to_tile(self):
-        self._test_bbox_to_tile(tile_utils.bboxToListQuadkey)
-        # self._test_bbox_to_tile(tile_utils.bboxToListColRow)
+    @unittest.skip("skip example")
+    def test_example_1(self):
+        level=6
+        for coord in [[-136.7, -61.5],[-136.7, 61.5], [-92.9, -34.0]]:
+            rc = tile_utils.coord_to_row_col(coord, level)
+            print(level,coord,rc)
 
-    def _test_bbox_to_tile(self, fn):
+    @unittest.skip("skip unused")
+    def test_bbox_to_quad_tile(self):
+        self._test_bbox_to_quad_tile(tile_utils.bboxToListQuadkey)
+        # self._test_bbox_to_quad_tile(tile_utils.bboxToListColRow)
+
+    def _test_bbox_to_quad_tile(self, fn):
         # https://wiki.openstreetmap.org/wiki/Zoom_levels
         rect= (-180,-90,180,90)
         for level in range(2):
