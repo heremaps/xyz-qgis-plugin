@@ -381,6 +381,8 @@ class LayeredEditBuffer(object):
 class EditBuffer(object):
     def __init__(self):
         self.layer_buffer=dict()
+    def reset(self):
+        self.layer_buffer = dict()
     def get_layer_buffer(self, layer_id):
         return self.layer_buffer.get(layer_id, None)
     def remove_layers(self, lst_layer_id):

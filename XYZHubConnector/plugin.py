@@ -67,6 +67,7 @@ class XYZHubConnector(object):
         print(sys.version)
         self.iface = iface
         self.web_menu = "&XYZ Hub Connector"
+        self.hasGuiInitialized = False
         self.init_modules()
         self.obj = self
 
@@ -130,6 +131,14 @@ class XYZHubConnector(object):
         # progress = self.iface.statusBarIface().children()[2] # will be hidden by qgis
         self.iface.statusBarIface().addPermanentWidget(progress)
         self.pb = progress
+        self.hasGuiInitialized = True
+
+    def new_session(self):
+        self.con_man.reset()
+        self.edit_buffer.reset()
+        
+        if self.hasGuiInitialized:
+            self.pb.hide()
 
     def init_modules(self):
         if LOG_TO_FILE:
@@ -163,6 +172,7 @@ class XYZHubConnector(object):
         self.con_man.ld_pool.signal.progress.connect( self.cb_progress_busy) #, Qt.QueuedConnection
         self.con_man.ld_pool.signal.finished.connect( self.cb_progress_done)
         
+        QgsProject.instance().cleared.connect(self.new_session)
         QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.layer_man.remove_layers)
 
@@ -180,6 +190,7 @@ class XYZHubConnector(object):
 
     def unload_modules(self):
         # self.con_man.disconnect_ux( self.iface)
+        QgsProject.instance().cleared.disconnect(self.new_session)
         QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.layer_man.remove_layers)
 
@@ -189,6 +200,8 @@ class XYZHubConnector(object):
         self.iface.currentLayerChanged.disconnect( self.cb_layer_selected) # UNCOMMENT
 
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
+        
+        QgsProject.instance().readProject.disconnect( self.import_project)
         
         # utils.disconnect_silent(self.iface.currentLayerChanged)
 

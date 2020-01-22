@@ -114,7 +114,8 @@ class LayerControllerManager(ControllerManager):
     def __init__(self):
         super().__init__()
         self._layer_ptr = dict()
-
+    def reset(self):
+        self._layer_ptr = dict()
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
             # assert con.layer is not None 
