@@ -76,14 +76,17 @@ class TestTileUtils(BaseTestAsync):
             sorted(tile_utils.bboxToListColRow(*rect_upperR , 2)), 
             ['2_2_1', '2_3_1'])
 
-    # @unittest.skip("skip")
-    def test_coord_to_row_col(self):
+    def print_coord_to_row_col(self):
         level=1
         for lon in [-180,-90,0,90,180]:
             for lat in [-90,-45,0,45,90]:
                 coord = [lon,lat]
                 rc = tile_utils.coord_to_row_col(coord, level)
                 print(level,coord,"\t",rc)
+
+    # @unittest.skip("skip")
+    def test_coord_to_row_col(self):
+        # self.print_coord_to_row_col()
         for schema, expected in [
             ["here", [547589, 407779]],
             ["web", [547589, 692956]]
@@ -106,7 +109,17 @@ class TestTileUtils(BaseTestAsync):
         max_x = 180
         lst_y = [tile_utils.coord_from_percent(x,0,level)[1] for x in lst_percent]
         max_y = 90
-        print(avg(lst_x), abs_avg(lst_x), avg(lst_y), abs_avg(lst_y))
+
+        lst_debug_avg = [
+            "\t" + "avg(lst_x), abs_avg(lst_x), avg(lst_y), abs_avg(lst_y)",
+            "actual: \t" + "\t".join(map("{:.2f}".format, [
+                avg(lst_x), abs_avg(lst_x), avg(lst_y), abs_avg(lst_y)
+            ])),
+            "expected: \t" + "\t".join(map("{:.2f}".format,[
+                0, max_x/2, 0, max_y/2
+            ]))
+        ]
+        # print("\n".join(lst_debug_avg))
         try:
             self.assertEqual(max(lst_x), max_x)
             self.assertEqual(-max_x, min(lst_x))
@@ -121,23 +134,38 @@ class TestTileUtils(BaseTestAsync):
             self.assertAlmostEqual(abs_avg(lst_y), max_y/2, delta=max_y*0.05, 
                 msg="abs y coordinates not average to %s"%(max_y/2))
         except Exception as e:
-            sep = "\n "
-            debug_coord = ("percent" + "\t" + "coord" + sep +
-                sep.join(map(lambda a: "{:.2f} \t{:.2f} {:.2f}".format(*a), 
+            linesep = "\n "
+            debug_coord = ("percent" + "\t" + "coord" + linesep +
+                linesep.join(map(lambda a: "{:.2f} \t{:.2f} {:.2f}".format(*a), 
                 zip(lst_percent, lst_x, lst_y)))
                 )
-            e.args = (e.args[0] + sep + debug_coord, *e.args[1:])
+            e.args = (linesep.join([
+                e.args[0], *lst_debug_avg, debug_coord
+                ]), 
+                *e.args[1:])
             raise e
 
     def test_extent_from_row_col(self):
+        linesep = "\n "
+        lst_msg = list()
+        lst_check = list()
         level = 1
         for lon in [-180,-90,0,90,180]:
             for lat in [-90,-45,0,45,90]:
                 coord = [lon,lat]
-                r,c = tile_utils.coord_to_row_col(coord, level)
+                r, c = tile_utils.coord_to_row_col(coord, level)
                 extent = tile_utils.extent_from_row_col(r,c,level)
-                print(level,[r,c],"\t",coord,"\t",extent)
-                # self.assertEqual(coord, coord2, "not equal")
+                check = (
+                    (extent[0] <= coord[0] <= extent[2] ) and
+                    (extent[1] <= coord[1] <= extent[3] )
+                    )
+                lst_msg.append(" ".join(map(str,[level,[r,c],"\t",coord,"\t",extent,"\t",
+                    "Ok" if check else "Fail"
+                    ])))
+                lst_check.append(check)
+
+        self.assertTrue(all(lst_check), "converted extent does not cover input coord" 
+            + linesep + linesep.join(lst_msg))
 
     @unittest.skip("skip example")
     def test_example_1(self):
