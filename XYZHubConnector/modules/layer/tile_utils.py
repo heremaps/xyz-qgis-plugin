@@ -161,7 +161,7 @@ def get_zoom_for_current_map_scale(canvas):
         if scale < upper_bound:
             zoom = _upper_bound_scale_to_zoom_level[upper_bound]
             break
-    return zoom
+    return max(zoom, 1)
 
 # bbox
 
