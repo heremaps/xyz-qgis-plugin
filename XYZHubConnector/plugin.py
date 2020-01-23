@@ -471,11 +471,13 @@ class XYZHubConnector(object):
         con_load.start_args( make_qt_args(*a, **kw))
 
     def iter_checked_xyz_subnode(self):
-        """ iterate through visible xyz nodes (vector layer and group node)
+        """ iterate through visible xyz nodes (vector layer and group node),
+        excluding layer in edit mode
         """
         root = QgsProject.instance().layerTreeRoot()
         for vl in root.checkedLayers():
             if is_xyz_supported_layer(vl):
+                if vl.isEditable(): continue
                 yield vl
         for g in iter_group_node(root):
             if (len(g.findLayers()) == 0 

@@ -180,11 +180,20 @@ def spiral_iter(lstX, lstY):
     for ix, iy in spiral_index(len(lstX), len(lstY)):
         yield (lstX[ix], lstY[iy]) 
 
+def get_tile_format(schema="here"):
+    return "{level}_{col}_{row}"
+
+def parse_tile_id(tile_id, schema="here"):
+    return dict(zip(
+        ["level","col","row"],
+        map(int, tile_id.split("_"))
+        ))
+
 def bboxToListColRow(x_min,y_min,x_max,y_max,level,schema="here"):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level,schema)
     lst_row = list(range(r1,r2+1))
     lst_col = list(range(c1,c2+1))
-    return ["{level}_{col}_{row}".format(level=level,row=row,col=col)
+    return [get_tile_format(schema=schema).format(level=level,row=row,col=col)
     for col, row in spiral_iter(lst_col, lst_row)]
 
 def bboxToListQuadkey(x_min,y_min,x_max,y_max,level):

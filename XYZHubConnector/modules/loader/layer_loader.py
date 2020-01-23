@@ -12,7 +12,7 @@ import copy
 import json
 from typing import Any, Callable, Dict, List, Union
 
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import QgsProject, QgsVectorLayer, QgsRectangle
 from qgis.PyQt.QtCore import QThreadPool
 from qgis.PyQt.QtNetwork import QNetworkReply
 
@@ -20,7 +20,7 @@ from ..controller import (AsyncFun, BasicSignal, ChainController,
                           ChainInterrupt, LoopController, NetworkFun,
                           WorkerFun, make_qt_args, parse_exception_obj,
                           parse_qt_args)
-from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render
+from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render, tile_utils
 from ..layer.edit_buffer import LayeredEditBuffer
 from ..network import NetManager, net_handler
 from .loop_loader import BaseLoader, BaseLoop, ParallelFun
@@ -176,7 +176,7 @@ class LoadLayerController(BaseLoader):
                 self.status = self.ALL_FEAT
         map_fields: dict = self.layer.get_map_fields()
         similarity_threshold = self.kw.get("similarity_threshold")
-        return make_qt_args(obj, map_fields, similarity_threshold)
+        return make_qt_args(obj, map_fields, similarity_threshold, **kw)
     
     # non-threaded
     def _render(self, *parsed_feat):
@@ -221,8 +221,8 @@ class LoadLayerController(BaseLoader):
 
     #threaded (parallel)
     def _dispatch_render(self, *parsed_feat):
-        map_feat, map_fields = parsed_feat
-        lst_args = [(geom, idx, feat, fields) 
+        map_feat, map_fields, kw_params = parsed_feat
+        lst_args = [(geom, idx, feat, fields, kw_params) 
             for geom in map_feat.keys()
             for idx, (feat, fields) in enumerate(zip(
                 map_feat[geom], map_fields[geom]))
@@ -230,7 +230,7 @@ class LoadLayerController(BaseLoader):
         ]
 
         return lst_args
-    def _render_single(self, geom, idx, feat, fields):
+    def _render_single(self, geom, idx, feat, fields, kw_params):
         if not self.layer.has_layer(geom, idx):
             vlayer=self.layer.add_ext_layer(geom, idx)
         else:
@@ -280,7 +280,21 @@ class TileLayerLoader(LoadLayerController):
 
         map_fields: dict = self.layer.get_map_fields()
         similarity_threshold = self.kw.get("similarity_threshold")
-        return make_qt_args(obj, map_fields, similarity_threshold)
+        return make_qt_args(obj, map_fields, similarity_threshold, **kw)
+
+    def _render_single(self, geom, idx, feat, fields, kw_params):
+        if not self.layer.has_layer(geom, idx):
+            vlayer=self.layer.add_ext_layer(geom, idx)
+        else:
+            vlayer=self.layer.get_layer(geom, idx)
+        tile_id = kw_params.get("tile_id")
+        tile_schema = kw_params.get("tile_schema")
+        lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
+        rcl = [lrc[k] for k in ["row","col","level"]]
+        extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
+        render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
+
+        render.add_feature_render(vlayer, feat, fields)
 
     def reset(self, **kw):
         """

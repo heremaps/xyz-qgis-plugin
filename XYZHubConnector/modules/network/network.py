@@ -120,8 +120,9 @@ class NetManager(QObject):
 
     def load_features_tile(self, conn_info, tile_id="0", tile_schema="quadkey", **kw):
         reply_tag = "tile"
-        tile_url = "tile/{tile_schema}/{tile_id}".format(
-            tile_schema=tile_schema, tile_id=tile_id)
+        kw_tile = dict(tile_schema=tile_schema, tile_id=tile_id)
+        kw.update(kw_tile)
+        tile_url = "tile/{tile_schema}/{tile_id}".format(**kw_tile)
         endpoint = "/spaces/{space_id}/" + tile_url
         return self._load_features_endpoint(endpoint, conn_info, reply_tag=reply_tag, **kw)
 

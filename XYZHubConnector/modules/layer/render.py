@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from qgis.core import (QgsVectorLayer, QgsWkbTypes, QgsProject, 
+from qgis.core import (QgsVectorLayer, QgsWkbTypes, QgsProject, QgsFeatureRequest,
     QgsCoordinateReferenceSystem, QgsCoordinateTransform)
 from qgis.utils import iface
 
@@ -37,15 +37,33 @@ def get_vlayer(layer_id):
     return vlayer
 
 # mixed-geom
-def parse_feature(obj, map_fields, similarity_threshold=None):
+def parse_feature(obj, map_fields, similarity_threshold=None, **kw_params):
     map_feat, map_fields = parser.xyz_json_to_feature_map(obj, map_fields,similarity_threshold)
-    return map_feat, map_fields
+    return map_feat, map_fields, kw_params
 
 def truncate_add_render(vlayer, feat, new_fields):
     pr = vlayer.dataProvider()
     if pr.truncate():
         vlayer.updateExtents()
     return add_feature_render(vlayer, feat, new_fields)
+
+def clear_features_in_extent(vlayer, extent):
+    pr = vlayer.dataProvider()
+    it = pr.getFeatures(
+        QgsFeatureRequest(extent).setSubsetOfAttributes([0])
+        .setFlags(QgsFeatureRequest.NoGeometry)
+    )
+    lst_fid = [ft.id() for ft in it]
+    pr.deleteFeatures(lst_fid)
+    vlayer.updateExtents()
+
+# unused
+def clear_features_in_feat(vlayer, feat: list):
+    lst_bbox = [ft.geometry().boundingBox() for ft in feat]
+    extent = lst_bbox[0]
+    for bbox in lst_bbox[1:]:
+        extent.combineExtentWith(bbox)
+    clear_features_in_extent(vlayer, extent)
 
 def add_feature_render(vlayer, feat, new_fields):
     pr = vlayer.dataProvider()
