@@ -69,6 +69,20 @@ def cb_log_qgis(msg, tag, level):
             msg=msg
         ))
 
+class LoggingSignal(QObject):
+    logging = pyqtSignal(object)
+
+GLOBAL_ERROR_SIGNAL = LoggingSignal()
+
+def connect_global_error_signal(callback):
+    GLOBAL_ERROR_SIGNAL.logging.connect(callback, Qt.QueuedConnection)
+def print_error(err):
+    GLOBAL_ERROR_SIGNAL.logging.emit(err)
+def disconnect_global_error_signal():
+    try: GLOBAL_ERROR_SIGNAL.logging.disconnect()
+    except: pass
+
+
 # dont need extra signal
 # class LoggingSignal(QObject):
 #     logging = pyqtSignal(object)

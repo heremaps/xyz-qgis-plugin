@@ -14,11 +14,11 @@ import math
 from osgeo import ogr
 from qgis.PyQt.QtCore import QVariant
 
-from qgis.core import (QgsCoordinateReferenceSystem,
+from qgis.core import (QgsCoordinateReferenceSystem, QgsCsException,
                        QgsCoordinateTransform, QgsFeature, QgsProject, 
                        QgsField, QgsFields, QgsGeometry, QgsJsonUtils)
 
-from ..common.signal import make_print_qgis
+from ..common.signal import make_print_qgis, print_error
 
 print_qgis = make_print_qgis("parser")
 
@@ -110,7 +110,10 @@ def feature_collection(features):
     
 def transform_geom(ft, transformer):
     geom = ft.geometry()
-    geom.transform(transformer)
+    try: geom.transform(transformer)
+    except QgsCsException as e: 
+        print_error(e)
+        return
     ft.setGeometry(geom)
     return ft
     

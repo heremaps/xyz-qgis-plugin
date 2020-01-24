@@ -88,8 +88,9 @@ def add_feature_render(vlayer, feat, new_fields):
     # if QgsWkbTypes.geometryType(ft.geometry().wkbType()) == geom_type
 
     if transformer.isValid() and not transformer.isShortCircuited():
-        feat = [parser.transform_geom(ft, transformer) 
-        for ft in feat]
+        feat = filter(None, (
+            parser.transform_geom(ft, transformer) for ft in feat if ft
+        ))
 
     names = set(vlayer.fields().names())
     diff_fields = [f for f in new_fields if not f.name() in names]

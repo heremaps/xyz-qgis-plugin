@@ -54,7 +54,8 @@ PLUGIN_NAME = config.PLUGIN_NAME
 
 LOG_TO_FILE = 1
 
-from .modules.common.signal import make_print_qgis, cb_log_qgis
+from .modules.common.signal import (make_print_qgis, cb_log_qgis, 
+    connect_global_error_signal, disconnect_global_error_signal)
 print_qgis = make_print_qgis("plugin")
 
 class XYZHubConnector(object):
@@ -143,6 +144,7 @@ class XYZHubConnector(object):
     def init_modules(self):
         if LOG_TO_FILE:
             QgsApplication.messageLog().messageReceived.connect(cb_log_qgis) #, Qt.QueuedConnection
+        connect_global_error_signal(self.log_err_traceback)
 
         # util.init_module()
 
@@ -207,6 +209,7 @@ class XYZHubConnector(object):
 
         self.secret.deactivate()
         
+        disconnect_global_error_signal()
         if LOG_TO_FILE:
             QgsApplication.messageLog().messageReceived.disconnect(cb_log_qgis)
         # close_file_logger()
