@@ -49,6 +49,14 @@ def truncate_add_render(vlayer, feat, new_fields):
 
 def clear_features_in_extent(vlayer, extent):
     pr = vlayer.dataProvider()
+    
+    crs_src = "EPSG:4326"
+    crs_dst = vlayer.crs()
+
+    transformer = parser.make_transformer(crs_src, crs_dst)
+    if transformer.isValid() and not transformer.isShortCircuited():
+        extent = transformer.transformBoundingBox(extent, handle180Crossover=True)
+
     it = pr.getFeatures(
         QgsFeatureRequest(extent).setSubsetOfAttributes([0])
         .setFlags(QgsFeatureRequest.NoGeometry)
