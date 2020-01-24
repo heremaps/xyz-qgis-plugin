@@ -241,7 +241,7 @@ class TileLayerLoader(LoadLayerController):
     def __init__(self, *a, layer: XYZLayer=None, **kw):
         super().__init__(*a, **kw)
         self.fixed_keys = ["tags", "limit", "tile_schema"]
-        self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
+        self.params_queue = queue.CachedQueue(key="tile_id") # dont have retry logic
         self.layer = layer
         self.total_params = 0
         self.cnt_params = 0
@@ -281,20 +281,6 @@ class TileLayerLoader(LoadLayerController):
         map_fields: dict = self.layer.get_map_fields()
         similarity_threshold = self.kw.get("similarity_threshold")
         return make_qt_args(obj, map_fields, similarity_threshold, **kw)
-
-    def _render_single(self, geom, idx, feat, fields, kw_params):
-        if not self.layer.has_layer(geom, idx):
-            vlayer=self.layer.add_ext_layer(geom, idx)
-        else:
-            vlayer=self.layer.get_layer(geom, idx)
-        tile_id = kw_params.get("tile_id")
-        tile_schema = kw_params.get("tile_schema")
-        lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
-        rcl = [lrc[k] for k in ["row","col","level"]]
-        extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
-        render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
-
-        render.add_feature_render(vlayer, feat, fields)
 
     def reset(self, **kw):
         """
@@ -347,6 +333,25 @@ class TileLayerLoader(LoadLayerController):
             "Layer: %s. Token: %s"%(name, token)
             )
         self.signal.results.emit( make_qt_args(msg))
+
+class LiveTileLayerLoader(TileLayerLoader):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
+
+    def _render_single(self, geom, idx, feat, fields, kw_params):
+        if not self.layer.has_layer(geom, idx):
+            vlayer=self.layer.add_ext_layer(geom, idx)
+        else:
+            vlayer=self.layer.get_layer(geom, idx)
+        tile_id = kw_params.get("tile_id")
+        tile_schema = kw_params.get("tile_schema")
+        lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
+        rcl = [lrc[k] for k in ["row","col","level"]]
+        extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
+        render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
+
+        render.add_feature_render(vlayer, feat, fields)
 
 ########################
 # Upload
