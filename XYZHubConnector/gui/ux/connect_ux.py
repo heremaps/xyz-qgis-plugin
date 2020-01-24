@@ -25,7 +25,7 @@ class ConnectUX(SpaceUX):
     signal_space_tile = pyqtSignal(object)
     def __init__(self, *a):
         # these are like abstract variables
-        self.checkBox_tile = None
+        self.radioButton_loading_live = None
         self.btn_load = None
         self.lineEdit_limit = None
         self.lineEdit_max_feat = None
@@ -35,13 +35,13 @@ class ConnectUX(SpaceUX):
         # super().config(*a)
 
         self.btn_load.clicked.connect(self.start_connect)
-        self.checkBox_tile.toggled.connect(self.ui_enable_tile_mode)
+        self.radioButton_loading_single.toggled.connect(self.ui_disable_tile_mode)
 
         self._set_mask_number(self.lineEdit_limit,0,100000)
         self._set_mask_number(self.lineEdit_max_feat)
         self._set_mask_tags(self.lineEdit_tags)
 
-        self.checkBox_tile.setChecked(True)
+        self.radioButton_loading_live.setChecked(True)
         self.lineEdit_limit.setText("100")
         self.lineEdit_max_feat.setText("1000000")
 
@@ -77,15 +77,15 @@ class ConnectUX(SpaceUX):
         for btn in [self.btn_load]:
             btn.setEnabled(flag)
             btn.clearFocus()
-    def ui_enable_tile_mode(self, flag):
-        self.lineEdit_max_feat.setEnabled(not flag) # disable
+    def ui_disable_tile_mode(self, flag):
+        self.lineEdit_max_feat.setEnabled( flag) # disable
 
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
         conn_info = SpaceConnectionInfo(self.conn_info)
-        if self.checkBox_tile.isChecked():
+        if self.radioButton_loading_live.isChecked():
             self.signal_space_tile.emit( make_qt_args(conn_info, meta, **self.get_params() ))
         else:
             self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
