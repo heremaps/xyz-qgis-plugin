@@ -26,12 +26,12 @@ from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel
+from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
 from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, 
     LoadLayerController, UploadLayerController, EditSyncController,
-    TileLayerLoader)
+    TileLayerLoader, LiveTileLayerLoader)
 
 from .modules.layer.edit_buffer import EditBuffer
 from .modules.layer import bbox_utils
@@ -393,7 +393,8 @@ class XYZHubConnector(object):
         dialog.signal_space_count.connect(self.start_count_feat, Qt.QueuedConnection) # queued -> non-blocking ui
 
         ############ connect btn        
-        dialog.signal_space_connect.connect(self.start_load_layer)
+        # dialog.signal_space_connect.connect(self.start_load_layer)
+        dialog.signal_space_connect.connect(self.start_loading)
         dialog.signal_space_tile.connect(self.start_load_tile)
 
         ############ upload btn        
@@ -451,16 +452,10 @@ class XYZHubConnector(object):
 
         # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
     def start_load_tile(self, args):
-        canvas = self.iface.mapCanvas()
-        rect = bbox_utils.extent_to_rect(
-            bbox_utils.get_bounding_box(canvas))
-        level = tile_utils.get_zoom_for_current_map_scale(canvas)
         # rect = (-180,-90,180,90)
         # level = 0
         a, kw = parse_qt_args(args)
-
-        kw["tile_schema"] = "here"
-        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        kw.update(self.make_tile_params())
         # kw["limit"] = 100
 
         ############ connect btn        
@@ -472,6 +467,33 @@ class XYZHubConnector(object):
         con_load.signal.error.connect( self.cb_handle_error_msg )
 
         con_load.start_args( make_qt_args(*a, **kw))
+
+    def make_tile_params(self, rect=None, level=None):
+        if not rect:
+            canvas = self.iface.mapCanvas()
+            rect = bbox_utils.extent_to_rect(
+                bbox_utils.get_bounding_box(canvas))
+            level = tile_utils.get_zoom_for_current_map_scale(canvas)
+        kw = dict()
+        kw["tile_schema"] = "here"
+        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        return kw
+
+    def start_loading(self, args):
+        a, kw = parse_qt_args(args)
+        loading_mode = kw.get("loading_mode")
+        try:
+            con_load = self.make_loader_from_mode(loading_mode)
+        except Exception as e:
+            self.show_err_msgbar(e)
+            return
+
+        if loading_mode == LOADING_MODES.SINGLE:
+            con_load.start_args(args)
+        else:
+            kw.update(self.make_tile_params())
+            con_load.start_args( make_qt_args(*a, **kw))
+
 
     def iter_checked_xyz_subnode(self):
         """ iterate through visible xyz nodes (vector layer and group node),
@@ -531,9 +553,7 @@ class XYZHubConnector(object):
         if ext_action not in ["pan", "zoom"]: 
             return
         level = tile_utils.get_zoom_for_current_map_scale(canvas)
-        kw = dict()
-        kw["tile_schema"] = "here"
-        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        kw = self.make_tile_params(rect, level)
         # kw["limit"] = 100
 
         unique_con = set()
@@ -565,15 +585,31 @@ class XYZHubConnector(object):
 
     def import_project(self):
         self.init_all_tile_loader()
+
+    def make_loader_from_mode(self, loading_mode, layer=None):
+        if not loading_mode:
+            raise Exception("Invalid loading mode: %s"%str(loading_mode))
+        option = dict(zip(LOADING_MODES, [
+            (LiveTileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (TileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (LoadLayerController, self.con_man.add_background, self.make_cb_success_args("Loading finish"))
+            ])).get(loading_mode)
+        if not option:
+            return
+
+        loader_class, fn_register, cb_success_args = option
+        con_load = loader_class(self.network, n_parallel=1, layer=layer)
+        con_load.signal.results.connect( cb_success_args)
+        con_load.signal.error.connect( self.cb_handle_error_msg )
+
+        ptr = fn_register(con_load)
+        return con_load
+
+
     def init_tile_loader(self, qnode):
         layer = XYZLayer.load_from_qnode(qnode)
-        con_load = TileLayerLoader(self.network, n_parallel=1, layer=layer)
-        ptr = self.con_man.add_layer(con_load)
-        # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
-        con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
-        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
-        con_load.signal.error.connect( self.cb_handle_error_msg )
-        return con_load
+        loading_mode = layer.loader_params.get("loading_mode")
+        return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_tile_loader(self):
         cnt = 0

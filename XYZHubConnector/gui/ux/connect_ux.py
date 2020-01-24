@@ -12,6 +12,7 @@ from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator, QIntValidator  
 
 from ...modules.controller import make_qt_args
+from ...models import LOADING_MODES
 from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import process_tags
 
@@ -26,6 +27,8 @@ class ConnectUX(SpaceUX):
     def __init__(self, *a):
         # these are like abstract variables
         self.radioButton_loading_live = None
+        self.radioButton_loading_tile = None
+        self.radioButton_loading_single = None
         self.btn_load = None
         self.lineEdit_limit = None
         self.lineEdit_max_feat = None
@@ -52,16 +55,25 @@ class ConnectUX(SpaceUX):
         ]:
             self.comboBox_similarity_threshold.addItem(text,data)
         self.comboBox_similarity_threshold.setCurrentIndex(2)
+    def _get_loading_mode(self) -> str:
+        for mode, box in zip(LOADING_MODES, [
+            self.radioButton_loading_live, 
+            self.radioButton_loading_tile, 
+            self.radioButton_loading_single
+        ]):
+            if box.isChecked(): return mode
+        return LOADING_MODES[0]
 
     def get_params(self):
-        key = ["tags","limit","max_feat","similarity_threshold"]
+        key = ["tags","limit","max_feat","similarity_threshold","loading_mode"]
         val = [
             process_tags(self.lineEdit_tags.text().strip()),
             self.lineEdit_limit.text().strip(),
             self.lineEdit_max_feat.text().strip(),
-            self.comboBox_similarity_threshold.currentData()
+            self.comboBox_similarity_threshold.currentData(),
+            self._get_loading_mode()
         ]
-        fn = [str, int, int, int]
+        fn = [str, int, int, int, str]
         return dict( 
             (k, f(v)) for k,v,f in zip(key,val,fn) if len(str(v)) > 0
             )
@@ -85,9 +97,13 @@ class ConnectUX(SpaceUX):
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta, token=self.get_input_token())
         conn_info = SpaceConnectionInfo(self.conn_info)
-        if self.radioButton_loading_live.isChecked():
-            self.signal_space_tile.emit( make_qt_args(conn_info, meta, **self.get_params() ))
-        else:
-            self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
+        self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
+
+
+        # if self.radioButton_loading_live.isChecked():
+        #     self.signal_space_tile.emit( make_qt_args(conn_info, meta, **self.get_params() ))
+        # else:
+        #     self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
+
         # self.close()
 

@@ -51,14 +51,14 @@ class LoadLayerController(BaseLoader):
     If space is empty, no layer shall be created.
     Stateful controller
     """
-    def __init__(self, network: NetManager, n_parallel=1):
+    def __init__(self, network: NetManager, layer: XYZLayer=None, n_parallel=1):
         BaseLoader.__init__(self)
         self.pool = QThreadPool() # .globalInstance() will crash afterward
         self.n_parallel = 1
         self.status = self.LOADING
 
         self.fixed_keys = ["tags"]
-        self.layer: XYZLayer = None
+        self.layer = layer
         self.max_feat: int = None
         self.kw: dict = None
         self.fixed_params = dict()

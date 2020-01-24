@@ -67,7 +67,7 @@ class XYZLayer(object):
         meta = load_json_default(meta, default=dict())
         conn_info = load_json_default(conn_info, default=dict())
         conn_info = SpaceConnectionInfo.from_dict(conn_info)
-        loader_params = load_json_default(loader_params, default=None)
+        loader_params = load_json_default(loader_params, default=dict())
 
         obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
         obj.qgroups["main"] = qnode
@@ -131,6 +131,8 @@ class XYZLayer(object):
             title=self.meta.get("title",""),
             tags=tags, idx=idx,
             )
+        loading_mode: str = self.loader_params.get("loading_mode")
+        if loading_mode: name += " (%s)"%(loading_mode)
         return name
     def _group_geom_name(self, geom_str):
         geom = QgsWkbTypes.geometryDisplayString(
