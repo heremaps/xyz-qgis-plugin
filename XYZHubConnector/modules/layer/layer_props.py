@@ -32,6 +32,7 @@ class QProps():
         
     @classmethod
     def updatePropsVersion(cls,qnode):
+        cls._removeProperty(qnode, cls.EDIT_FLAG) # deprecated props
         for key in cls.v0.keys():
             cls._getOldProperty(qnode, key)
 
@@ -55,3 +56,12 @@ class QProps():
     @classmethod
     def translateValue(cls, oldValue, version):
         return oldValue
+
+    @classmethod
+    def _removeProperty(cls,qnode,key):
+        qnode.removeCustomProperty(key)
+        for version, mapping in reversed(list(enumerate([
+            cls.v0, # v1, v2
+        ]))):
+            oldKey = mapping[key]
+            qnode.removeCustomProperty(oldKey)
