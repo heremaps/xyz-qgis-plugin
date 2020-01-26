@@ -398,11 +398,9 @@ class EditBuffer(object):
         
         for vlayer in lst_vlayer:
             if not (isinstance(vlayer, QgsVectorLayer) and is_xyz_supported_layer(vlayer)): continue
-            if vlayer.customProperty(QProps.EDIT_FLAG) is not None: continue
-            vlayer.setCustomProperty(QProps.EDIT_FLAG, True)
-
-
             layer_id = vlayer.id()
+            if layer_id in self.layer_buffer: continue
+
             layer_cache = LayeredEditBuffer(layer_id,
                 cb_enable_ui=self._cb_enable_ui)
             self.layer_buffer[layer_id] = layer_cache
@@ -412,8 +410,6 @@ class EditBuffer(object):
 
     def unload_connection(self):
         for c in self.layer_buffer.values():
-            vlayer = get_layer(c.get_layer_id())
-            vlayer.removeCustomProperty(QProps.EDIT_FLAG)
             c.unload_connection()
             
     def make_connection_pair(self, vlayer, layer_cache):
