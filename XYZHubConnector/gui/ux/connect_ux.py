@@ -57,6 +57,29 @@ class ConnectUX(SpaceUX):
         ]:
             self.comboBox_similarity_threshold.addItem(text,data)
         self.comboBox_similarity_threshold.setCurrentIndex(2)
+        self.comboBox_similarity_threshold.setToolTip("\n".join([
+            "Features with similar set of properties are merged into the same layer",
+            " + balanced: features with similar properties are merged, balanced layers",
+            " + maximal: no feature is merged, as many layers",
+            " + single: all features are merged into 1 layer",
+        ]))
+
+        for btn, msg in zip([
+            self.radioButton_loading_live, 
+            self.radioButton_loading_tile, 
+            self.radioButton_loading_single
+        ],[
+            "Live loading: Features in the current extent are loaded interactively",
+            "\n".join([
+                "Incremental loading: New features in the current extent are loaded and cached interactively.",
+                "Cached features will not be refreshed"
+            ]),
+            "Single loading: All features are loaded only once, in iterations",
+        ]):
+            btn.setToolTip(msg)
+        self.lineEdit_max_feat.setToolTip("Maximum limit of features to be loaded")
+        self.lineEdit_limit.setToolTip("Number of features loaded per request")
+            
     def _get_loading_mode(self) -> str:
         for mode, box in zip(LOADING_MODES, [
             self.radioButton_loading_live, 

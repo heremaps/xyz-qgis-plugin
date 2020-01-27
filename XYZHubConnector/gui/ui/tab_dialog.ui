@@ -292,7 +292,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Layer Categorization</string>
+             <string>Layering</string>
             </property>
            </widget>
           </item>
@@ -322,7 +322,7 @@
         <widget class="QWidget" name="widget_4" native="true">
          <property name="maximumSize">
           <size>
-           <width>250</width>
+           <width>220</width>
            <height>16777215</height>
           </size>
          </property>
@@ -472,7 +472,7 @@
         <widget class="QWidget" name="widget_5" native="true">
          <property name="maximumSize">
           <size>
-           <width>200</width>
+           <width>220</width>
            <height>16777215</height>
           </size>
          </property>
@@ -624,7 +624,7 @@
         <widget class="QWidget" name="widget_7" native="true">
          <property name="maximumSize">
           <size>
-           <width>200</width>
+           <width>220</width>
            <height>16777215</height>
           </size>
          </property>
@@ -687,7 +687,7 @@
         <widget class="QWidget" name="widget_9" native="true">
          <property name="maximumSize">
           <size>
-           <width>200</width>
+           <width>220</width>
            <height>16777215</height>
           </size>
          </property>
