@@ -37,8 +37,10 @@ class ConnectUX(SpaceUX):
     def config(self, *a):
         # super().config(*a)
 
+        self.ui_enable_tile_mode(False)
+
         self.btn_load.clicked.connect(self.start_connect)
-        self.radioButton_loading_single.toggled.connect(self.ui_disable_tile_mode)
+        self.radioButton_loading_single.toggled.connect(self.ui_enable_tile_mode)
 
         self._set_mask_number(self.lineEdit_limit,0,100000)
         self._set_mask_number(self.lineEdit_max_feat)
@@ -89,8 +91,8 @@ class ConnectUX(SpaceUX):
         for btn in [self.btn_load]:
             btn.setEnabled(flag)
             btn.clearFocus()
-    def ui_disable_tile_mode(self, flag):
-        self.lineEdit_max_feat.setEnabled( flag) # disable
+    def ui_enable_tile_mode(self, flag):
+        self.lineEdit_max_feat.setEnabled( flag)
 
     def start_connect(self):
         index = self._get_current_index()
