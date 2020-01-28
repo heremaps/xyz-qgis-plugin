@@ -145,11 +145,14 @@ class XYZLayer(object):
         returns vlayer name shown in qgis
         """
         tags = "-(%s)" %(self.tags) if len(self.tags) else ""
-        return "{title}-{id}{tags}-{geom}-{idx}".format(
+        name = "{title}-{id}{tags}-{geom}-{idx}".format(
             id=self.meta.get("id",""),
             title=self.meta.get("title",""),
             geom=geom_str, idx=idx, tags=tags,
             )
+        loading_mode: str = self.loader_params.get("loading_mode")
+        if loading_mode: name += " (%s)"%(loading_mode)
+        return name
     def _db_layer_name(self, geom_str, idx):
         """
         returns name of the table corresponds to vlayer in sqlite db
