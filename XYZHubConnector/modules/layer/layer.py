@@ -26,6 +26,7 @@ from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_jso
 from ...models.space_model import parse_copyright
 from ...models import SpaceConnectionInfo
 from ...utils import make_unique_full_path, make_fixed_full_path
+from ... import config
 from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
@@ -84,6 +85,7 @@ class XYZLayer(object):
     def save_params_to_node(self, qnode):
         qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
         qnode.setCustomProperty(QProps.TAGS, self.tags)
+        qnode.setCustomProperty(QProps.PLUGIN_VERSION, config.PLUGIN_VERSION)
 
     def _save_meta_node(self, qnode):
         qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))

@@ -15,6 +15,7 @@ class QProps():
     TAGS = "XYZHub/tags" # included in params
     LOADER_PARAMS = "XYZHub/loader"
     EDIT_FLAG = "XYZHub/edit"
+    PLUGIN_VERSION = "XYZHub/version"
 
     v0 = {
         LAYER_META : "xyz-hub",
