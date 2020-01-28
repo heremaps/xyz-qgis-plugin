@@ -8,6 +8,9 @@
 #
 ###############################################################################
 
+class InvalidLoadingMode(Exception):
+    pass
+
 class LoadingMode(list):
     LIVE = "live"
     INCREMENTAL = "incremental"

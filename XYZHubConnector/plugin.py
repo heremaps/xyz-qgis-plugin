@@ -26,7 +26,7 @@ from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES
+from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
 from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, 
@@ -588,7 +588,7 @@ class XYZHubConnector(object):
 
     def make_loader_from_mode(self, loading_mode, layer=None):
         if not loading_mode:
-            raise Exception("Invalid loading mode: %s"%str(loading_mode))
+            raise InvalidLoadingMode(loading_mode)
         option = dict(zip(LOADING_MODES, [
             (LiveTileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
             (TileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
