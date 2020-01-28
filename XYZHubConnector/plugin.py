@@ -609,6 +609,12 @@ class XYZHubConnector(object):
     def init_tile_loader(self, qnode):
         layer = XYZLayer.load_from_qnode(qnode)
         loading_mode = layer.loader_params.get("loading_mode")
+        # backward-compatibility, import project
+        if not loading_mode: 
+            self.cb_success_msg("Import XYZ Layer", 
+                "Undefined loading mode: %s, " % loading_mode +  
+                "default to live loading (layer: %s)" % layer.get_name())
+            loading_mode = LOADING_MODES.LIVE
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_tile_loader(self):
