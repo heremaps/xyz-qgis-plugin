@@ -488,7 +488,7 @@ class XYZHubConnector(object):
             self.show_err_msgbar(e)
             return
 
-        if loading_mode == LOADING_MODES.SINGLE:
+        if loading_mode == LOADING_MODES.STATIC:
             con_load.start_args(args)
         else:
             kw.update(self.make_tile_params())
@@ -587,7 +587,7 @@ class XYZHubConnector(object):
         self.init_all_tile_loader()
 
     def make_loader_from_mode(self, loading_mode, layer=None):
-        if not loading_mode:
+        if loading_mode not in LOADING_MODES:
             raise InvalidLoadingMode(loading_mode)
         option = dict(zip(LOADING_MODES, [
             (LiveTileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
@@ -610,7 +610,7 @@ class XYZHubConnector(object):
         layer = XYZLayer.load_from_qnode(qnode)
         loading_mode = layer.loader_params.get("loading_mode")
         # backward-compatibility, import project
-        if not loading_mode: 
+        if loading_mode not in LOADING_MODES:
             self.cb_success_msg("Import XYZ Layer", 
                 "Undefined loading mode: %s, " % loading_mode +  
                 "default to live loading (layer: %s)" % layer.get_name())

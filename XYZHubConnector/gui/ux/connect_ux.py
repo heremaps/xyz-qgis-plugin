@@ -74,7 +74,7 @@ class ConnectUX(SpaceUX):
                 "Incremental loading: New features in the current extent are loaded and cached interactively.",
                 "Cached features will not be refreshed"
             ]),
-            "Single loading: All features are loaded only once, in iterations",
+            "Static loading: All features are loaded only once, in iterations",
         ]):
             btn.setToolTip(msg)
         self.lineEdit_max_feat.setToolTip("Maximum limit of features to be loaded")

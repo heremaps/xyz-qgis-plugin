@@ -14,8 +14,8 @@ class InvalidLoadingMode(Exception):
 class LoadingMode(list):
     LIVE = "live"
     INCREMENTAL = "incremental"
-    SINGLE = "single"
+    STATIC = "static"
     def __init__(self):
-        super().__init__([self.LIVE, self.INCREMENTAL, self.SINGLE])
+        super().__init__([self.LIVE, self.INCREMENTAL, self.STATIC])
 
 LOADING_MODES = LoadingMode() # live, incremental, single

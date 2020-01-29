@@ -391,7 +391,7 @@
              <enum>Qt::LeftToRight</enum>
             </property>
             <property name="text">
-                <string>Single</string>
+                <string>Static</string>
             </property>
            </widget>
           </item>
