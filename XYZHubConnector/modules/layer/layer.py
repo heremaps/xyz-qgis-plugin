@@ -44,7 +44,7 @@ class XYZLayer(object):
     for i,k in enumerate(["Point","Line","Polygon", "Unknown geometry", NO_GEOM]))
     # https://qgis.org/api/qgswkbtypes_8cpp_source.html#l00129 
 
-    def __init__(self, conn_info, meta, tags="", unique:str=None, loader_params:dict=None, group_name="XYZ Hub Layer", ext="gpkg"):
+    def __init__(self, conn_info, meta, tags="", unique:str=None, loader_params:dict=None, ext="gpkg"):
         super().__init__()
         self.ext = ext
         self.conn_info = conn_info
@@ -53,7 +53,7 @@ class XYZLayer(object):
         self.unique = str(unique or int(time.time() * 10))
         self.loader_params = loader_params or dict()
 
-        self._group_name = group_name
+        self._base_group_name = ""
 
         self.map_vlayer = dict()
         self.map_fields = dict()
@@ -66,13 +66,12 @@ class XYZLayer(object):
         tags = get_customProperty_str(qnode, QProps.TAGS)
         unique = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         loader_params = get_customProperty_str(qnode, QProps.LOADER_PARAMS)
-        name = qnode.name()
         meta = load_json_default(meta, default=dict())
         conn_info = load_json_default(conn_info, default=dict())
         conn_info = SpaceConnectionInfo.from_dict(conn_info)
         loader_params = load_json_default(loader_params, default=dict())
 
-        obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
+        obj = cls(conn_info, meta, tags=tags, unique=unique, loader_params=loader_params)
         obj.qgroups["main"] = qnode
         # obj._save_meta_node(qnode)
         for g in qnode.findGroups():
@@ -124,10 +123,8 @@ class XYZLayer(object):
     def get_layer(self, geom_str, idx):
         return self.map_vlayer[geom_str][idx]
     def get_name(self):
-        name = self._group_name
-        loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name += " (%s)"%(loading_mode)
-        return name
+        group = self.qgroups["main"]
+        return group.name() if group else self._base_group_name
     def _make_group_name(self, idx=None):
         """
         returns main layer group name
@@ -151,7 +148,7 @@ class XYZLayer(object):
         returns vlayer name shown in qgis
         """
         name = "{group_name}-{geom}-{idx}".format(
-            group_name=self._group_name,
+            group_name=self._base_group_name,
             geom=geom_str, idx=idx,
             )
         return name
@@ -217,8 +214,11 @@ class XYZLayer(object):
         tree_root = QgsProject.instance().layerTreeRoot()
         group = self.qgroups.get("main")
         if not group:
-            self._group_name = self._make_unique_group_name()
-            group = tree_root.insertGroup(0, self.get_name())
+            self._base_group_name = self._make_unique_group_name()
+            name = self._base_group_name
+            loading_mode: str = self.loader_params.get("loading_mode")
+            if loading_mode: name += " (%s)"%(loading_mode)
+            group = tree_root.insertGroup(0, name)
             self.qgroups["main"] = group
             self._save_meta_node(group)
         return group
