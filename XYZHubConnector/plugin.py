@@ -249,7 +249,14 @@ class XYZHubConnector(object):
     ############### 
     # Callback of action (main function)
     ###############
-    def cb_success_msg(self, title, msg="", dt=5):
+    
+    def show_info_msgbar(self, title, msg="", dt=5):
+        self.iface.messageBar().pushMessage(
+            config.TAG_PLUGIN, ": ".join([title,msg]),
+            Qgis.Info, dt
+        )
+
+    def show_success_msgbar(self, title, msg="", dt=5):
         self.iface.messageBar().pushMessage(
             config.TAG_PLUGIN, ": ".join([title,msg]),
             Qgis.Success, dt
@@ -257,14 +264,14 @@ class XYZHubConnector(object):
 
     def make_cb_success(self, title, msg="", dt=5):
         def _cb_success_msg():
-            self.cb_success_msg(title, msg, dt=dt)
+            self.show_success_msgbar(title, msg, dt=dt)
         return _cb_success_msg
         
     def make_cb_success_args(self, title, msg="", dt=5):
         def _cb_success_msg(args):
             a, kw = parse_qt_args(args)
             txt = ". ".join(map(str,a))
-            self.cb_success_msg(title, txt, dt=dt)
+            self.show_success_msgbar(title, txt, dt=dt)
         return _cb_success_msg
 
     def cb_handle_error_msg(self, e):
@@ -611,7 +618,7 @@ class XYZHubConnector(object):
         loading_mode = layer.loader_params.get("loading_mode")
         # backward-compatibility, import project
         if loading_mode not in LOADING_MODES:
-            self.cb_success_msg("Import XYZ Layer", 
+            self.show_info_msgbar("Import XYZ Layer", 
                 "Undefined loading mode: %s, " % loading_mode +  
                 "default to live loading (layer: %s)" % layer.get_name())
             loading_mode = LOADING_MODES.LIVE
@@ -632,7 +639,7 @@ class XYZHubConnector(object):
                 
 
         # print_qgis(self.con_man._layer_ptr)
-        self.cb_success_msg("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
+        self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
 
     ############### 
     # Open dialog
