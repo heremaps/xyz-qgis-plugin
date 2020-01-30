@@ -615,6 +615,7 @@ class XYZHubConnector(object):
                 "Undefined loading mode: %s, " % loading_mode +  
                 "default to live loading (layer: %s)" % layer.get_name())
             loading_mode = LOADING_MODES.LIVE
+            layer.update_loader_params(loading_mode=loading_mode)
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_tile_loader(self):

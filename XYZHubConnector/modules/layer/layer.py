@@ -11,6 +11,8 @@
 import sqlite3
 import time
 import json
+import re
+REGEX_LOADING_MODE = re.compile(r"\(\w+\)$")
 
 from qgis.core import (QgsCoordinateReferenceSystem, QgsFeatureRequest,
                        QgsProject, QgsVectorFileWriter, QgsVectorLayer, 
@@ -72,6 +74,7 @@ class XYZLayer(object):
 
         obj = cls(conn_info, meta, tags=tags, unique=unique, group_name=name, loader_params=loader_params)
         obj.qgroups["main"] = qnode
+        # obj._save_meta_node(qnode)
         for g in qnode.findGroups():
             obj.qgroups[g.name()] = g
             lst_vlayers = [i.layer() for i in g.findLayers()]
@@ -79,10 +82,10 @@ class XYZLayer(object):
                 geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
                 obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
                 obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
-                obj._save_meta(vlayer)
+                # obj._save_meta_vlayer(vlayer)
         return obj
 
-    def save_params_to_node(self, qnode):
+    def _save_params_to_node(self, qnode):
         qnode.setCustomProperty(QProps.LOADER_PARAMS, json.dumps(self.get_loader_params(), ensure_ascii=False))
         qnode.setCustomProperty(QProps.TAGS, self.tags)
         qnode.setCustomProperty(QProps.PLUGIN_VERSION, config.PLUGIN_VERSION)
@@ -91,9 +94,9 @@ class XYZLayer(object):
         qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))
         qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
         qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
-        self.save_params_to_node(qnode)
+        self._save_params_to_node(qnode)
         
-    def _save_meta(self, vlayer):
+    def _save_meta_vlayer(self, vlayer):
         self._save_meta_node(vlayer)
 
         lic = self.meta.get("license")
@@ -121,7 +124,10 @@ class XYZLayer(object):
     def get_layer(self, geom_str, idx):
         return self.map_vlayer[geom_str][idx]
     def get_name(self):
-        return self._group_name
+        name = self._group_name
+        loading_mode: str = self.loader_params.get("loading_mode")
+        if loading_mode: name += " (%s)"%(loading_mode)
+        return name
     def _make_group_name(self, idx=None):
         """
         returns main layer group name
@@ -133,8 +139,6 @@ class XYZLayer(object):
             title=self.meta.get("title",""),
             tags=tags, idx=idx,
             )
-        loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name += " (%s)"%(loading_mode)
         return name
     def _group_geom_name(self, geom_str):
         geom = QgsWkbTypes.geometryDisplayString(
@@ -146,14 +150,10 @@ class XYZLayer(object):
         """
         returns vlayer name shown in qgis
         """
-        tags = "-(%s)" %(self.tags) if len(self.tags) else ""
-        name = "{title}-{id}{tags}-{geom}-{idx}".format(
-            id=self.meta.get("id",""),
-            title=self.meta.get("title",""),
-            geom=geom_str, idx=idx, tags=tags,
+        name = "{group_name}-{geom}-{idx}".format(
+            group_name=self._group_name,
+            geom=geom_str, idx=idx,
             )
-        loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name += " (%s)"%(loading_mode)
         return name
     def _db_layer_name(self, geom_str, idx):
         """
@@ -178,32 +178,51 @@ class XYZLayer(object):
         for vlayer in self.iter_layer():
             cnt += get_feat_cnt_from_src(vlayer)
         return cnt
+
+    def update_loader_params(self, **loader_params):
+        self.loader_params.update(loader_params)
+        qnode = self.qgroups["main"]
+        self._update_group_name(qnode)
+
+        # # update name of vlayer might break things
+        # for idx, vlayer in enumerate(i.layer() 
+        #     for g in qnode.findGroups()
+        #     for i in g.findLayers()
+        #     ):
+        #     geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
+        #     self._update_vlayer_name(vlayer, geom_str, idx)
+
+    def _update_group_name(self, group):
+        name = group.name()
+        match = REGEX_LOADING_MODE.search(name)
+        if match:
+            name = name[:match.start()]
+        loading_mode: str = self.loader_params.get("loading_mode")
+        if loading_mode: name += "(%s)"%(loading_mode)
+        group.setName(name)
+        
+    def _update_vlayer_name(self, vlayer, geom_str, idx):
+        vlayer.setName(self._layer_name(geom_str, idx))
+        
+    def _make_unique_group_name(self):
+        tree_root = QgsProject.instance().layerTreeRoot()
+        name = self._make_group_name()
+        all_names = [g.name() for g in tree_root.findGroups()]
+        dupe_names = [x for x in all_names if x.startswith(name)]
+        idx = len(dupe_names)
+        if idx: name = self._make_group_name(idx)
+        return name
+
     def add_empty_group(self):
         tree_root = QgsProject.instance().layerTreeRoot()
         group = self.qgroups.get("main")
         if not group:
-            name = self._make_group_name()
-            all_names = [g.name() for g in tree_root.findGroups()]
-            dupe_names = [x for x in all_names if x.startswith(name)]
-            idx = len(dupe_names)
-            if idx: name = self._make_group_name(idx)
-            self._group_name = name
-            group = tree_root.insertGroup(0, name)
+            self._group_name = self._make_unique_group_name()
+            group = tree_root.insertGroup(0, self.get_name())
             self.qgroups["main"] = group
             self._save_meta_node(group)
         return group
     def add_ext_layer(self, geom_str, idx):
-        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
-
-        vlayer = self._init_ext_layer(geom_str, idx, crs)
-        self._add_layer(geom_str, vlayer, idx)
-
-        dom = QDomDocument()
-        dom.setContent(LAYER_QML, True) # xyz_id non editable
-        vlayer.importNamedStyle(dom)
-
-        QgsProject.instance().addMapLayer(vlayer, False)
-
         group = self.add_empty_group()
 
         geom = self._group_geom_name(geom_str)
@@ -215,6 +234,17 @@ class XYZLayer(object):
             group.addGroup(geom)
         )
         self.qgroups[geom] = group_geom
+
+
+        crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
+
+        vlayer = self._init_ext_layer(geom_str, idx, crs)
+        self._add_layer(geom_str, vlayer, idx)
+
+        dom = QDomDocument()
+        dom.setContent(LAYER_QML, True) # xyz_id non editable
+        vlayer.importNamedStyle(dom)
+        QgsProject.instance().addMapLayer(vlayer, False)
 
         group_geom.addLayer(vlayer)
         
@@ -268,7 +298,7 @@ class XYZLayer(object):
 
         uri = "%s|layername=%s"%(fname, db_layer_name)
         vlayer = QgsVectorLayer(uri, layer_name, "ogr")
-        self._save_meta(vlayer)
+        self._save_meta_vlayer(vlayer)
         
         return vlayer
 
