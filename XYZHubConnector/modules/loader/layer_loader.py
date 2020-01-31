@@ -342,7 +342,7 @@ class TileLayerLoader(LoadLayerController):
     def _create_or_get_vlayer(self, geom, idx, feat, fields, kw_params):
         vlayer = super()._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
         vlayer.beforeEditingStarted.connect(self.stop_loop)
-        vlayer.editingStopped.connect(self.continue_loop)
+        # vlayer.editingStopped.connect(self.continue_loop)
         return vlayer
 
     def continue_loop(self):

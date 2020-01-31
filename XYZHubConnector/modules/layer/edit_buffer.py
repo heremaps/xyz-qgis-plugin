@@ -383,7 +383,7 @@ class EditBuffer(object):
         self.layer_buffer=dict()
     def reset(self):
         self.layer_buffer = dict()
-    def get_layer_buffer(self, layer_id):
+    def get_layer_buffer(self, layer_id) -> LayeredEditBuffer:
         return self.layer_buffer.get(layer_id, None)
     def remove_layers(self, lst_layer_id):
         for layer_id in lst_layer_id:

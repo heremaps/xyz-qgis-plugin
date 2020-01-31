@@ -575,6 +575,9 @@ class XYZHubConnector(object):
             con = self.con_man.get_from_xyz_layer(xlayer_id)
             if con is None: continue
             if con in unique_con: continue
+            if con.layer:
+                if not self.is_all_layer_edit_buffer_empty(con.layer):
+                    continue
             lst_con.append(con)
             unique_con.add(con)
         # print_qgis(lst_con)
@@ -584,6 +587,15 @@ class XYZHubConnector(object):
             print_qgis(con.status)
             print_qgis("loading tile", level, rect)
             con.restart(**kw)
+
+    def is_all_layer_edit_buffer_empty(self, layer: XYZLayer) -> bool:
+        return all(
+            layer_buffer.is_empty()
+            for layer_buffer in (
+                self.edit_buffer.get_layer_buffer(vlayer.id())
+                for vlayer in layer.iter_layer()
+            ) if layer_buffer
+        )
 
     def add_basemap_layer(self, args):
         a, kw = parse_qt_args(args)
