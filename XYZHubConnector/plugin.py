@@ -620,7 +620,7 @@ class XYZHubConnector(object):
         if loading_mode not in LOADING_MODES:
             old = loading_mode
             loading_mode = LOADING_MODES.LIVE
-            layer.update_loader_params(loading_mode=loading_mode)
+            # layer.update_loader_params(loading_mode=loading_mode) # not save changes to layer
             self.show_info_msgbar("Import XYZ Layer", 
                 "Undefined loading mode: %s, " % old +  
                 "default to live loading (layer: %s)" % layer.get_name())
