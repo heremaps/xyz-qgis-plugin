@@ -29,7 +29,7 @@ from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, 
+from .modules.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
     LoadLayerController, UploadLayerController, EditSyncController,
     TileLayerLoader, LiveTileLayerLoader)
 
@@ -286,6 +286,11 @@ class XYZHubConnector(object):
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
             return
+        elif isinstance(e0, ManualInterrupt):
+            con = e0.args[0]
+            if isinstance(con, LoadLayerController):
+                self.show_info_msgbar("Loading is paused", "Layer: %s" % con.layer.get_name())
+                return
         self.show_err_msgbar(err)
 
     def show_net_err(self, err):

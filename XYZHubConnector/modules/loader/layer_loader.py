@@ -123,7 +123,7 @@ class LoadLayerController(BaseLoader):
             self._try_finish()
             return False
         elif self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
+            self.signal.error.emit(ManualInterrupt(self))
             self._try_finish()
             return False
         elif self.status == self.ALL_FEAT:
@@ -437,7 +437,7 @@ class UploadLayerController(BaseLoop):
         self.dispatch_parallel(n_parallel=self.n_parallel)
     def _run_loop(self):
         if self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
+            self.signal.error.emit(ManualInterrupt(self))
             return 
         if not self.lst_added_feat.has_next():
             self._try_finish()
@@ -482,7 +482,7 @@ class EditSyncController(UploadLayerController):
         return sync_feature
     def _run_loop(self):
         if self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
+            self.signal.error.emit(ManualInterrupt(self))
             return 
         
         conn_info = self.get_conn_info()
