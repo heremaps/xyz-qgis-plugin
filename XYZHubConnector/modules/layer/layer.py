@@ -180,6 +180,7 @@ class XYZLayer(object):
         self.loader_params.update(loader_params)
         qnode = self.qgroups["main"]
         self._update_group_name(qnode)
+        self._save_meta_node(qnode)
 
         # # update name of vlayer might break things
         # for idx, vlayer in enumerate(i.layer() 
@@ -188,6 +189,10 @@ class XYZLayer(object):
         #     ):
         #     geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
         #     self._update_vlayer_name(vlayer, geom_str, idx)
+
+    def _update_unique_group_name(self, group):
+        name = self._make_final_group_name()
+        group.setName(name)
 
     def _update_group_name(self, group):
         name = group.name()
@@ -200,7 +205,14 @@ class XYZLayer(object):
         
     def _update_vlayer_name(self, vlayer, geom_str, idx):
         vlayer.setName(self._layer_name(geom_str, idx))
-        
+    
+    def _make_final_group_name(self):
+        self._base_group_name = self._make_unique_group_name()
+        name = self._base_group_name
+        loading_mode: str = self.loader_params.get("loading_mode")
+        if loading_mode: name += " (%s)"%(loading_mode)
+        return name
+
     def _make_unique_group_name(self):
         tree_root = QgsProject.instance().layerTreeRoot()
         name = self._make_group_name()
@@ -214,10 +226,7 @@ class XYZLayer(object):
         tree_root = QgsProject.instance().layerTreeRoot()
         group = self.qgroups.get("main")
         if not group:
-            self._base_group_name = self._make_unique_group_name()
-            name = self._base_group_name
-            loading_mode: str = self.loader_params.get("loading_mode")
-            if loading_mode: name += " (%s)"%(loading_mode)
+            name = self._make_final_group_name()
             group = tree_root.insertGroup(0, name)
             self.qgroups["main"] = group
             self._save_meta_node(group)

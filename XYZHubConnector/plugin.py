@@ -618,11 +618,12 @@ class XYZHubConnector(object):
         loading_mode = layer.loader_params.get("loading_mode")
         # backward-compatibility, import project
         if loading_mode not in LOADING_MODES:
-            self.show_info_msgbar("Import XYZ Layer", 
-                "Undefined loading mode: %s, " % loading_mode +  
-                "default to live loading (layer: %s)" % layer.get_name())
+            old = loading_mode
             loading_mode = LOADING_MODES.LIVE
             layer.update_loader_params(loading_mode=loading_mode)
+            self.show_info_msgbar("Import XYZ Layer", 
+                "Undefined loading mode: %s, " % old +  
+                "default to live loading (layer: %s)" % layer.get_name())
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_tile_loader(self):
