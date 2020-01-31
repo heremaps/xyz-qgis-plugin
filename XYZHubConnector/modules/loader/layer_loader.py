@@ -230,12 +230,17 @@ class LoadLayerController(BaseLoader):
         ]
 
         return lst_args
+
     def _render_single(self, geom, idx, feat, fields, kw_params):
+        vlayer = self._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
+        render.add_feature_render(vlayer, feat, fields)
+
+    def _create_or_get_vlayer(self, geom, idx, feat, fields, kw_params):
         if not self.layer.has_layer(geom, idx):
             vlayer=self.layer.add_ext_layer(geom, idx)
         else:
             vlayer=self.layer.get_layer(geom, idx)
-        render.add_feature_render(vlayer, feat, fields)
+        return vlayer
 
 class TileLayerLoader(LoadLayerController):
     def __init__(self, *a, layer: XYZLayer=None, **kw):
@@ -334,16 +339,24 @@ class TileLayerLoader(LoadLayerController):
             )
         self.signal.results.emit( make_qt_args(msg))
 
+    def _create_or_get_vlayer(self, geom, idx, feat, fields, kw_params):
+        vlayer = super()._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
+        vlayer.beforeEditingStarted.connect(self.stop_loop)
+        vlayer.editingStopped.connect(self.continue_loop)
+        return vlayer
+
+    def continue_loop(self):
+        if self.count_active() == 0:
+            BaseLoader.reset(self)
+            self.dispatch_parallel(n_parallel=self.n_parallel)
+
 class LiveTileLayerLoader(TileLayerLoader):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
-        if not self.layer.has_layer(geom, idx):
-            vlayer=self.layer.add_ext_layer(geom, idx)
-        else:
-            vlayer=self.layer.get_layer(geom, idx)
+        vlayer = self._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
         tile_id = kw_params.get("tile_id")
         tile_schema = kw_params.get("tile_schema")
         lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
