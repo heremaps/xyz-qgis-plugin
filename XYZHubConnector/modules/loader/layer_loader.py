@@ -226,16 +226,16 @@ class LoadLayerController(BaseLoader):
             for geom in map_feat.keys()
             for idx, (feat, fields) in enumerate(zip(
                 map_feat[geom], map_fields[geom]))
-            if feat
         ]
 
         return lst_args
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
-        vlayer = self._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
+        if not feat: return
+        vlayer = self._create_or_get_vlayer(geom, idx)
         render.add_feature_render(vlayer, feat, fields)
 
-    def _create_or_get_vlayer(self, geom, idx, feat, fields, kw_params):
+    def _create_or_get_vlayer(self, geom, idx):
         if not self.layer.has_layer(geom, idx):
             vlayer=self.layer.add_ext_layer(geom, idx)
         else:
@@ -339,8 +339,8 @@ class TileLayerLoader(LoadLayerController):
             )
         self.signal.results.emit( make_qt_args(msg))
 
-    def _create_or_get_vlayer(self, geom, idx, feat, fields, kw_params):
-        vlayer = super()._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
+    def _create_or_get_vlayer(self, geom, idx):
+        vlayer = super()._create_or_get_vlayer(geom, idx)
         vlayer.beforeEditingStarted.connect(self.stop_loop)
         # vlayer.editingStopped.connect(self.continue_loop)
         return vlayer
@@ -356,14 +356,14 @@ class LiveTileLayerLoader(TileLayerLoader):
         self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
-        vlayer = self._create_or_get_vlayer(geom, idx, feat, fields, kw_params)
+        vlayer = self._create_or_get_vlayer(geom, idx)
         tile_id = kw_params.get("tile_id")
         tile_schema = kw_params.get("tile_schema")
         lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
         rcl = [lrc[k] for k in ["row","col","level"]]
         extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
         render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
-
+        if not feat: return
         render.add_feature_render(vlayer, feat, fields)
 
 ########################
