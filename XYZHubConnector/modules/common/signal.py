@@ -96,8 +96,7 @@ def disconnect_global_error_signal():
 #     except: pass
 
 class BasicSignal(QObject):
-    """
-    Defines the signals available .
+    """ Defines the signals available .
 
     Supported signals are:
 
@@ -105,15 +104,20 @@ class BasicSignal(QObject):
         No data
 
     error
-        `tuple` (exctype, value, traceback.format_exc() )
+        `exception` exception object
 
     result
-        `object` data returned from processing, anything
+        `qt_args` encapsulates results in form (args, kw)
 
     progress
         `int` indicating % progress
+        
+    info
+        `qt_args` encapsulates data to be displayed in form (args, kw)
+
     """
     finished = pyqtSignal()
     results = pyqtSignal(object)
     error = pyqtSignal(object)
     progress = pyqtSignal(object)
+    info = pyqtSignal(object)

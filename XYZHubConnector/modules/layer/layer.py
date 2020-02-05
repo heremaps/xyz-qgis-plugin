@@ -59,6 +59,7 @@ class XYZLayer(object):
         self.map_vlayer = dict()
         self.map_fields = dict()
         self.qgroups = dict()
+        self.callbacks = dict()
 
     @classmethod
     def load_from_qnode(cls, qnode):
@@ -75,6 +76,7 @@ class XYZLayer(object):
         name = qnode.name()
         obj = cls(conn_info, meta, tags=tags, unique=unique, loader_params=loader_params, group_name=name)
         obj.qgroups["main"] = qnode
+        obj._update_group_name(qnode)
 
         # obj._save_meta_node(qnode)
         for g in qnode.findGroups():
@@ -112,14 +114,84 @@ class XYZLayer(object):
             meta.setRights(lst_txt)
         vlayer.setMetadata(meta)
 
+    def config_callback(self, **callbacks):
+        self.callbacks = callbacks
+        self.callbacks["print"] = lambda: print("vlayer edit")
+
+        qnode = self.qgroups.get("main")
+        if not qnode: return
+
+        self._connect_cb_group(qnode)
+        
+        for geom_str, lst_vlayer in self.map_vlayer.items():
+            for idx, vlayer in enumerate(lst_vlayer):
+                self._connect_cb_vlayer(vlayer, geom_str, idx)
+
+    def _cb_delete_vlayer(self, vlayer, geom_str, idx):
+        self._remove_layer(geom_str, idx)
+        try:
+            self._disconnect_cb_vlayer(vlayer) # deleted anyway
+        except RuntimeError: pass
+
+    def destroy(self):
+        # for geom_str, lst_vlayer in self.map_vlayer.items():
+        #     for idx, vlayer in enumerate(lst_vlayer):
+        #         if not vlayer: continue
+        #         self._cb_delete_vlayer(vlayer, geom_str, idx)
+        try:
+            self._disconnect_cb_group(self.qgroups.get("main"))
+        except RuntimeError: pass
+        self.qgroups.pop("main", None)
+
+    def _make_cb_args(self, fn, *args):
+        def cb():
+            fn(*args)
+        return cb
+    def _connect_cb_group(self, qnode):
+        if not self.callbacks: return
+        print("connect group", qnode)
+        qnode.destroyed.connect(self.callbacks["destroy"])
+    def _disconnect_cb_group(self, qnode):
+        if not self.callbacks: return
+        if not qnode: return
+        print("disconnect group")
+        qnode.destroyed.disconnect(self.callbacks["destroy"])
+        
+    def _connect_cb_vlayer(self, vlayer, geom_str, idx):
+        if not self.callbacks: return
+        vlayer.beforeEditingStarted.connect(self.callbacks["start_editing"])
+        vlayer.beforeEditingStarted.connect(self.callbacks["print"])
+        cb_delete_vlayer = self.callbacks.setdefault(vlayer.id(),
+            self._make_cb_args(self._cb_delete_vlayer, vlayer, geom_str, idx))
+        vlayer.willBeDeleted.connect(self.callbacks["stop_loading"])
+        vlayer.willBeDeleted.connect(cb_delete_vlayer)
+        # vlayer.editingStopped.connect(self.callbacks["end_editing"])
+
+    def _disconnect_cb_vlayer(self, vlayer):
+        if not self.callbacks: return
+        print("disconnect vlayer")
+        vlayer.beforeEditingStarted.disconnect(self.callbacks["start_editing"])
+        vlayer.beforeEditingStarted.disconnect(self.callbacks["print"])
+        vlayer.willBeDeleted.disconnect(self.callbacks["stop_loading"])
+        cb_delete_vlayer = self.callbacks.pop(vlayer.id(), None)
+        if cb_delete_vlayer:
+            vlayer.willBeDeleted.disconnect(cb_delete_vlayer)
+        # vlayer.editingStopped.disconnect(self.callbacks["end_editing"])
+
     def iter_layer(self):
         for lst in self.map_vlayer.values():
             for vlayer in lst:
+                if not vlayer: continue
                 yield vlayer
+
     def has_layer(self, geom_str, idx):
+        """ Check if there is already a vlayer with given geometry and index
+        (corresponding to that of map_fields)
+        """
         return (
             geom_str in self.map_vlayer and 
-            idx < len(self.map_vlayer[geom_str])
+            idx < len(self.map_vlayer[geom_str]) and
+            bool(self.map_vlayer[geom_str][idx])
             )
     def get_loader_params(self) -> dict:
         return self.loader_params or dict()
@@ -171,6 +243,8 @@ class XYZLayer(object):
     def get_id(self):
         return self.unique
     def get_map_fields(self):
+        """ returns reference to existing mutable map_fields
+        """
         return self.map_fields
     def get_feat_cnt(self):
         cnt = 0
@@ -198,14 +272,17 @@ class XYZLayer(object):
         self._group_name = name
         group.setName(name)
 
-
-    def _update_group_name(self, group):
-        name = group.name()
+    def _get_base_group_name(self, name):
         match = REGEX_LOADING_MODE.search(name)
         if match:
             name = name[:match.start()]
-        loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name += "(%s)"%(loading_mode)
+        return name
+
+    def _update_group_name(self, group):
+        name = group.name()
+        name = self._get_base_group_name(name)
+        self._base_group_name = name
+        name = self._detailed_group_name(name)
         self._group_name = name
         group.setName(name)
         
@@ -214,7 +291,7 @@ class XYZLayer(object):
     
     def _detailed_group_name(self, name):
         loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name += " (%s)"%(loading_mode)
+        if loading_mode: name = "%s (%s)" % (name.strip(), loading_mode)
         return name
 
     def _make_unique_group_name(self):
@@ -237,8 +314,18 @@ class XYZLayer(object):
             group = tree_root.insertGroup(0, name)
             self.qgroups["main"] = group
             self._save_meta_node(group)
+            self._connect_cb_group(group)
         return group
+
     def add_ext_layer(self, geom_str, idx):
+        """ Add layer group structure
+        qgroups: dict["main"] = group
+            dict[geom] = list([vlayer1, vlayer2,...])
+        map_vlayer: dict[geom_str] = list([vlayer1, vlayer2,...])
+        map_fields: dict[geom_str] = list([fields1, fields2,...])
+        geom_str: QgsWkbTypes.displayString (detailed geometry, e.g. Multi-)
+        geom: QgsWkbTypes.geometryDisplayString (generic geometry,)
+        """
         group = self.add_empty_group()
 
         geom = self._group_geom_name(geom_str)
@@ -256,6 +343,7 @@ class XYZLayer(object):
 
         vlayer = self._init_ext_layer(geom_str, idx, crs)
         self._add_layer(geom_str, vlayer, idx)
+        self._connect_cb_vlayer(vlayer, geom_str, idx)
 
         dom = QDomDocument()
         dom.setContent(LAYER_QML, True) # xyz_id non editable
@@ -267,9 +355,19 @@ class XYZLayer(object):
         if iface: iface.setActiveLayer(vlayer)
         return vlayer
     def _add_layer(self, geom_str, vlayer, idx):
+        """ Add vlayer to correct position (geometry and index) in the internal map
+        """
         lst = self.map_vlayer.setdefault(geom_str, list())
-        assert idx == len(lst), "vlayer count mismatch"
-        lst.append(vlayer)
+        # assert idx == len(lst), "vlayer count mismatch"
+        if idx == len(lst):
+            lst.append(vlayer)
+        else:
+            lst[idx] = vlayer
+
+    def _remove_layer(self, geom_str, idx):
+        """ Remove vlayer from the internal map without messing the index
+        """
+        self.map_vlayer[geom_str][idx] = None
 
     def _init_ext_layer(self, geom_str, idx, crs):
         """ given non map of feat, init a qgis layer

@@ -72,7 +72,6 @@ class ControllerManager(object):
         self.signal = CanvasSignal()
         self._ptr = 0
         self._lst = dict()
-        self._layer_ptr = dict()
         self.ld_pool = LoaderPool()
     def finish_fast(self):
         self.ld_pool.reset()
@@ -143,6 +142,23 @@ class LayerControllerManager(ControllerManager):
             cb_register_layer()
 
         return ptr
+
+    def remove_layer(self, con):
+        con.destroy()
+        ptr = self._layer_ptr.pop(con.layer.get_id(), None)
+        con1 = self._lst.pop(ptr, None)
+        return con is con1
+    def remove_all_layer(self):
+        ok = list()
+        for xid, ptr in self._layer_ptr.items():
+            con = self._lst.pop(ptr, None)
+            con.destroy()
+            ok.append(con.layer.get_id() == xid)
+        return all(ok)
+
+    def unload(self):
+        return self.remove_all_layer()
+
                 
 class LoaderManager(LayerControllerManager):
     def config(self, network):

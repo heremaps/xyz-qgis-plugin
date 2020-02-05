@@ -132,7 +132,21 @@ class XYZHubConnector(object):
         # progress = self.iface.statusBarIface().children()[2] # will be hidden by qgis
         self.iface.statusBarIface().addPermanentWidget(progress)
         self.pb = progress
+
+        # btn_toggle_edit = self.get_btn_toggle_edit()
+        # btn_toggle_edit.toggled.connect(lambda *a: print("toggled", a))
+
         self.hasGuiInitialized = True
+
+    # unused
+    def get_btn_toggle_edit(self):
+        text_toggle_edit = "toggle editing"
+        toolbar = self.iface.digitizeToolBar()
+        mapping = dict(
+            (w.text().lower() if hasattr(w,"text") else str(i), w)
+            for i, w in enumerate(toolbar.children())
+        )
+        return mapping[text_toggle_edit]
 
     def new_session(self):
         self.con_man.reset()
@@ -199,6 +213,8 @@ class XYZHubConnector(object):
         # QgsProject.instance().layersAdded.disconnect( self.edit_buffer.config_connection)
         self.edit_buffer.unload_connection()
 
+        self.con_man.unload()
+
         self.iface.currentLayerChanged.disconnect( self.cb_layer_selected) # UNCOMMENT
 
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
@@ -250,29 +266,36 @@ class XYZHubConnector(object):
     # Callback of action (main function)
     ###############
     
-    def show_info_msgbar(self, title, msg="", dt=5):
+    def show_info_msgbar(self, title, msg="", dt=3):
         self.iface.messageBar().pushMessage(
             config.TAG_PLUGIN, ": ".join([title,msg]),
             Qgis.Info, dt
         )
 
-    def show_success_msgbar(self, title, msg="", dt=5):
+    def show_success_msgbar(self, title, msg="", dt=3):
         self.iface.messageBar().pushMessage(
             config.TAG_PLUGIN, ": ".join([title,msg]),
             Qgis.Success, dt
         )
 
-    def make_cb_success(self, title, msg="", dt=5):
+    def make_cb_success(self, title, msg="", dt=3):
         def _cb_success_msg():
             self.show_success_msgbar(title, msg, dt=dt)
         return _cb_success_msg
         
-    def make_cb_success_args(self, title, msg="", dt=5):
+    def make_cb_success_args(self, title, msg="", dt=3):
         def _cb_success_msg(args):
             a, kw = parse_qt_args(args)
             txt = ". ".join(map(str,a))
             self.show_success_msgbar(title, txt, dt=dt)
         return _cb_success_msg
+
+    def make_cb_info_args(self, title, msg="", dt=3):
+        def _cb_info_msg(args):
+            a, kw = parse_qt_args(args)
+            txt = ". ".join(map(str,a))
+            self.show_info_msgbar(title, txt, dt=dt)
+        return _cb_info_msg
 
     def cb_handle_error_msg(self, e):
         err = parse_exception_obj(e)
@@ -287,10 +310,8 @@ class XYZHubConnector(object):
             ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
             return
         elif isinstance(e0, ManualInterrupt):
-            con = e0.args[0]
-            if isinstance(con, LoadLayerController):
-                self.show_info_msgbar("Loading is paused", "Layer: %s" % con.layer.get_name())
-                return
+            self.log_err_traceback(e0)
+            return
         self.show_err_msgbar(err)
 
     def show_net_err(self, err):
@@ -313,7 +334,7 @@ class XYZHubConnector(object):
 
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
-            "Error", repr(err),
+            config.TAG_PLUGIN, repr(err),
             Qgis.Warning, 3
         )
         self.log_err_traceback(err)
@@ -437,7 +458,7 @@ class XYZHubConnector(object):
         con_upload = UploadLayerController(self.network, n_parallel=2)
         self.con_man.add_background(con_upload)
         # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish") )
+        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish", dt=4))
         con_upload.signal.error.connect( self.cb_handle_error_msg )
         
         con = InitUploadLayerController(self.network)
@@ -616,7 +637,7 @@ class XYZHubConnector(object):
         option = dict(zip(LOADING_MODES, [
             (LiveTileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
             (TileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (LoadLayerController, self.con_man.add_background, self.make_cb_success_args("Loading finish"))
+            (LoadLayerController, self.con_man.add_background, self.make_cb_success_args("Loading finish", dt=3))
             ])).get(loading_mode)
         if not option:
             return
@@ -625,6 +646,9 @@ class XYZHubConnector(object):
         con_load = loader_class(self.network, n_parallel=1, layer=layer)
         con_load.signal.results.connect( cb_success_args)
         con_load.signal.error.connect( self.cb_handle_error_msg )
+
+        cb_info = self.make_cb_info_args("Loading status", dt=3)
+        con_load.signal.info.connect( cb_info)
 
         ptr = fn_register(con_load)
         return con_load
