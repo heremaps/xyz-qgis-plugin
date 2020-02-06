@@ -75,7 +75,7 @@ class ControllerManager(object):
         self.ld_pool = LoaderPool()
     def finish_fast(self):
         self.ld_pool.reset()
-    def add_background(self, con, show_progress=True):
+    def add_on_demand_controller(self, con, show_progress=True):
         """ background controller will not get affected when finish_fast()
         """
         callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
@@ -122,7 +122,7 @@ class LayerControllerManager(ControllerManager):
         return _register_xyz_layer
     def get_from_xyz_layer(self, xlayer_id):
         return self._lst.get(self._layer_ptr.get(xlayer_id))
-    def add_layer(self, con, show_progress=True):
+    def add_persistent_loader(self, con, show_progress=True):
         callbacks = [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
         
         ptr = self._add(con)
@@ -144,16 +144,16 @@ class LayerControllerManager(ControllerManager):
         return ptr
 
     def remove_layer(self, con):
-        con.destroy()
         ptr = self._layer_ptr.pop(con.layer.get_id(), None)
         con1 = self._lst.pop(ptr, None)
+        con.destroy()
         return con is con1
     def remove_all_layer(self):
         ok = list()
         for xid, ptr in self._layer_ptr.items():
             con = self._lst.pop(ptr, None)
-            con.destroy()
             ok.append(con.layer.get_id() == xid)
+            con.destroy()
         return all(ok)
 
     def unload(self):

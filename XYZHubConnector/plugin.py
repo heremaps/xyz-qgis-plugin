@@ -456,13 +456,13 @@ class XYZHubConnector(object):
 
     def start_upload_space(self, args):
         con_upload = UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_upload)
+        self.con_man.add_on_demand_controller(con_upload)
         # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
         con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish", dt=4))
         con_upload.signal.error.connect( self.cb_handle_error_msg )
         
         con = InitUploadLayerController(self.network)
-        self.con_man.add_background(con)
+        self.con_man.add_on_demand_controller(con)
 
         con.signal.results.connect( con_upload.start_args)
         con.signal.error.connect( self.cb_handle_error_msg )
@@ -475,7 +475,7 @@ class XYZHubConnector(object):
         
         ############ connect btn        
         con_load = LoadLayerController(self.network, n_parallel=1)
-        self.con_man.add_background(con_load)
+        self.con_man.add_on_demand_controller(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         con_load.signal.results.connect( self.make_cb_success_args("Loading finish") )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
@@ -493,7 +493,7 @@ class XYZHubConnector(object):
 
         ############ connect btn        
         con_load = TileLayerLoader(self.network, n_parallel=1)
-        self.con_man.add_layer(con_load)
+        self.con_man.add_persistent_loader(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
         con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
@@ -635,9 +635,9 @@ class XYZHubConnector(object):
         if loading_mode not in LOADING_MODES:
             raise InvalidLoadingMode(loading_mode)
         option = dict(zip(LOADING_MODES, [
-            (LiveTileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (TileLayerLoader, self.con_man.add_layer, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (LoadLayerController, self.con_man.add_background, self.make_cb_success_args("Loading finish", dt=3))
+            (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (LoadLayerController, self.con_man.add_on_demand_controller, self.make_cb_success_args("Loading finish", dt=3))
             ])).get(loading_mode)
         if not option:
             return
@@ -713,7 +713,7 @@ class XYZHubConnector(object):
         # print_qgis("removed_feat: ", removed_ids)
 
         con = EditSyncController(self.network)
-        self.con_man.add_background(con)
+        self.con_man.add_on_demand_controller(con)
         con.signal.finished.connect( layer_buffer.sync_complete)
         con.signal.results.connect( self.make_cb_success_args("Sync edit finish") )
         con.signal.error.connect( self.cb_handle_error_msg )
