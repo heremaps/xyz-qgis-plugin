@@ -53,6 +53,7 @@ class LoadLayerController(BaseLoader):
     """
     def __init__(self, network: NetManager, layer: XYZLayer=None, n_parallel=1):
         BaseLoader.__init__(self)
+
         self.pool = QThreadPool() # .globalInstance() will crash afterward
         self.n_parallel = 1
         self.status = self.LOADING
@@ -63,8 +64,9 @@ class LoadLayerController(BaseLoader):
         self.kw: dict = None
         self.fixed_params = dict()
         self.params_queue: queue.ParamsQueue = None
-        
-        self._config(network)
+
+        self._cb_network_load = network.load_features_iterate
+        self._config()
     def post_render(self,*a,**kw):
         for v in self.layer.iter_layer():
             v.triggerRepaint()
@@ -107,9 +109,9 @@ class LoadLayerController(BaseLoader):
         )
         self.params_queue = queue.ParamsQueue_deque_smart(params, buffer_size=1)
 
-    def _config(self, network: NetManager):
+    def _config(self):
         self.config_fun([
-            NetworkFun( network.load_features_iterate), 
+            NetworkFun( self._cb_network_load), 
             WorkerFun( net_handler.on_received, self.pool),
             AsyncFun( self._process_render), 
             WorkerFun( render.parse_feature, self.pool),
@@ -123,10 +125,7 @@ class LoadLayerController(BaseLoader):
             self._try_finish()
             return False
         elif self.status == self.STOPPED:
-            self._try_finish()
-            msg = "Loading is paused. Layer: %s" % self.layer.get_name()
-            self.show_info_msg(msg) # can be disabled if loading stop for different use case
-            self._handle_error(ManualInterrupt(msg))
+            self._after_loading_stopped()
             return False
         elif self.status == self.ALL_FEAT:
             if not self.params_queue.has_retry():
@@ -245,25 +244,46 @@ class LoadLayerController(BaseLoader):
         return vlayer
 
     def destroy(self):
-        self.stop_loop()
+        self._stop_loading()
         # self.layer.destroy() !?!
+        
+    def _stop_loading(self):
+        """ Stop loading immediately
+        """
+        self.lst_fun.clear()
+        self._config()
+        self.status = self.STOPPED
+        self._after_loading_stopped()
+    
+    def _after_loading_stopped(self):
+        self._try_finish()
+        msg = "Loading stopped. Layer: %s" % self.layer.get_name()
+        self.show_info_msg(msg) # can be disabled if loading stop for different use case
+        self._handle_error(ManualInterrupt(msg))
+
+    def show_info_msg(self, msg, dt=1):
+        self.signal.info.emit(make_qt_args(
+            msg, dt=dt
+        ))
 
 class TileLayerLoader(LoadLayerController):
-    def __init__(self, *a, layer: XYZLayer=None, **kw):
-        super().__init__(*a, **kw)
+    def __init__(self, network: NetManager, *a, layer: XYZLayer=None, **kw):
+        super().__init__(network, *a, **kw)
         self.fixed_keys = ["tags", "limit", "tile_schema"]
         self.params_queue = queue.CachedQueue(key="tile_id") # dont have retry logic
         self.layer = layer
         self.total_params = 0
         self.cnt_params = 0
         self.feat_cnt = 0
+        self._cb_network_load = network.load_features_tile
+        self._config()
 
         if layer:
             self._config_layer_callback(layer)
 
-    def _config(self, network: NetManager):
+    def _config(self):
         self.config_fun([
-            NetworkFun( network.load_features_tile), 
+            NetworkFun( self._cb_network_load), 
             WorkerFun( net_handler.on_received, self.pool),
             AsyncFun( self._process_render), 
             WorkerFun( render.parse_feature, self.pool),
@@ -357,12 +377,10 @@ class TileLayerLoader(LoadLayerController):
     def _config_layer_callback(self, layer):
         layer.config_callback(
             start_editing=self._start_editing,
-            end_editing=self.continue_loop,
-            stop_loading=self.stop_loop,
+            end_editing=self._continue_loop,
+            stop_loading=self._stop_loading,
             destroy=self.destroy, # !?!
             )
-        # vlayer.beforeEditingStarted.connect(self._start_editing)
-        # vlayer.editingStopped.connect(self.continue_loop)
 
     def _start_editing(self):
         self.show_info_msg(" ".join([
@@ -370,12 +388,9 @@ class TileLayerLoader(LoadLayerController):
             "To re-enable loading, please exit editing mode and push changes.",
             "Layer: %s" % self.layer.get_name()
         ]))
-        self.stop_loop()
-    def show_info_msg(self, msg, dt=1):
-        self.signal.info.emit(make_qt_args(
-            msg, dt=dt
-        ))
-    def continue_loop(self):
+        self._stop_loading()
+
+    def _continue_loop(self):
         if self.count_active() == 0:
             BaseLoader.reset(self)
             self.dispatch_parallel(n_parallel=self.n_parallel)
