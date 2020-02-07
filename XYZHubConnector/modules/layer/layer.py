@@ -259,7 +259,7 @@ class XYZLayer(object):
         match = REGEX_LOADING_MODE.search(name)
         if match:
             name = name[:match.start()]
-        return name
+        return name.strip()
 
     def _update_group_name(self, group):
         name = group.name()
@@ -274,16 +274,19 @@ class XYZLayer(object):
     
     def _detailed_group_name(self, name):
         loading_mode: str = self.loader_params.get("loading_mode")
-        if loading_mode: name = "%s (%s)" % (name.strip(), loading_mode)
+        if loading_mode: name = "%s (%s)" % (name, loading_mode)
         return name
 
     def _make_unique_group_name(self):
         tree_root = QgsProject.instance().layerTreeRoot()
         name = self._make_group_name()
-        all_names = [g.name() for g in tree_root.findGroups()]
+        all_names = sorted(self._get_base_group_name(g.name()) 
+            for g in tree_root.findGroups())
         dupe_names = [x for x in all_names if x.startswith(name)]
-        idx = len(dupe_names)
-        if idx: name = self._make_group_name(idx)
+        idx = 0
+        while name in dupe_names:
+            idx += 1
+            name = self._make_group_name(idx)
         self._base_group_name = name
         return name
 
