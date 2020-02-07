@@ -137,6 +137,7 @@ class XYZLayer(object):
             for idx, vlayer in enumerate(lst_vlayer):
                 if not vlayer: continue
                 self._cb_delete_vlayer(vlayer, geom_str, idx)
+
     def _make_cb_args(self, fn, *args):
         def cb():
             fn(*args)

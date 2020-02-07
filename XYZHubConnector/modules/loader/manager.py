@@ -114,7 +114,7 @@ class LayerControllerManager(ControllerManager):
         super().__init__()
         self._layer_ptr = dict()
     def reset(self):
-        self._layer_ptr = dict()
+        self.unload()
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
             # assert con.layer is not None 
@@ -143,18 +143,15 @@ class LayerControllerManager(ControllerManager):
 
         return ptr
 
-    def remove_layer(self, xlayer_id):
+    def remove_persistent_loader(self, xlayer_id):
         ptr = self._layer_ptr.pop(xlayer_id, None)
         con = self._lst.pop(ptr, None)
         con.destroy()
         
-    def remove_all_layer(self):
+    def unload(self):
         for xid, ptr in self._layer_ptr.items():
             con = self._lst.pop(ptr, None)
             con.destroy()
-
-    def unload(self):
-        return self.remove_all_layer()
 
                 
 class LoaderManager(LayerControllerManager):

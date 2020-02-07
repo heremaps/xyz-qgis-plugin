@@ -695,7 +695,7 @@ class XYZHubConnector(object):
             qnode = lst[i]
             if (is_parent_root and is_xyz_supported_node(qnode)):
                 xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-                self.con_man.remove_layer(xlayer_id)
+                self.con_man.remove_persistent_loader(xlayer_id)
             # is possible to handle vlayer delete here
             # instead of handle in layer.py via callbacks
  
