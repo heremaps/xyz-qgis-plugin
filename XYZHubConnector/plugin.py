@@ -689,7 +689,6 @@ class XYZHubConnector(object):
 
 
     def cb_qnodes_deleted(self, parent, i0, i1):
-        print("qnodes deleted", i0, i1)
         is_parent_root = not parent.parent()
         lst = parent.children()
         for i in range(i0, i1+1):

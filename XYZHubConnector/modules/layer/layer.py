@@ -114,7 +114,6 @@ class XYZLayer(object):
 
     def config_callback(self, **callbacks):
         self.callbacks = callbacks
-        self.callbacks["print"] = lambda: print("vlayer edit")
 
         qnode = self.qgroups.get("main")
         if not qnode: return
@@ -130,7 +129,6 @@ class XYZLayer(object):
         except RuntimeError: pass
 
     def destroy(self):
-        print("layer.destroy")
         self.qgroups.pop("main", None)
 
         # Delete vlayer in case a it is moved out of the group
@@ -147,7 +145,6 @@ class XYZLayer(object):
     def _connect_cb_vlayer(self, vlayer, geom_str, idx):
         if not self.callbacks: return
         vlayer.beforeEditingStarted.connect(self.callbacks["start_editing"])
-        vlayer.beforeEditingStarted.connect(self.callbacks["print"])
         vlayer.willBeDeleted.connect(self.callbacks["stop_loading"])
         cb_delete_vlayer = self.callbacks.setdefault(vlayer.id(),
             self._make_cb_args(self._cb_delete_vlayer, vlayer, geom_str, idx))
@@ -156,9 +153,7 @@ class XYZLayer(object):
 
     def _disconnect_cb_vlayer(self, vlayer):
         if not self.callbacks: return
-        print("disconnect vlayer")
         vlayer.beforeEditingStarted.disconnect(self.callbacks["start_editing"])
-        vlayer.beforeEditingStarted.disconnect(self.callbacks["print"])
         vlayer.willBeDeleted.disconnect(self.callbacks["stop_loading"])
         cb_delete_vlayer = self.callbacks.pop(vlayer.id(), None)
         if cb_delete_vlayer:
