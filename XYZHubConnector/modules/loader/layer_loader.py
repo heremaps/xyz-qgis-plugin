@@ -382,12 +382,12 @@ class TileLayerLoader(LoadLayerController):
             )
 
     def _start_editing(self):
+        self.stop_loading()
         self.show_info_msg(" ".join([
             "Enter editing mode will disable live and incremental loading.", 
             "To re-enable loading, please exit editing mode and push changes.",
             "Layer: %s" % self.layer.get_name()
         ]))
-        self.stop_loading()
 
     def _continue_loop(self):
         if self.count_active() == 0:
