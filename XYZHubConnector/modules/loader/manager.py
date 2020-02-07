@@ -143,18 +143,15 @@ class LayerControllerManager(ControllerManager):
 
         return ptr
 
-    def remove_layer(self, con):
-        ptr = self._layer_ptr.pop(con.layer.get_id(), None)
-        con1 = self._lst.pop(ptr, None)
+    def remove_layer(self, xlayer_id):
+        ptr = self._layer_ptr.pop(xlayer_id, None)
+        con = self._lst.pop(ptr, None)
         con.destroy()
-        return con is con1
+        
     def remove_all_layer(self):
-        ok = list()
         for xid, ptr in self._layer_ptr.items():
             con = self._lst.pop(ptr, None)
-            ok.append(con.layer.get_id() == xid)
             con.destroy()
-        return all(ok)
 
     def unload(self):
         return self.remove_all_layer()

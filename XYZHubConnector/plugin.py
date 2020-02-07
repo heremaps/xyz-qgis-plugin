@@ -200,6 +200,8 @@ class XYZHubConnector(object):
         self.lastRect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
         self.iface.mapCanvas().extentsChanged.connect( self.reload_tile, Qt.QueuedConnection)
 
+        # handle delete xyz layer group
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.connect(self.cb_qnodes_deleted)
 
         QgsProject.instance().readProject.connect( self.import_project)
         self.import_project()
@@ -219,6 +221,8 @@ class XYZHubConnector(object):
 
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
         
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(self.cb_qnodes_deleted)
+
         QgsProject.instance().readProject.disconnect( self.import_project)
         
         # utils.disconnect_silent(self.iface.currentLayerChanged)
@@ -682,6 +686,20 @@ class XYZHubConnector(object):
 
         # print_qgis(self.con_man._layer_ptr)
         self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
+
+
+    def cb_qnodes_deleted(self, parent, i0, i1):
+        print("qnodes deleted", i0, i1)
+        is_parent_root = not parent.parent()
+        lst = parent.children()
+        for i in range(i0, i1+1):
+            qnode = lst[i]
+            if (is_parent_root and is_xyz_supported_node(qnode)):
+                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                self.con_man.remove_layer(xlayer_id)
+            # is possible to handle vlayer delete here
+            # instead of handle in layer.py via callbacks
+ 
 
     ############### 
     # Open dialog

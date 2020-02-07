@@ -79,14 +79,12 @@ class XYZLayer(object):
         obj._update_group_name(qnode)
 
         # obj._save_meta_node(qnode)
-        for g in qnode.findGroups():
-            obj.qgroups[g.name()] = g
-            lst_vlayers = [i.layer() for i in g.findLayers()]
-            for vlayer in lst_vlayers:
-                geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
-                obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
-                obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
-                # obj._save_meta_vlayer(vlayer)
+        for i in qnode.findLayers():
+            vlayer = i.layer()
+            geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
+            obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
+            obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
+            # obj._save_meta_vlayer(vlayer)
         return obj
 
     def _save_params_to_node(self, qnode):
@@ -121,8 +119,6 @@ class XYZLayer(object):
         qnode = self.qgroups.get("main")
         if not qnode: return
 
-        self._connect_cb_group(qnode)
-        
         for geom_str, lst_vlayer in self.map_vlayer.items():
             for idx, vlayer in enumerate(lst_vlayer):
                 self._connect_cb_vlayer(vlayer, geom_str, idx)
@@ -134,36 +130,27 @@ class XYZLayer(object):
         except RuntimeError: pass
 
     def destroy(self):
-        # for geom_str, lst_vlayer in self.map_vlayer.items():
-        #     for idx, vlayer in enumerate(lst_vlayer):
-        #         if not vlayer: continue
-        #         self._cb_delete_vlayer(vlayer, geom_str, idx)
-        try:
-            self._disconnect_cb_group(self.qgroups.get("main"))
-        except RuntimeError: pass
+        print("layer.destroy")
         self.qgroups.pop("main", None)
 
+        # Delete vlayer in case a it is moved out of the group
+        # thus will not be implicitly deleted
+        for geom_str, lst_vlayer in self.map_vlayer.items():
+            for idx, vlayer in enumerate(lst_vlayer):
+                if not vlayer: continue
+                self._cb_delete_vlayer(vlayer, geom_str, idx)
     def _make_cb_args(self, fn, *args):
         def cb():
             fn(*args)
         return cb
-    def _connect_cb_group(self, qnode):
-        if not self.callbacks: return
-        print("connect group", qnode)
-        qnode.destroyed.connect(self.callbacks["destroy"])
-    def _disconnect_cb_group(self, qnode):
-        if not self.callbacks: return
-        if not qnode: return
-        print("disconnect group")
-        qnode.destroyed.disconnect(self.callbacks["destroy"])
         
     def _connect_cb_vlayer(self, vlayer, geom_str, idx):
         if not self.callbacks: return
         vlayer.beforeEditingStarted.connect(self.callbacks["start_editing"])
         vlayer.beforeEditingStarted.connect(self.callbacks["print"])
+        vlayer.willBeDeleted.connect(self.callbacks["stop_loading"])
         cb_delete_vlayer = self.callbacks.setdefault(vlayer.id(),
             self._make_cb_args(self._cb_delete_vlayer, vlayer, geom_str, idx))
-        vlayer.willBeDeleted.connect(self.callbacks["stop_loading"])
         vlayer.willBeDeleted.connect(cb_delete_vlayer)
         # vlayer.editingStopped.connect(self.callbacks["end_editing"])
 
@@ -314,7 +301,6 @@ class XYZLayer(object):
             group = tree_root.insertGroup(0, name)
             self.qgroups["main"] = group
             self._save_meta_node(group)
-            self._connect_cb_group(group)
         return group
 
     def add_ext_layer(self, geom_str, idx):
@@ -330,14 +316,11 @@ class XYZLayer(object):
 
         geom = self._group_geom_name(geom_str)
         order = self.GEOM_ORDER.get(geom)
-        group_geom = self.qgroups.get(geom)
-        group_geom = group_geom or (
-            group.insertGroup(order,geom)
+        group_geom = group.findGroup(geom) or (
+            group.insertGroup(order, geom)
             if order is not None else 
             group.addGroup(geom)
         )
-        self.qgroups[geom] = group_geom
-
 
         crs = QgsCoordinateReferenceSystem('EPSG:4326').toWkt()
 

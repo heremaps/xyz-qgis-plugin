@@ -244,10 +244,10 @@ class LoadLayerController(BaseLoader):
         return vlayer
 
     def destroy(self):
-        self._stop_loading()
-        # self.layer.destroy() !?!
+        self.stop_loading()
+        self.layer.destroy()
         
-    def _stop_loading(self):
+    def stop_loading(self):
         """ Stop loading immediately
         """
         self.lst_fun.clear()
@@ -378,8 +378,7 @@ class TileLayerLoader(LoadLayerController):
         layer.config_callback(
             start_editing=self._start_editing,
             end_editing=self._continue_loop,
-            stop_loading=self._stop_loading,
-            destroy=self.destroy, # !?!
+            stop_loading=self.stop_loading,
             )
 
     def _start_editing(self):
@@ -388,7 +387,7 @@ class TileLayerLoader(LoadLayerController):
             "To re-enable loading, please exit editing mode and push changes.",
             "Layer: %s" % self.layer.get_name()
         ]))
-        self._stop_loading()
+        self.stop_loading()
 
     def _continue_loop(self):
         if self.count_active() == 0:
