@@ -250,10 +250,13 @@ class LoadLayerController(BaseLoader):
     def stop_loading(self):
         """ Stop loading immediately
         """
-        self.lst_fun.clear()
-        self._config()
-        self.status = self.STOPPED
-        self._after_loading_stopped()
+        try:
+            self.status = self.STOPPED
+            self.lst_fun.clear()
+            self._config()
+            self._after_loading_stopped()
+        except Exception as err:
+            self._handle_error(err)
     
     def _after_loading_stopped(self):
         self._try_finish()
