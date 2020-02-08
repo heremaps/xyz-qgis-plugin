@@ -259,7 +259,7 @@ class LoadLayerController(BaseLoader):
             self._handle_error(err)
     
     def _after_loading_stopped(self):
-        self._try_finish()
+        self._release() # hot fix, no finish signal
         msg = "Loading stopped. Layer: %s" % self.layer.get_name()
         self.show_info_msg(msg) # can be disabled if loading stop for different use case
         self._handle_error(ManualInterrupt(msg))
