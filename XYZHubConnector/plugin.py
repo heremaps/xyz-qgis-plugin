@@ -202,6 +202,8 @@ class XYZHubConnector(object):
 
         # handle delete xyz layer group
         QgsProject.instance().layerTreeRoot().willRemoveChildren.connect(self.cb_qnodes_deleted)
+        QgsProject.instance().layerTreeRoot().visibilityChanged.connect(self.cb_qnode_visibility_changed)
+        
 
         QgsProject.instance().readProject.connect( self.import_project)
         self.import_project()
@@ -222,6 +224,7 @@ class XYZHubConnector(object):
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
         
         QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(self.cb_qnodes_deleted)
+        QgsProject.instance().layerTreeRoot().visibilityChanged.disconnect(self.cb_qnode_visibility_changed)
 
         QgsProject.instance().readProject.disconnect( self.import_project)
         
@@ -687,6 +690,12 @@ class XYZHubConnector(object):
         # print_qgis(self.con_man._layer_ptr)
         self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
 
+
+    def cb_qnode_visibility_changed(self, qnode):
+        if qnode.isVisible(): return
+        xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        con = self.con_man.get_from_xyz_layer(xlayer_id)
+        con.stop_loading()
 
     def cb_qnodes_deleted(self, parent, i0, i1):
         is_parent_root = not parent.parent()
