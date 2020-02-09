@@ -695,7 +695,8 @@ class XYZHubConnector(object):
         if qnode.isVisible(): return
         xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         con = self.con_man.get_from_xyz_layer(xlayer_id)
-        con.stop_loading()
+        if con:
+            con.stop_loading()
 
     def cb_qnodes_deleted(self, parent, i0, i1):
         is_parent_root = not parent.parent()
