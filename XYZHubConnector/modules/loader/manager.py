@@ -125,7 +125,7 @@ class LayerControllerManager(ControllerManager):
     def get_from_xyz_layer(self, xlayer_id):
         return self._lst.get(self._layer_ptr.get(xlayer_id))
     def add_persistent_loader(self, con, show_progress=True):
-        callbacks = [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
+        callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
         
         ptr = self._add(con)
         # con.signal.finished.connect( self.make_deregister_cb(ptr))
