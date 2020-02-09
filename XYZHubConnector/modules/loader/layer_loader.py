@@ -129,9 +129,10 @@ class LoadLayerController(BaseLoader):
             return False
         elif self.status == self.ALL_FEAT:
             if not self.params_queue.has_retry():
-                self._try_finish()
                 if self.get_feat_cnt() == 0:
                     self._handle_error(EmptyXYZSpaceError())
+                else:
+                    self._try_finish()
                 return False
         elif self.status == self.MAX_FEAT:
             self._try_finish()
@@ -218,6 +219,7 @@ class LoadLayerController(BaseLoader):
             self._retry(reply)
             return
         # otherwise emit error
+        self._release() # hot fix, no finish signal
         self.signal.error.emit(err)
 
     #threaded (parallel)
@@ -259,7 +261,6 @@ class LoadLayerController(BaseLoader):
             self._handle_error(err)
     
     def _after_loading_stopped(self):
-        self._release() # hot fix, no finish signal
         msg = "Loading stopped. Layer: %s" % self.layer.get_name()
         self.show_info_msg(msg) # can be disabled if loading stop for different use case
         self._handle_error(ManualInterrupt(msg))
@@ -355,7 +356,6 @@ class TileLayerLoader(LoadLayerController):
             e = chain_err
         if isinstance(e, EmptyXYZSpaceError):
             return
-
         super()._handle_error(e)
         
     def _retry(self, reply: QNetworkReply):
