@@ -146,12 +146,14 @@ class LayerControllerManager(ControllerManager):
     def remove_persistent_loader(self, xlayer_id):
         ptr = self._layer_ptr.pop(xlayer_id, None)
         con = self._lst.pop(ptr, None)
-        con.destroy()
+        if con:
+            con.destroy()
         
     def unload(self):
         for xid, ptr in self._layer_ptr.items():
             con = self._lst.pop(ptr, None)
-            con.destroy()
+            if con:
+                con.destroy()
 
                 
 class LoaderManager(LayerControllerManager):
