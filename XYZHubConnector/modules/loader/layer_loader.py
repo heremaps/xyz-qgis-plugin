@@ -87,6 +87,7 @@ class LoadLayerController(BaseLoader):
         # includes reset
         if self.layer is None: 
             raise InvalidXYZLayerError()
+        self.stop_loading()
         params = self.layer.get_loader_params()
         params.update(kw)
         return self._start(**params)
