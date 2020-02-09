@@ -20,7 +20,7 @@ from .space_loader import (CreateSpaceController, DeleteSpaceController,
                            StatSpaceController)
 
 from ..common.signal import make_print_qgis
-print_qgis = make_print_qgis("controller_manager")
+print_qgis = make_print_qgis("controller_manager", debug=True)
 
 class CanvasSignal(QObject):
     canvas_zoom = pyqtSignal()
@@ -46,10 +46,12 @@ class LoaderPool(object):
         self._n_background -= 1
         self.try_finish()
     def start_dispatch(self, progress):
+        print_qgis("start_dispatch", self.count_active())
         # if progress > 0: return
         self._dispatch()
         self.signal.progress.emit( self.count_active())
     def try_finish(self):
+        print_qgis("try_finish", self.count_active())
         self._release()
         if self.count_active() == 0:
             self.signal.finished.emit()
