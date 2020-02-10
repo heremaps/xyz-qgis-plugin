@@ -644,7 +644,7 @@ class XYZHubConnector(object):
         option = dict(zip(LOADING_MODES, [
             (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
             (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (LoadLayerController, self.con_man.add_on_demand_controller, self.make_cb_success_args("Loading finish", dt=3))
+            (LoadLayerController, self.con_man.add_persistent_loader, self.make_cb_success_args("Loading finish", dt=3))
             ])).get(loading_mode)
         if not option:
             return
@@ -696,7 +696,9 @@ class XYZHubConnector(object):
         xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         con = self.con_man.get_from_xyz_layer(xlayer_id)
         if con:
-            con.stop_loading()
+            loading_mode = con.layer and con.layer.loader_params.get("loading_mode")
+            if loading_mode != LOADING_MODES.STATIC:
+                con.stop_loading()
 
     def cb_qnodes_deleted(self, parent, i0, i1):
         is_parent_root = not parent.parent()
