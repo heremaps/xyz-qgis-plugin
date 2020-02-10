@@ -606,6 +606,8 @@ class XYZHubConnector(object):
             if con.layer:
                 if not self.is_all_layer_edit_buffer_empty(con.layer):
                     continue
+                if con.layer.loader_params.get("loading_mode") == LOADING_MODES.STATIC:
+                    continue
             lst_con.append(con)
             unique_con.add(con)
         # print_qgis(lst_con)
