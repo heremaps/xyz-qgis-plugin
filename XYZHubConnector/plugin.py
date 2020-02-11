@@ -671,14 +671,19 @@ class XYZHubConnector(object):
         loading_mode = layer.loader_params.get("loading_mode")
         # backward-compatibility, import project
         if loading_mode not in LOADING_MODES:
-            old = loading_mode
-            loading_mode = LOADING_MODES.LIVE
-            layer.update_loader_params(loading_mode=loading_mode) # invalid loading mode default to live
-            # TODO prompt user for handling invalid loading mode layer
+            # old = loading_mode
+            # loading_mode = LOADING_MODES.LIVE
+            # layer.update_loader_params(loading_mode=loading_mode) # invalid loading mode default to live
+            # # TODO prompt user for handling invalid loading mode layer
+            # self.show_info_msgbar("Import XYZ Layer", 
+            #     "Undefined loading mode: %s, " % old +  
+            #     "default to live loading " +
+            #     "(layer: %s)" % layer.get_name())
             self.show_info_msgbar("Import XYZ Layer", 
-                "Undefined loading mode: %s, " % old +  
-                "default to live loading " +
+                "Undefined loading mode: %s, " % loading_mode + 
+                "loading disabled " +
                 "(layer: %s)" % layer.get_name())
+            return
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_layer_loader(self):
@@ -689,6 +694,7 @@ class XYZHubConnector(object):
             if con: continue
             try: 
                 con = self.init_layer_loader(qnode)
+                if not con: continue
                 cnt += 1
             except Exception as e:
                 self.show_err_msgbar(e)
