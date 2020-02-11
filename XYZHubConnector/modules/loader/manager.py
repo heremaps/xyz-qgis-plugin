@@ -115,6 +115,7 @@ class LayerControllerManager(ControllerManager):
     def __init__(self):
         super().__init__()
         self._layer_ptr = dict()
+        self._static_ptr = set()
     def reset(self):
         self.unload()
     def make_register_xyz_layer_cb(self, con, ptr):
@@ -122,8 +123,17 @@ class LayerControllerManager(ControllerManager):
             # assert con.layer is not None 
             self._layer_ptr[con.layer.get_id()] = ptr
         return _register_xyz_layer
-    def get_from_xyz_layer(self, xlayer_id):
+    def get_loader(self, xlayer_id):
         return self._lst.get(self._layer_ptr.get(xlayer_id))
+    def get_interactive_loader(self, xlayer_id):
+        if self._layer_ptr.get(xlayer_id) in self._static_ptr: return
+        return self.get_loader(xlayer_id)
+    def get_all_static_loader(self):
+        return [self._lst.get(ptr) for ptr in self._static_ptr if ptr in self._lst]
+    def add_static_loader(self, con, show_progress=True):
+        ptr = self.add_persistent_loader(con, show_progress)
+        self._static_ptr.add(ptr)
+        return ptr
     def add_persistent_loader(self, con, show_progress=True):
         callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
         
@@ -146,6 +156,7 @@ class LayerControllerManager(ControllerManager):
         return ptr
 
     def remove_persistent_loader(self, xlayer_id):
+        self._static_ptr.discard(xlayer_id)
         ptr = self._layer_ptr.pop(xlayer_id, None)
         con = self._lst.pop(ptr, None)
         if con:

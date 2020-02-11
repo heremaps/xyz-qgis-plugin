@@ -600,13 +600,11 @@ class XYZHubConnector(object):
         lst_con = list()
         for qnode in self.iter_checked_xyz_subnode():
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-            con = self.con_man.get_from_xyz_layer(xlayer_id)
-            if con is None: continue
+            con = self.con_man.get_interactive_loader(xlayer_id)
+            if not con: continue
             if con in unique_con: continue
             if con.layer:
                 if not self.is_all_layer_edit_buffer_empty(con.layer):
-                    continue
-                if con.layer.loader_params.get("loading_mode") == LOADING_MODES.STATIC:
                     continue
             lst_con.append(con)
             unique_con.add(con)
@@ -638,7 +636,12 @@ class XYZHubConnector(object):
     ###############
 
     def import_project(self):
-        self.init_all_tile_loader()
+        self.init_all_layer_loader()
+
+        # # restart static loader once
+        # for con in self.con_man.get_all_static_loader():
+        #     # truncate all feature 
+        #     con.restart()
 
     def make_loader_from_mode(self, loading_mode, layer=None):
         if loading_mode not in LOADING_MODES:
@@ -646,7 +649,7 @@ class XYZHubConnector(object):
         option = dict(zip(LOADING_MODES, [
             (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
             (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (LoadLayerController, self.con_man.add_persistent_loader, self.make_cb_success_args("Loading finish", dt=3))
+            (LoadLayerController, self.con_man.add_static_loader, self.make_cb_success_args("Loading finish", dt=3))
             ])).get(loading_mode)
         if not option:
             return
@@ -663,7 +666,7 @@ class XYZHubConnector(object):
         return con_load
 
 
-    def init_tile_loader(self, qnode):
+    def init_layer_loader(self, qnode):
         layer = XYZLayer.load_from_qnode(qnode)
         loading_mode = layer.loader_params.get("loading_mode")
         # backward-compatibility, import project
@@ -676,14 +679,14 @@ class XYZHubConnector(object):
                 "default to live loading (layer: %s)" % layer.get_name())
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
-    def init_all_tile_loader(self):
+    def init_all_layer_loader(self):
         cnt = 0
         for qnode in self.iter_update_all_xyz_node():
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-            con = self.con_man.get_from_xyz_layer(xlayer_id)
+            con = self.con_man.get_loader(xlayer_id)
             if con: continue
             try: 
-                con = self.init_tile_loader(qnode)
+                con = self.init_layer_loader(qnode)
                 cnt += 1
             except Exception as e:
                 self.show_err_msgbar(e)
@@ -696,11 +699,9 @@ class XYZHubConnector(object):
     def cb_qnode_visibility_changed(self, qnode):
         if qnode.isVisible(): return
         xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-        con = self.con_man.get_from_xyz_layer(xlayer_id)
+        con = self.con_man.get_interactive_loader(xlayer_id)
         if con:
-            loading_mode = con.layer and con.layer.loader_params.get("loading_mode")
-            if loading_mode != LOADING_MODES.STATIC:
-                con.stop_loading()
+            con.stop_loading()
 
     def cb_qnodes_deleted(self, parent, i0, i1):
         is_parent_root = not parent.parent()
