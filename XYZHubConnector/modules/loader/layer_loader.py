@@ -264,8 +264,10 @@ class LoadLayerController(BaseLoader):
     
     def _after_loading_stopped(self):
         msg = "Loading stopped. Layer: %s" % self.layer.get_name()
-        self.show_info_msg(msg) # can be disabled if loading stop for different use case
+        # # self.show_info_msg(msg) # can be disabled if loading stop for different use case
         self._handle_error(ManualInterrupt(msg))
+        # do not try_finish as it fail in case of vlayer deleted
+        
 
     def show_info_msg(self, msg, dt=1):
         self.signal.info.emit(make_qt_args(
@@ -389,7 +391,7 @@ class TileLayerLoader(LoadLayerController):
     def _start_editing(self):
         self.stop_loading()
         self.show_info_msg(" ".join([
-            "Enter editing mode will disable live and incremental loading.", 
+            "Enter editing mode will disable interactive loading.", 
             "To re-enable loading, please exit editing mode and push changes.",
             "Layer: %s" % self.layer.get_name()
         ]))
