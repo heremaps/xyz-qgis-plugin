@@ -279,6 +279,12 @@ class XYZHubConnector(object):
             Qgis.Info, dt
         )
 
+    def show_warning_msgbar(self, title, msg="", dt=3):
+        self.iface.messageBar().pushMessage(
+            config.TAG_PLUGIN, ": ".join([title,msg]),
+            Qgis.Warning, dt
+        )
+
     def show_success_msgbar(self, title, msg="", dt=3):
         self.iface.messageBar().pushMessage(
             config.TAG_PLUGIN, ": ".join([title,msg]),
@@ -669,21 +675,25 @@ class XYZHubConnector(object):
     def init_layer_loader(self, qnode):
         layer = XYZLayer.load_from_qnode(qnode)
         loading_mode = layer.loader_params.get("loading_mode")
-        # backward-compatibility, import project
         if loading_mode not in LOADING_MODES:
+            # # approach 1: backward compatible, import project
+            # # invalid loading mode default to live
             # old = loading_mode
             # loading_mode = LOADING_MODES.LIVE
-            # layer.update_loader_params(loading_mode=loading_mode) # invalid loading mode default to live
+            # layer.update_loader_params(loading_mode=loading_mode) # save new loading_mode to layer
             # # TODO prompt user for handling invalid loading mode layer
             # self.show_info_msgbar("Import XYZ Layer", 
             #     "Undefined loading mode: %s, " % old +  
-            #     "default to live loading " +
+            #     "default to %s loading " % (loading_mode) +
             #     "(layer: %s)" % layer.get_name())
-            self.show_info_msgbar("Import XYZ Layer", 
+
+            # approach 2: not backward compatible, but no data loss
+            self.show_warning_msgbar("Import XYZ Layer", 
                 "Undefined loading mode: %s, " % loading_mode + 
                 "loading disabled " +
                 "(layer: %s)" % layer.get_name())
             return
+            
         return self.make_loader_from_mode(loading_mode, layer=layer)
 
     def init_all_layer_loader(self):
