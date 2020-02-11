@@ -67,16 +67,24 @@ class LoadLayerController(BaseLoader):
 
         self._cb_network_load = network.load_features_iterate
         self._config()
+
+        if layer:
+            self._config_layer_callback(layer)
+
     def post_render(self,*a,**kw):
         for v in self.layer.iter_layer():
             v.triggerRepaint()
+            
+    def _config_layer_callback(self, layer):
+        layer.config_callback(
+            stop_loading=self.stop_loading
+            )
+
     def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
         tags = kw.get("tags","")
         self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
         self.layer.add_empty_group()
-        self.layer.config_callback(
-            stop_loading=self.stop_loading
-            )
+        self._config_layer_callback(self.layer)
         return self._start(**kw)
 
     def _start(self, **kw):
@@ -302,12 +310,6 @@ class TileLayerLoader(LoadLayerController):
             ParallelFun( self._render_single), 
             AsyncFun( self.post_render), 
         ])
-    def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
-        old_layer = self.layer
-        layer = super().start(conn_info, meta, **kw)
-        if not old_layer and layer:
-            self._config_layer_callback(layer)
-        return layer
 
     def _check_status(self):
         if not self.params_queue.has_next():
