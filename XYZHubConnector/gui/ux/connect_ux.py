@@ -90,15 +90,16 @@ class ConnectUX(SpaceUX):
         return LOADING_MODES[0]
 
     def get_params(self):
-        key = ["tags","limit","max_feat","similarity_threshold","loading_mode"]
+        key = ["tags","limit","max_feat","similarity_threshold","similarity_mode","loading_mode"]
         val = [
             process_tags(self.lineEdit_tags.text().strip()),
             self.lineEdit_limit.text().strip(),
             self.lineEdit_max_feat.text().strip(),
             self.comboBox_similarity_threshold.currentData(),
+            self.comboBox_similarity_threshold.currentText(),
             self._get_loading_mode()
         ]
-        fn = [str, int, int, int, str]
+        fn = [str, int, int, int, str, str]
         return dict( 
             (k, f(v)) for k,v,f in zip(key,val,fn) if len(str(v)) > 0
             )
