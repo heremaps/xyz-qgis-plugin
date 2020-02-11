@@ -186,7 +186,7 @@ class XYZLayer(object):
             bool(self.map_vlayer[geom_str][idx])
             )
     def get_loader_params(self) -> dict:
-        return self.loader_params or dict()
+        return dict(self.loader_params) or dict()
     def get_layer(self, geom_str, idx):
         return self.map_vlayer[geom_str][idx]
     def get_name(self):
