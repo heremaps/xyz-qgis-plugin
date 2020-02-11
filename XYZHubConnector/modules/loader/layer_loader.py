@@ -74,6 +74,9 @@ class LoadLayerController(BaseLoader):
         tags = kw.get("tags","")
         self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
         self.layer.add_empty_group()
+        self.layer.config_callback(
+            stop_loading=self.stop_loading
+            )
         return self._start(**kw)
 
     def _start(self, **kw):

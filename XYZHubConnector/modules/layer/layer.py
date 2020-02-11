@@ -144,21 +144,30 @@ class XYZLayer(object):
         return cb
         
     def _connect_cb_vlayer(self, vlayer, geom_str, idx):
-        if not self.callbacks: return
-        vlayer.beforeEditingStarted.connect(self.callbacks["start_editing"])
-        vlayer.willBeDeleted.connect(self.callbacks["stop_loading"])
         cb_delete_vlayer = self.callbacks.setdefault(vlayer.id(),
             self._make_cb_args(self._cb_delete_vlayer, vlayer, geom_str, idx))
         vlayer.willBeDeleted.connect(cb_delete_vlayer)
+
+        for signal, name in zip(
+            [vlayer.beforeEditingStarted, vlayer.willBeDeleted],
+            ["start_editing", "stop_loading"]
+        ):
+            if name not in self.callbacks: continue
+            signal.connect(self.callbacks[name])
         # vlayer.editingStopped.connect(self.callbacks["end_editing"])
 
     def _disconnect_cb_vlayer(self, vlayer):
-        if not self.callbacks: return
-        vlayer.beforeEditingStarted.disconnect(self.callbacks["start_editing"])
-        vlayer.willBeDeleted.disconnect(self.callbacks["stop_loading"])
         cb_delete_vlayer = self.callbacks.pop(vlayer.id(), None)
         if cb_delete_vlayer:
             vlayer.willBeDeleted.disconnect(cb_delete_vlayer)
+        
+        for signal, name in zip(
+            [vlayer.beforeEditingStarted, vlayer.willBeDeleted],
+            ["start_editing", "stop_loading"]
+        ):
+            if name not in self.callbacks: continue
+            signal.disconnect(self.callbacks[name])
+            
         # vlayer.editingStopped.disconnect(self.callbacks["end_editing"])
 
     def iter_layer(self):
