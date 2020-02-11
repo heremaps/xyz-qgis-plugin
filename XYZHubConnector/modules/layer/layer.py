@@ -135,7 +135,7 @@ class XYZLayer(object):
         # thus will not be implicitly deleted
         for geom_str, lst_vlayer in self.map_vlayer.items():
             for idx, vlayer in enumerate(lst_vlayer):
-                if not vlayer: continue
+                if vlayer is None: continue
                 self._cb_delete_vlayer(vlayer, geom_str, idx)
 
     def _make_cb_args(self, fn, *args):
