@@ -397,7 +397,7 @@ class TileLayerLoader(LoadLayerController):
         self.stop_loading()
         self.show_info_msg(" ".join([
             "Enter editing mode will disable interactive loading.", 
-            "To re-enable loading, please exit editing mode and push changes.",
+            "To re-enable loading, please exit editing mode and push changes to XYZ Hub.",
             "Layer: %s" % self.layer.get_name()
         ]))
 
