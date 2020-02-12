@@ -10,6 +10,8 @@
 
 import os
 from qgis.core import QgsApplication
+from . import __version__ as PLUGIN_VERSION
+
 PLUGIN_NAME = __package__
 USER_DIR = os.path.abspath(QgsApplication.qgisSettingsDirPath())
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))

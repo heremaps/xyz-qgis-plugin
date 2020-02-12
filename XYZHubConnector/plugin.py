@@ -26,12 +26,12 @@ from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel
+from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
 from .modules.controller import ChainController
 from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.loader import (LoaderManager, EmptyXYZSpaceError, InitUploadLayerController, 
+from .modules.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
     LoadLayerController, UploadLayerController, EditSyncController,
-    TileLayerLoader)
+    TileLayerLoader, LiveTileLayerLoader)
 
 from .modules.layer.edit_buffer import EditBuffer
 from .modules.layer import bbox_utils
@@ -54,7 +54,8 @@ PLUGIN_NAME = config.PLUGIN_NAME
 
 LOG_TO_FILE = 1
 
-from .modules.common.signal import make_print_qgis, cb_log_qgis
+from .modules.common.signal import (make_print_qgis, cb_log_qgis, 
+    connect_global_error_signal, disconnect_global_error_signal)
 print_qgis = make_print_qgis("plugin")
 
 class XYZHubConnector(object):
@@ -67,6 +68,7 @@ class XYZHubConnector(object):
         print(sys.version)
         self.iface = iface
         self.web_menu = "&XYZ Hub Connector"
+        self.hasGuiInitialized = False
         self.init_modules()
         self.obj = self
 
@@ -131,9 +133,32 @@ class XYZHubConnector(object):
         self.iface.statusBarIface().addPermanentWidget(progress)
         self.pb = progress
 
+        # btn_toggle_edit = self.get_btn_toggle_edit()
+        # btn_toggle_edit.toggled.connect(lambda *a: print("toggled", a))
+
+        self.hasGuiInitialized = True
+
+    # unused
+    def get_btn_toggle_edit(self):
+        text_toggle_edit = "toggle editing"
+        toolbar = self.iface.digitizeToolBar()
+        mapping = dict(
+            (w.text().lower() if hasattr(w,"text") else str(i), w)
+            for i, w in enumerate(toolbar.children())
+        )
+        return mapping[text_toggle_edit]
+
+    def new_session(self):
+        self.con_man.reset()
+        self.edit_buffer.reset()
+        
+        if self.hasGuiInitialized:
+            self.pb.hide()
+
     def init_modules(self):
         if LOG_TO_FILE:
             QgsApplication.messageLog().messageReceived.connect(cb_log_qgis) #, Qt.QueuedConnection
+        connect_global_error_signal(self.log_err_traceback)
 
         # util.init_module()
 
@@ -163,6 +188,7 @@ class XYZHubConnector(object):
         self.con_man.ld_pool.signal.progress.connect( self.cb_progress_busy) #, Qt.QueuedConnection
         self.con_man.ld_pool.signal.finished.connect( self.cb_progress_done)
         
+        QgsProject.instance().cleared.connect(self.new_session)
         QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].connect( self.layer_man.remove_layers)
 
@@ -170,28 +196,43 @@ class XYZHubConnector(object):
 
         self.iface.currentLayerChanged.connect( self.cb_layer_selected) # UNCOMMENT
 
+        canvas = self.iface.mapCanvas()
+        self.lastRect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
         self.iface.mapCanvas().extentsChanged.connect( self.reload_tile, Qt.QueuedConnection)
 
+        # handle delete xyz layer group
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.connect(self.cb_qnodes_deleted)
+        QgsProject.instance().layerTreeRoot().visibilityChanged.connect(self.cb_qnode_visibility_changed)
+        
 
         QgsProject.instance().readProject.connect( self.import_project)
         self.import_project()
 
     def unload_modules(self):
         # self.con_man.disconnect_ux( self.iface)
+        QgsProject.instance().cleared.disconnect(self.new_session)
         QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.edit_buffer.remove_layers)
         # QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect( self.layer_man.remove_layers)
 
         # QgsProject.instance().layersAdded.disconnect( self.edit_buffer.config_connection)
         self.edit_buffer.unload_connection()
 
+        self.con_man.unload()
+
         self.iface.currentLayerChanged.disconnect( self.cb_layer_selected) # UNCOMMENT
 
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
+        
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(self.cb_qnodes_deleted)
+        QgsProject.instance().layerTreeRoot().visibilityChanged.disconnect(self.cb_qnode_visibility_changed)
+
+        QgsProject.instance().readProject.disconnect( self.import_project)
         
         # utils.disconnect_silent(self.iface.currentLayerChanged)
 
         self.secret.deactivate()
         
+        disconnect_global_error_signal()
         if LOG_TO_FILE:
             QgsApplication.messageLog().messageReceived.disconnect(cb_log_qgis)
         # close_file_logger()
@@ -231,23 +272,43 @@ class XYZHubConnector(object):
     ############### 
     # Callback of action (main function)
     ###############
-    def cb_success_msg(self, title, msg="", dt=5):
+    
+    def show_info_msgbar(self, title, msg="", dt=3):
+        self.iface.messageBar().pushMessage(
+            config.TAG_PLUGIN, ": ".join([title,msg]),
+            Qgis.Info, dt
+        )
+
+    def show_warning_msgbar(self, title, msg="", dt=3):
+        self.iface.messageBar().pushMessage(
+            config.TAG_PLUGIN, ": ".join([title,msg]),
+            Qgis.Warning, dt
+        )
+
+    def show_success_msgbar(self, title, msg="", dt=3):
         self.iface.messageBar().pushMessage(
             config.TAG_PLUGIN, ": ".join([title,msg]),
             Qgis.Success, dt
         )
 
-    def make_cb_success(self, title, msg="", dt=5):
+    def make_cb_success(self, title, msg="", dt=3):
         def _cb_success_msg():
-            self.cb_success_msg(title, msg, dt=dt)
+            self.show_success_msgbar(title, msg, dt=dt)
         return _cb_success_msg
         
-    def make_cb_success_args(self, title, msg="", dt=5):
+    def make_cb_success_args(self, title, msg="", dt=3):
         def _cb_success_msg(args):
             a, kw = parse_qt_args(args)
             txt = ". ".join(map(str,a))
-            self.cb_success_msg(title, txt, dt=dt)
+            self.show_success_msgbar(title, txt, dt=dt)
         return _cb_success_msg
+
+    def make_cb_info_args(self, title, msg="", dt=3):
+        def _cb_info_msg(args):
+            a, kw = parse_qt_args(args)
+            txt = ". ".join(map(str,a))
+            self.show_info_msgbar(title, txt, dt=dt)
+        return _cb_info_msg
 
     def cb_handle_error_msg(self, e):
         err = parse_exception_obj(e)
@@ -260,6 +321,9 @@ class XYZHubConnector(object):
             if ok: return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub","Requested query returns no features")
+            return
+        elif isinstance(e0, ManualInterrupt):
+            self.log_err_traceback(e0)
             return
         self.show_err_msgbar(err)
 
@@ -283,7 +347,7 @@ class XYZHubConnector(object):
 
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(
-            "Error", repr(err),
+            config.TAG_PLUGIN, repr(err),
             Qgis.Warning, 3
         )
         self.log_err_traceback(err)
@@ -375,7 +439,8 @@ class XYZHubConnector(object):
         dialog.signal_space_count.connect(self.start_count_feat, Qt.QueuedConnection) # queued -> non-blocking ui
 
         ############ connect btn        
-        dialog.signal_space_connect.connect(self.start_load_layer)
+        # dialog.signal_space_connect.connect(self.start_load_layer)
+        dialog.signal_space_connect.connect(self.start_loading)
         dialog.signal_space_tile.connect(self.start_load_tile)
 
         ############ upload btn        
@@ -404,13 +469,13 @@ class XYZHubConnector(object):
 
     def start_upload_space(self, args):
         con_upload = UploadLayerController(self.network, n_parallel=2)
-        self.con_man.add_background(con_upload)
+        self.con_man.add_on_demand_controller(con_upload)
         # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
-        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish") )
+        con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish", dt=4))
         con_upload.signal.error.connect( self.cb_handle_error_msg )
         
         con = InitUploadLayerController(self.network)
-        self.con_man.add_background(con)
+        self.con_man.add_on_demand_controller(con)
 
         con.signal.results.connect( con_upload.start_args)
         con.signal.error.connect( self.cb_handle_error_msg )
@@ -423,7 +488,7 @@ class XYZHubConnector(object):
         
         ############ connect btn        
         con_load = LoadLayerController(self.network, n_parallel=1)
-        self.con_man.add_background(con_load)
+        self.con_man.add_on_demand_controller(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         con_load.signal.results.connect( self.make_cb_success_args("Loading finish") )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
@@ -433,21 +498,15 @@ class XYZHubConnector(object):
 
         # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
     def start_load_tile(self, args):
-        canvas = self.iface.mapCanvas()
-        rect = bbox_utils.extend_to_rect(
-            bbox_utils.get_bounding_box(canvas))
-        level = tile_utils.get_zoom_for_current_map_scale(canvas)
         # rect = (-180,-90,180,90)
         # level = 0
         a, kw = parse_qt_args(args)
-
-        kw["tile_schema"] = "here"
-        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        kw.update(self.make_tile_params())
         # kw["limit"] = 100
 
         ############ connect btn        
         con_load = TileLayerLoader(self.network, n_parallel=1)
-        self.con_man.add_layer(con_load)
+        self.con_man.add_persistent_loader(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
         con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
         # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
@@ -455,12 +514,41 @@ class XYZHubConnector(object):
 
         con_load.start_args( make_qt_args(*a, **kw))
 
+    def make_tile_params(self, rect=None, level=None):
+        if not rect:
+            canvas = self.iface.mapCanvas()
+            rect = bbox_utils.extent_to_rect(
+                bbox_utils.get_bounding_box(canvas))
+            level = tile_utils.get_zoom_for_current_map_scale(canvas)
+        kw = dict()
+        kw["tile_schema"] = "here"
+        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        return kw
+
+    def start_loading(self, args):
+        a, kw = parse_qt_args(args)
+        loading_mode = kw.get("loading_mode")
+        try:
+            con_load = self.make_loader_from_mode(loading_mode)
+        except Exception as e:
+            self.show_err_msgbar(e)
+            return
+
+        if loading_mode == LOADING_MODES.STATIC:
+            con_load.start_args(args)
+        else:
+            kw.update(self.make_tile_params())
+            con_load.start_args( make_qt_args(*a, **kw))
+
+
     def iter_checked_xyz_subnode(self):
-        """ iterate through visible xyz nodes (vector layer and group node)
+        """ iterate through visible xyz nodes (vector layer and group node),
+        excluding layer in edit mode
         """
         root = QgsProject.instance().layerTreeRoot()
         for vl in root.checkedLayers():
             if is_xyz_supported_layer(vl):
+                if vl.isEditable(): continue
                 yield vl
         for g in iter_group_node(root):
             if (len(g.findLayers()) == 0 
@@ -488,24 +576,42 @@ class XYZHubConnector(object):
             fn_node(g)
             if is_xyz_supported_node(g):
                 yield g
+    
+    def extent_action(self, rect0, rect1):
+        diff = [r0 - r1 for r0,r1 in zip(rect0,rect1)]
+        x_sign = diff[0] * diff[2]
+        y_sign = diff[1] * diff[3]
+        if x_sign >= 0 and y_sign >= 0: # same direction
+            return "pan"
+        elif x_sign < 0 and y_sign < 0:
+            return "zoom"
+        elif x_sign * y_sign == 0 and x_sign + y_sign < 0:
+            return "resize"
+        else:
+            return "unknown"
 
     def reload_tile(self):
         canvas = self.iface.mapCanvas()
-        rect = bbox_utils.extend_to_rect(
-            bbox_utils.get_bounding_box(canvas))
+        rect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
+        ext_action = self.extent_action(rect,self.lastRect)
+        print_qgis("Extent action: ", ext_action,rect)
+        self.lastRect = rect
+        if ext_action not in ["pan", "zoom"]: 
+            return
         level = tile_utils.get_zoom_for_current_map_scale(canvas)
-        kw = dict()
-        kw["tile_schema"] = "here"
-        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        kw = self.make_tile_params(rect, level)
         # kw["limit"] = 100
 
         unique_con = set()
         lst_con = list()
         for qnode in self.iter_checked_xyz_subnode():
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-            con = self.con_man.get_from_xyz_layer(xlayer_id)
-            if con is None: continue
+            con = self.con_man.get_interactive_loader(xlayer_id)
+            if not con: continue
             if con in unique_con: continue
+            if con.layer:
+                if not self.is_all_layer_edit_buffer_empty(con.layer):
+                    continue
             lst_con.append(con)
             unique_con.add(con)
         # print_qgis(lst_con)
@@ -515,6 +621,15 @@ class XYZHubConnector(object):
             print_qgis(con.status)
             print_qgis("loading tile", level, rect)
             con.restart(**kw)
+
+    def is_all_layer_edit_buffer_empty(self, layer: XYZLayer) -> bool:
+        return all(
+            layer_buffer.is_empty()
+            for layer_buffer in (
+                self.edit_buffer.get_layer_buffer(vlayer.id())
+                for vlayer in layer.iter_layer()
+            ) if layer_buffer
+        )
 
     def add_basemap_layer(self, args):
         a, kw = parse_qt_args(args)
@@ -527,32 +642,96 @@ class XYZHubConnector(object):
     ###############
 
     def import_project(self):
-        self.init_all_tile_loader()
-    def init_tile_loader(self, qnode):
-        layer = XYZLayer.load_from_qnode(qnode)
-        con_load = TileLayerLoader(self.network, n_parallel=1, layer=layer)
-        ptr = self.con_man.add_layer(con_load)
-        # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
-        con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
-        # con_load.signal.finished.connect( self.refresh_canvas, Qt.QueuedConnection)
+        self.init_all_layer_loader()
+
+        # # restart static loader once
+        # for con in self.con_man.get_all_static_loader():
+        #     # truncate all feature 
+        #     con.restart()
+
+    def make_loader_from_mode(self, loading_mode, layer=None):
+        if loading_mode not in LOADING_MODES:
+            raise InvalidLoadingMode(loading_mode)
+        option = dict(zip(LOADING_MODES, [
+            (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+            (LoadLayerController, self.con_man.add_static_loader, self.make_cb_success_args("Loading finish", dt=3))
+            ])).get(loading_mode)
+        if not option:
+            return
+
+        loader_class, fn_register, cb_success_args = option
+        con_load = loader_class(self.network, n_parallel=1, layer=layer)
+        con_load.signal.results.connect( cb_success_args)
         con_load.signal.error.connect( self.cb_handle_error_msg )
+
+        cb_info = self.make_cb_info_args("Loading status", dt=3)
+        con_load.signal.info.connect( cb_info)
+
+        ptr = fn_register(con_load)
         return con_load
 
-    def init_all_tile_loader(self):
+
+    def init_layer_loader(self, qnode):
+        layer = XYZLayer.load_from_qnode(qnode)
+        loading_mode = layer.loader_params.get("loading_mode")
+        if loading_mode not in LOADING_MODES:
+            # # approach 1: backward compatible, import project
+            # # invalid loading mode default to live
+            # old = loading_mode
+            # loading_mode = LOADING_MODES.LIVE
+            # layer.update_loader_params(loading_mode=loading_mode) # save new loading_mode to layer
+            # # TODO prompt user for handling invalid loading mode layer
+            # self.show_info_msgbar("Import XYZ Layer", 
+            #     "Undefined loading mode: %s, " % old +  
+            #     "default to %s loading " % (loading_mode) +
+            #     "(layer: %s)" % layer.get_name())
+
+            # approach 2: not backward compatible, but no data loss
+            self.show_warning_msgbar("Import XYZ Layer", 
+                "Undefined loading mode: %s, " % loading_mode + 
+                "loading disabled " +
+                "(layer: %s)" % layer.get_name())
+            return
+            
+        return self.make_loader_from_mode(loading_mode, layer=layer)
+
+    def init_all_layer_loader(self):
         cnt = 0
         for qnode in self.iter_update_all_xyz_node():
             xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-            con = self.con_man.get_from_xyz_layer(xlayer_id)
+            con = self.con_man.get_loader(xlayer_id)
             if con: continue
             try: 
-                con = self.init_tile_loader(qnode)
+                con = self.init_layer_loader(qnode)
+                if not con: continue
                 cnt += 1
             except Exception as e:
                 self.show_err_msgbar(e)
                 
 
         # print_qgis(self.con_man._layer_ptr)
-        self.cb_success_msg("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
+        self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported"%cnt, dt=2)
+
+
+    def cb_qnode_visibility_changed(self, qnode):
+        if qnode.isVisible(): return
+        xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        con = self.con_man.get_interactive_loader(xlayer_id)
+        if con:
+            con.stop_loading()
+
+    def cb_qnodes_deleted(self, parent, i0, i1):
+        is_parent_root = not parent.parent()
+        lst = parent.children()
+        for i in range(i0, i1+1):
+            qnode = lst[i]
+            if (is_parent_root and is_xyz_supported_node(qnode)):
+                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                self.con_man.remove_persistent_loader(xlayer_id)
+            # is possible to handle vlayer delete here
+            # instead of handle in layer.py via callbacks
+ 
 
     ############### 
     # Open dialog
@@ -584,7 +763,7 @@ class XYZHubConnector(object):
         # print_qgis("removed_feat: ", removed_ids)
 
         con = EditSyncController(self.network)
-        self.con_man.add_background(con)
+        self.con_man.add_on_demand_controller(con)
         con.signal.finished.connect( layer_buffer.sync_complete)
         con.signal.results.connect( self.make_cb_success_args("Sync edit finish") )
         con.signal.error.connect( self.cb_handle_error_msg )

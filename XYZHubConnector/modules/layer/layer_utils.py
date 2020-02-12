@@ -57,8 +57,9 @@ def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid=list(), lst_xyz_id=list
     crs_dst = 'EPSG:4326'
     transformer = parser.make_transformer(crs_src, crs_dst)
     if transformer.isValid() and not transformer.isShortCircuited():
-        lst_feat = [parser.transform_geom(ft, transformer) 
-        for ft in lst_feat]
+        lst_feat = filter(None, (
+            parser.transform_geom(ft, transformer) for ft in lst_feat
+        ))
 
     added_feat = parser.feature_to_xyz_json(lst_feat, is_new=False) 
     for ft, xyz_id in zip(added_feat, lst_xyz_id):

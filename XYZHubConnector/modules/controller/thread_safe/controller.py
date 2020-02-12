@@ -38,7 +38,7 @@ class Controller(object):
         return self.lst_fun
     def start_args(self, args: QtArgs):
         a, kw = parse_qt_args(args)
-        self.start( *a, **kw)
+        return self.start( *a, **kw)
     def start(self, *a, **kw):
         self.lst_fun[0].call(make_qt_args(*a,**kw))
         

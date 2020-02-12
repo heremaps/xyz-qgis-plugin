@@ -12,7 +12,7 @@ import copy
 import json
 from typing import Any, Callable, Dict, List, Union
 
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import QgsProject, QgsVectorLayer, QgsRectangle
 from qgis.PyQt.QtCore import QThreadPool
 from qgis.PyQt.QtNetwork import QNetworkReply
 
@@ -20,7 +20,7 @@ from ..controller import (AsyncFun, BasicSignal, ChainController,
                           ChainInterrupt, LoopController, NetworkFun,
                           WorkerFun, make_qt_args, parse_exception_obj,
                           parse_qt_args)
-from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render
+from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render, tile_utils
 from ..layer.edit_buffer import LayeredEditBuffer
 from ..network import NetManager, net_handler
 from .loop_loader import BaseLoader, BaseLoop, ParallelFun
@@ -51,26 +51,40 @@ class LoadLayerController(BaseLoader):
     If space is empty, no layer shall be created.
     Stateful controller
     """
-    def __init__(self, network: NetManager, n_parallel=1):
+    def __init__(self, network: NetManager, layer: XYZLayer=None, n_parallel=1):
         BaseLoader.__init__(self)
+
         self.pool = QThreadPool() # .globalInstance() will crash afterward
         self.n_parallel = 1
         self.status = self.LOADING
 
         self.fixed_keys = ["tags"]
-        self.layer: XYZLayer = None
+        self.layer = layer
         self.max_feat: int = None
         self.kw: dict = None
         self.fixed_params = dict()
         self.params_queue: queue.ParamsQueue = None
-        
-        self._config(network)
+
+        self._cb_network_load = network.load_features_iterate
+        self._config()
+
+        if layer:
+            self._config_layer_callback(layer)
+
     def post_render(self,*a,**kw):
         for v in self.layer.iter_layer():
             v.triggerRepaint()
+            
+    def _config_layer_callback(self, layer):
+        layer.config_callback(
+            stop_loading=self.stop_loading
+            )
+
     def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
         tags = kw.get("tags","")
         self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
+        self.layer.add_empty_group()
+        self._config_layer_callback(self.layer)
         return self._start(**kw)
 
     def _start(self, **kw):
@@ -84,6 +98,7 @@ class LoadLayerController(BaseLoader):
         # includes reset
         if self.layer is None: 
             raise InvalidXYZLayerError()
+        self.stop_loading()
         params = self.layer.get_loader_params()
         params.update(kw)
         return self._start(**params)
@@ -106,9 +121,9 @@ class LoadLayerController(BaseLoader):
         )
         self.params_queue = queue.ParamsQueue_deque_smart(params, buffer_size=1)
 
-    def _config(self, network: NetManager):
+    def _config(self):
         self.config_fun([
-            NetworkFun( network.load_features_iterate), 
+            NetworkFun( self._cb_network_load), 
             WorkerFun( net_handler.on_received, self.pool),
             AsyncFun( self._process_render), 
             WorkerFun( render.parse_feature, self.pool),
@@ -121,15 +136,15 @@ class LoadLayerController(BaseLoader):
         if self.status == self.FINISHED:
             self._try_finish()
             return False
-        elif self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
-            self._try_finish()
+        elif self.status == self.STOPPED:
+            self._after_loading_stopped()
             return False
         elif self.status == self.ALL_FEAT:
             if not self.params_queue.has_retry():
                 if self.get_feat_cnt() == 0:
                     self._handle_error(EmptyXYZSpaceError())
-                self._try_finish()
+                else:
+                    self._try_finish()
                 return False
         elif self.status == self.MAX_FEAT:
             self._try_finish()
@@ -143,8 +158,11 @@ class LoadLayerController(BaseLoader):
     def _run(self):
         conn_info = self.layer.conn_info
             
-        # if not self.params_queue.has_next():
-        #     self.params_queue.gen_params()
+        # TODO refactor methods
+        if not self.params_queue.has_next():
+            self.status = self.FINISHED
+            self._try_finish()
+            return
         params = self.params_queue.get_params()
         
         LoopController.start(self, conn_info, **params, **self.fixed_params)
@@ -172,7 +190,7 @@ class LoadLayerController(BaseLoader):
                 self.status = self.ALL_FEAT
         map_fields: dict = self.layer.get_map_fields()
         similarity_threshold = self.kw.get("similarity_threshold")
-        return make_qt_args(obj, map_fields, similarity_threshold)
+        return make_qt_args(obj, map_fields, similarity_threshold, **kw)
     
     # non-threaded
     def _render(self, *parsed_feat):
@@ -213,39 +231,78 @@ class LoadLayerController(BaseLoader):
             self._retry(reply)
             return
         # otherwise emit error
+        self._release() # hot fix, no finish signal
         self.signal.error.emit(err)
 
     #threaded (parallel)
     def _dispatch_render(self, *parsed_feat):
-        map_feat, map_fields = parsed_feat
-        lst_args = [(geom, idx, feat, fields) 
+        map_feat, map_fields, kw_params = parsed_feat
+        lst_args = [(geom, idx, feat, fields, kw_params) 
             for geom in map_feat.keys()
             for idx, (feat, fields) in enumerate(zip(
                 map_feat[geom], map_fields[geom]))
-            if feat
         ]
 
         return lst_args
-    def _render_single(self, geom, idx, feat, fields):
+
+    def _render_single(self, geom, idx, feat, fields, kw_params):
+        if not feat: return
+        vlayer = self._create_or_get_vlayer(geom, idx)
+        render.add_feature_render(vlayer, feat, fields)
+
+    def _create_or_get_vlayer(self, geom, idx):
         if not self.layer.has_layer(geom, idx):
             vlayer=self.layer.add_ext_layer(geom, idx)
         else:
             vlayer=self.layer.get_layer(geom, idx)
-        render.add_feature_render(vlayer, feat, fields)
+        return vlayer
+
+    def destroy(self):
+        self.stop_loading()
+        self.layer.destroy()
+        
+    def stop_loading(self):
+        """ Stop loading immediately
+        """
+        if self.status in [self.FINISHED, self.STOPPED]:
+            return
+        try:
+            self.status = self.STOPPED
+            self._config()
+            self._after_loading_stopped()
+        except Exception as err:
+            self._handle_error(err)
+    
+    def _after_loading_stopped(self):
+        msg = "Loading stopped. Layer: %s" % self.layer.get_name()
+        # # self.show_info_msg(msg) # can be disabled if loading stop for different use case
+        self._handle_error(ManualInterrupt(msg))
+        # do not try_finish as it fail in case of vlayer deleted
+        
+
+    def show_info_msg(self, msg, dt=1):
+        self.signal.info.emit(make_qt_args(
+            msg, dt=dt
+        ))
 
 class TileLayerLoader(LoadLayerController):
-    def __init__(self, *a, layer: XYZLayer=None, **kw):
-        super().__init__(*a, **kw)
+    def __init__(self, network: NetManager, *a, layer: XYZLayer=None, **kw):
+        super().__init__(network, *a, **kw)
         self.fixed_keys = ["tags", "limit", "tile_schema"]
         self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
         self.layer = layer
         self.total_params = 0
         self.cnt_params = 0
         self.feat_cnt = 0
+        self._cb_network_load = network.load_features_tile
+        self._config()
 
-    def _config(self, network: NetManager):
+        if layer:
+            self._config_layer_callback(layer)
+
+    def _config(self):
         self.config_fun([
-            NetworkFun( network.load_features_tile), 
+            NetworkFun( self._cb_network_load), 
             WorkerFun( net_handler.on_received, self.pool),
             AsyncFun( self._process_render), 
             WorkerFun( render.parse_feature, self.pool),
@@ -276,7 +333,7 @@ class TileLayerLoader(LoadLayerController):
 
         map_fields: dict = self.layer.get_map_fields()
         similarity_threshold = self.kw.get("similarity_threshold")
-        return make_qt_args(obj, map_fields, similarity_threshold)
+        return make_qt_args(obj, map_fields, similarity_threshold, **kw)
 
     def reset(self, **kw):
         """
@@ -307,9 +364,7 @@ class TileLayerLoader(LoadLayerController):
         else:
             e = chain_err
         if isinstance(e, EmptyXYZSpaceError):
-            self.layer.add_empty_group()
             return
-
         super()._handle_error(e)
         
     def _retry(self, reply: QNetworkReply):
@@ -330,6 +385,42 @@ class TileLayerLoader(LoadLayerController):
             "Layer: %s. Token: %s"%(name, token)
             )
         self.signal.results.emit( make_qt_args(msg))
+
+    def _config_layer_callback(self, layer):
+        layer.config_callback(
+            start_editing=self._start_editing,
+            end_editing=self._continue_loop,
+            stop_loading=self.stop_loading,
+            )
+
+    def _start_editing(self):
+        self.stop_loading()
+        self.show_info_msg(" ".join([
+            "Enter editing mode will disable interactive loading.", 
+            "To re-enable loading, please exit editing mode and push changes to XYZ Hub.",
+            "Layer: %s" % self.layer.get_name()
+        ]))
+
+    def _continue_loop(self):
+        if self.count_active() == 0:
+            BaseLoader.reset(self)
+            self.dispatch_parallel(n_parallel=self.n_parallel)
+
+class LiveTileLayerLoader(TileLayerLoader):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
+
+    def _render_single(self, geom, idx, feat, fields, kw_params):
+        vlayer = self._create_or_get_vlayer(geom, idx)
+        tile_id = kw_params.get("tile_id")
+        tile_schema = kw_params.get("tile_schema")
+        lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
+        rcl = [lrc[k] for k in ["row","col","level"]]
+        extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
+        render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
+        if not feat: return
+        render.add_feature_render(vlayer, feat, fields)
 
 ########################
 # Upload
@@ -402,7 +493,7 @@ class UploadLayerController(BaseLoop):
         self.dispatch_parallel(n_parallel=self.n_parallel)
     def _run_loop(self):
         if self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
+            self._handle_error(ManualInterrupt())
             return 
         if not self.lst_added_feat.has_next():
             self._try_finish()
@@ -447,7 +538,7 @@ class EditSyncController(UploadLayerController):
         return sync_feature
     def _run_loop(self):
         if self.status == self.STOPPED: 
-            self.signal.error.emit(ManualInterrupt())
+            self._handle_error(ManualInterrupt())
             return 
         
         conn_info = self.get_conn_info()

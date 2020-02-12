@@ -10,6 +10,7 @@
 
 from qgis.PyQt.QtNetwork import QNetworkReply
 from qgis.PyQt.QtCore import Qt, QThreadPool
+from qgis.core import QgsProject
 
 from .. import make_exception_obj
 from .. import BasicSignal, output_to_qt_args, parse_qt_args, QtArgs
@@ -26,7 +27,7 @@ class AsyncFun(object):
     """
 
     def __init__(self, fun: Callable):
-        self.signal = BasicSignal()
+        self.signal = BasicSignal(QgsProject.instance())
         self.fun: Callable = fun
         self.cache = dict()
         self._finished=False

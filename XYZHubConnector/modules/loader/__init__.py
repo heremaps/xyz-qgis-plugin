@@ -8,8 +8,9 @@
 #
 ###############################################################################
 
-from .layer_loader import (EditAddController, EditRemoveController, EditSyncController, 
+from .layer_loader import (EditAddController, EditRemoveController, EditSyncController,
                            EmptyXYZSpaceError, InitUploadLayerController,
                            LoadLayerController, UploadLayerController, TileLayerLoader,
+                           LiveTileLayerLoader,
                            ManualInterrupt)
 from .manager import LoaderManager

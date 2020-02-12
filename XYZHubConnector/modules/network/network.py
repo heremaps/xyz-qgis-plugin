@@ -108,42 +108,32 @@ class NetManager(QObject):
         return reply
         
     def load_features_bbox(self, conn_info, bbox, **kw):
-
+        reply_tag = "bbox"
         endpoint = "/spaces/{space_id}/bbox"
-        kw_request = dict(bbox)
-        kw_request.update(kw)
-        kw_prop = dict(reply_tag="bbox")
-        kw_prop.update(kw)
-        kw_prop["bbox"] = bbox
-        
+        kw_request = dict(bbox, **kw)
+        kw_prop = dict(reply_tag=reply_tag, bbox=bbox, **kw)
         return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
 
     def load_features_tile(self, conn_info, tile_id="0", tile_schema="quadkey", **kw):
         reply_tag = "tile"
-        tile_url = "tile/{tile_schema}/{tile_id}".format(
-            tile_schema=tile_schema, tile_id=tile_id)
+        kw_tile = dict(tile_schema=tile_schema, tile_id=tile_id)
+        tile_url = "tile/{tile_schema}/{tile_id}".format(**kw_tile)
         endpoint = "/spaces/{space_id}/" + tile_url
-        return self._load_features_endpoint(endpoint, conn_info, reply_tag=reply_tag, **kw)
+        kw_prop = dict(reply_tag=reply_tag, **dict(kw, **kw_tile))
+        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
 
-    def load_features_iterate(self, conn_info, **kw_iterate):
-        reply_tag = kw_iterate.pop("reply_tag","iterate")
+    def load_features_iterate(self, conn_info, **kw):
+        reply_tag = kw.pop("reply_tag","iterate")
         endpoint = "/spaces/{space_id}/iterate"
-        return self._load_features_endpoint(endpoint, conn_info, reply_tag=reply_tag, **kw_iterate)
+        kw_prop = dict(reply_tag=reply_tag, **kw)
+        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
 
-    def load_features_search(self, conn_info, **kw_iterate):
-        reply_tag = kw_iterate.pop("reply_tag","search")
+    def load_features_search(self, conn_info, **kw):
+        reply_tag = kw.pop("reply_tag","search")
         endpoint = "/spaces/{space_id}/search"
-        return self._load_features_endpoint(endpoint, conn_info, reply_tag=reply_tag, **kw_iterate)
+        kw_prop = dict(reply_tag=reply_tag, **kw)
+        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
         
-    def _load_features_endpoint(self, endpoint, conn_info, reply_tag=None, **kw_iterate):
-        """ Iterate through all ordered features (no feature is repeated twice)
-        """
-        kw_request = dict(kw_iterate)
-        kw_prop = dict(reply_tag=reply_tag)
-        kw_prop.update(kw_iterate)
-        
-        return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
-
     ###### feature function
     def add_features(self, conn_info, added_feat, **kw):
         send_request = self.network.post # create or modify (merge existing feature with payload) # might add attributes

@@ -65,7 +65,7 @@ def coord_to_percent_here_simple(coord, level):
         ((latitude + 90) / 180)
     ))
     return [y_percent, x_percent]
-
+    
 def get_row_col_bounds(level, schema="here"):
     """ 
     schema "here"
@@ -93,6 +93,33 @@ def coord_to_row_col(coord, level, schema="here"):
     row = max(0,min(nrow-1, math.floor(r*nrow)))
     col = max(0,min(ncol-1, math.floor(c*ncol)))
     return row, col
+
+# RowColLevel -> coordinate extent
+def coord_from_percent_here_simple(y_percent, x_percent, level):
+    longitude = max(-180, min(180,
+        x_percent * 360 - 180
+    ))
+    latitude = max(-90, min(90,
+        y_percent * 180 - 90
+    ))
+    return [longitude, latitude]
+
+def coord_from_percent(y_percent, x_percent, level, schema="here"):
+    return coord_from_percent_here_simple(y_percent,x_percent,level)
+
+def extent_from_row_col(row, col, level, schema="here"):
+    nrow, ncol = get_row_col_bounds(level, schema)
+    r = row/nrow
+    r1 = (row+1)/nrow
+    c = col/ncol
+    c1 = (col+1)/ncol
+    if schema == "here":
+        xy_min = coord_from_percent(r,c,level)
+        xy_max = coord_from_percent(r1,c1,level)
+        extent = xy_min + xy_max
+    else:
+        extent = [0,0,1,1] # dummy bing
+    return extent
 
 # vector_tiles_reader, tile_helper.py
 
@@ -134,7 +161,7 @@ def get_zoom_for_current_map_scale(canvas):
         if scale < upper_bound:
             zoom = _upper_bound_scale_to_zoom_level[upper_bound]
             break
-    return zoom
+    return max(zoom, 1)
 
 # bbox
 
@@ -153,11 +180,20 @@ def spiral_iter(lstX, lstY):
     for ix, iy in spiral_index(len(lstX), len(lstY)):
         yield (lstX[ix], lstY[iy]) 
 
+def get_tile_format(schema="here"):
+    return "{level}_{col}_{row}"
+
+def parse_tile_id(tile_id, schema="here"):
+    return dict(zip(
+        ["level","col","row"],
+        map(int, tile_id.split("_"))
+        ))
+
 def bboxToListColRow(x_min,y_min,x_max,y_max,level,schema="here"):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level,schema)
     lst_row = list(range(r1,r2+1))
     lst_col = list(range(c1,c2+1))
-    return ["{level}_{col}_{row}".format(level=level,row=row,col=col)
+    return [get_tile_format(schema=schema).format(level=level,row=row,col=col)
     for col, row in spiral_iter(lst_col, lst_row)]
 
 def bboxToListQuadkey(x_min,y_min,x_max,y_max,level):
@@ -183,3 +219,6 @@ def bboxToListQuadkeyFast(x_min,y_min,x_max,y_max,level):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level)
     return [tileXYToQuadKey(level, col, row)
         for row, col in spiral_fast_iter(r1,r2,c1,c2)]
+
+def bboxFromLevelColRow():
+    pass

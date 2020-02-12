@@ -55,6 +55,9 @@ class BaseTestAsync(unittest.TestCase):
         self._idx = 0
         self._lst_error = list()
         self.startTime = time.time()
+
+        self._log_debug("Test start. ###################")
+
     def tearDown(self):
         self._stop_async() # useless ?
         self._log_debug("Test ended. ################### \n")
@@ -70,7 +73,7 @@ class BaseTestAsync(unittest.TestCase):
 
     def _stop_async(self):
         self.loop.quit()
-        self._log_debug("Stop Async. ################### \n")
+        self._log_debug("Stop Async. ###################")
 
     def _handle_error(self, e):
         pretty_print_error(e)

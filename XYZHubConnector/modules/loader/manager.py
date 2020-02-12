@@ -46,10 +46,12 @@ class LoaderPool(object):
         self._n_background -= 1
         self.try_finish()
     def start_dispatch(self, progress):
+        print_qgis("start_dispatch", self.count_active())
         # if progress > 0: return
         self._dispatch()
         self.signal.progress.emit( self.count_active())
     def try_finish(self):
+        print_qgis("try_finish", self.count_active())
         self._release()
         if self.count_active() == 0:
             self.signal.finished.emit()
@@ -72,11 +74,10 @@ class ControllerManager(object):
         self.signal = CanvasSignal()
         self._ptr = 0
         self._lst = dict()
-        self._layer_ptr = dict()
         self.ld_pool = LoaderPool()
     def finish_fast(self):
         self.ld_pool.reset()
-    def add_background(self, con, show_progress=True):
+    def add_on_demand_controller(self, con, show_progress=True):
         """ background controller will not get affected when finish_fast()
         """
         callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
@@ -114,16 +115,27 @@ class LayerControllerManager(ControllerManager):
     def __init__(self):
         super().__init__()
         self._layer_ptr = dict()
-
+        self._static_ptr = set()
+    def reset(self):
+        self.unload()
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
             # assert con.layer is not None 
             self._layer_ptr[con.layer.get_id()] = ptr
         return _register_xyz_layer
-    def get_from_xyz_layer(self, xlayer_id):
+    def get_loader(self, xlayer_id):
         return self._lst.get(self._layer_ptr.get(xlayer_id))
-    def add_layer(self, con, show_progress=True):
-        callbacks = [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
+    def get_interactive_loader(self, xlayer_id):
+        if self._layer_ptr.get(xlayer_id) in self._static_ptr: return
+        return self.get_loader(xlayer_id)
+    def get_all_static_loader(self):
+        return [self._lst.get(ptr) for ptr in self._static_ptr if ptr in self._lst]
+    def add_static_loader(self, con, show_progress=True):
+        ptr = self.add_persistent_loader(con, show_progress)
+        self._static_ptr.add(ptr)
+        return ptr
+    def add_persistent_loader(self, con, show_progress=True):
+        callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
         
         ptr = self._add(con)
         # con.signal.finished.connect( self.make_deregister_cb(ptr))
@@ -142,6 +154,20 @@ class LayerControllerManager(ControllerManager):
             cb_register_layer()
 
         return ptr
+
+    def remove_persistent_loader(self, xlayer_id):
+        self._static_ptr.discard(xlayer_id)
+        ptr = self._layer_ptr.pop(xlayer_id, None)
+        con = self._lst.pop(ptr, None)
+        if con:
+            con.destroy()
+        
+    def unload(self):
+        for xid, ptr in self._layer_ptr.items():
+            con = self._lst.pop(ptr, None)
+            if con:
+                con.destroy()
+
                 
 class LoaderManager(LayerControllerManager):
     def config(self, network):

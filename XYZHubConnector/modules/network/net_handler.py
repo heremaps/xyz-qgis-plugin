@@ -75,6 +75,7 @@ def _onReceived(reply):
     conn_info, reply_tag = get_qt_property(reply,["conn_info", "reply_tag"])
     token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
     limit, handle, meta = get_qt_property(reply,["limit", "handle", "meta"])
+    tile_schema, tile_id = get_qt_property(reply,["tile_schema", "tile_id"])
 
     args = list()
     kw = dict()
@@ -90,7 +91,11 @@ def _onReceived(reply):
         print_qgis(obj.keys())
 
         args = [obj]
-        kw = dict(handle=handle, limit=limit)
+        if reply_tag == "tile":
+            kw = dict(limit=limit, tile_schema=tile_schema, tile_id=tile_id)
+        else:
+            kw = dict(handle=handle, limit=limit)
+            
     elif reply_tag in ("init_layer"):
         print_qgis(txt[:100])
         print_qgis(txt[-10:])
