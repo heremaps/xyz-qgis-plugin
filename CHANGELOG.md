@@ -1,24 +1,53 @@
 # Changelog 
 
-## version 1.7.6 (2019-11-28)
+## Version 1.8.0 (2020-02-12)
+
+#### New Feature
+
+* 3 loading modes: 
+    * Live loading: interactively refresh features in tiles 
+    * Incremental loading: interactively refresh and cache features in tiles (no features delete)
+    * Static loading: load and cache all features in space in background
+
+#### Improvements
+
+* Improve interactive loading mode behaviors:
+    * Externally deleted features is refreshed and not cached in live loading #25
+    * Editing mode temporarily stops interactive loading
+    * Hiding layer temporarily stops interactive loading
+    * Pushing changes to XYZ Hub to re-enable interactive loading
+* Resume loading after open saved project or network interruption #22
+* Save loader params into project
+* Generate unique layer name
+
+#### Bug Fixes
+
+* Fix errors when delete layers or close project
+    * Handle C++ wrapped object deleted error
+    * Handle signalsBlocked, memory error
+* Fix errors when importing XYZ layer from saved project
+* Fix progress bar start and stop correctly
+* Minimum zoom level is 1 (api, here schema)
+    
+## Version 1.7.6 (2019-11-28)
 
 * Token manager: assigned name to token, add/edit/delete/ordering
 * Stability improvement 
     * XYZ layer detection
 
-## version 1.7.5 (2019-11-08)
+## Version 1.7.5 (2019-11-08)
 
 * bug fixes: import XYZ layer from saved project
 
-## version 1.7.4 (2019-09-11)
+## Version 1.7.4 (2019-09-11)
 
 * bug fixes: updates in API 1.4
 
-## version 1.7.3 (2019-08-26)
+## Version 1.7.3 (2019-08-26)
 
 * bug fixes: edit buffer, data upload
 
-## version 1.7.2 (2019-08-23)
+## Version 1.7.2 (2019-08-23)
 
 * Tile loading mode, supports Live Map
     * A limited number of features per tile is reloaded every time panning or zooming occur.
@@ -31,7 +60,7 @@
     * similarity threshold (higher = more layers; 0 means 1 layer/geometry)
 * bug fixes: parser, fields similarity, case-different duplicate, dupe layer name
 
-## version 1.7.1 (2019-07-25)
+## Version 1.7.1 (2019-07-25)
 
 * New: Features in space will be categorized according to geometry and properties
 * 1 XYZ space might be loaded into multiple qgs vector layer in 1 group
@@ -44,7 +73,7 @@
 * Archive log file when it gets big (5MB)
 * bug fixing
 
-## version 1.7.0 (2019-06-24)
+## Version 1.7.0 (2019-06-24)
 
 * New: Changes of xyz layer can be pushed to XYZ Hub
 * allow delete large number of features, overcome URL limit of 2000
@@ -54,14 +83,14 @@
 * xyz layer added to top, basemap added to bottom
 * finish message of controller is queued
 
-## version 1.6.2 (2019-05-27)
+## Version 1.6.2 (2019-05-27)
 
 * fix compatibility issues with older setup (#15, #17, #18)
     * python 3, ver < 3.6
     * Qt5, ver < 5.8
 * clickable url in error message box
 
-## version 1.6.1 (2019-05-07)
+## Version 1.6.1 (2019-05-07)
 
 * fix several bugs in loading and uploading
     * unique field name (suffix ".number")
@@ -71,35 +100,35 @@
     * each space is stored in 1 gpkg file that contains many geom layer
 * add constraints in editing via UI (qml style)
 
-## version 1.6.0
+## Version 1.6.0
 
 * tab ui
 * allow upload to existing layer
 * fix error in NetworkFun
 * fix bugs (#11, #10)
 
-## version 1.5.7
+## Version 1.5.7
 
 * fix bugs (unicode, feature count, etc.)
 * use production server
 * try to stop progress bar when error or close dialog
 * update keywords in metadata
 
-## version 1.5.6
+## Version 1.5.6
 
 * add HERE map tile
-* persistent config file across plugin versions
+* persistent config file across plugin Versions
 * fix bugs with progress bar
 * fix bugs not showing unicode char properly
 
-## version 1.5.5
+## Version 1.5.5
 
 * Support tag feature
 * Handle mixed geometry space
 * Bug fixes
 * Show some error messages in dialog
 
-## version 1.5.3
+## Version 1.5.3
 
 * load space using iterate (adjusted to API 01.2019)
 * bouding box loading under dev (ui disabled)
