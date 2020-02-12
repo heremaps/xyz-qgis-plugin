@@ -69,9 +69,18 @@ class ConnectUX(SpaceUX):
             self.radioButton_loading_tile, 
             self.radioButton_loading_single
         ],[
-            "Live loading: Features in the current extent are loaded interactively",
-            "Incremental loading: New features in the current extent are loaded and cached interactively",
-            "Static loading: All features are loaded only once, in iterations",
+            "\n".join([
+                "Live loading: Interactively refresh features in the current canvas. ",
+                "Useful for visualizing and editing dynamic dataset"
+            ]),
+            "\n".join([
+                "Incremental loading: Interactively refresh and cache features in the current canvas. ",
+                "Useful for visualizing and exploring large dataset"
+            ]),
+            "\n".join([
+                "Static loading: Load and cache all features in space. ",
+                "Useful for importing and analysis of static dataset"
+            ]),
         ]):
             btn.setToolTip(msg)
         self.lineEdit_max_feat.setToolTip("Maximum limit of features to be loaded")
