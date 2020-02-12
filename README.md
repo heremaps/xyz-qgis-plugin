@@ -27,10 +27,14 @@ XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to 
 
 Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**. The main dialog contains 5 tabs:
 
-+ `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. There are 2 modes of loading, `Tile loading` (default) and `Iterate loading`. 
-    + `Tile loading` loads the data in the current bounding box interactively everytime the user moves around the map, suitable for visualization of large spaces. `Chunk size` indicates the number of features per tile.
-    + The other mode `Iterate loading` tries to load all data available in the given XYZ space iteratively, suitable for visualization of small spaces. `Chunk size` indicates the number of features per iteration.
-    + `Layer categorization` controls the organization of data in XYZ space into different QGIS layers based on fields similarity, with 3 levels:
++ `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
+
+    + `Mode`: there are 3 modes of loading
+        + `Live loading`: interactively refresh features in tiles within the current canvas. Useful for visualization of dynamic dataset with full editing capabilities
+        + `Incremental loading`: interactively refresh and cached features in tiles within the current canvas (no features delete). Useful for visualization and exploration of large dataset
+        + `Static loading`: load and cache all features in space in background. Useful for importing and analysis of static dataset
+    + `Chunk size` indicates the number of features per tile or iteration
+    + `Layering` controls the organization of data in XYZ space into different QGIS layers based on fields similarity, with 3 levels:
         + `single`: merge data into 1 layer per geometry type
         + `maximal`: do not merge data, as many layers per geometry type
         + `balanced`: merge only similar data into 1 layer, balanced number of layers per geometry type
