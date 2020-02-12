@@ -70,10 +70,7 @@ class ConnectUX(SpaceUX):
             self.radioButton_loading_single
         ],[
             "Live loading: Features in the current extent are loaded interactively",
-            "\n".join([
-                "Incremental loading: New features in the current extent are loaded and cached interactively.",
-                "Cached features will not be refreshed"
-            ]),
+            "Incremental loading: New features in the current extent are loaded and cached interactively",
             "Static loading: All features are loaded only once, in iterations",
         ]):
             btn.setToolTip(msg)
