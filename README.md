@@ -61,6 +61,6 @@ e.g. `sh makeBuild.sh 1.5.5`.
 [CHANGELOG](CHANGELOG.md)
 ## License
 
-Copyright (C) 2019 HERE Europe B.V.
+Copyright (C) 2020 HERE Europe B.V.
 
 This project is licensed under the MIT license - see the [LICENSE](./LICENSE) file in the root of this project for license details.
