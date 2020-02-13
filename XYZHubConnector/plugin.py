@@ -542,13 +542,11 @@ class XYZHubConnector(object):
 
 
     def iter_checked_xyz_subnode(self):
-        """ iterate through visible xyz nodes (vector layer and group node),
-        excluding layer in edit mode
+        """ iterate through visible xyz nodes (vector layer and group node)
         """
         root = QgsProject.instance().layerTreeRoot()
         for vl in root.checkedLayers():
             if is_xyz_supported_layer(vl):
-                if vl.isEditable(): continue
                 yield vl
         for g in iter_group_node(root):
             if (len(g.findLayers()) == 0 
@@ -602,25 +600,42 @@ class XYZHubConnector(object):
         kw = self.make_tile_params(rect, level)
         # kw["limit"] = 100
 
-        unique_con = set()
-        lst_con = list()
-        for qnode in self.iter_checked_xyz_subnode():
-            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
-            con = self.con_man.get_interactive_loader(xlayer_id)
-            if not con: continue
-            if con in unique_con: continue
-            if con.layer:
-                if not self.is_all_layer_edit_buffer_empty(con.layer):
-                    continue
-            lst_con.append(con)
-            unique_con.add(con)
-        # print_qgis(lst_con)
-        # print_qgis(self.con_man._layer_ptr)
-                
+        lst_con = self._get_lst_reloading_con()
         for con in lst_con:
             print_qgis(con.status)
             print_qgis("loading tile", level, rect)
             con.restart(**kw)
+
+    def _get_lst_reloading_con(self):
+        """ Return list of loader to be reload, that has
+        + any vlayer in group is visible
+        + and no vlayer in group is in edit mode
+        """
+        editing_xid = set()
+        unique_xid = set()
+        for qnode in self.iter_checked_xyz_subnode():
+            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+            if xlayer_id in editing_xid: continue
+            if hasattr(qnode, "isEditable") and qnode.isEditable():
+                editing_xid.add(xlayer_id)
+                continue
+            con = self.con_man.get_interactive_loader(xlayer_id)
+            if (con and con.layer and
+                self.is_all_layer_edit_buffer_empty(con.layer)
+            ):
+                unique_xid.add(xlayer_id)
+            else:
+                continue
+        
+        # print_qgis(editing_xid, unique_xid)
+        # print_qgis(unique_xid.difference(editing_xid))
+        # print_qgis(self.con_man._layer_ptr)
+        
+        return [
+            self.con_man.get_interactive_loader(xlayer_id)
+            for xlayer_id in unique_xid.difference(editing_xid)
+        ]
+                
 
     def is_all_layer_edit_buffer_empty(self, layer: XYZLayer) -> bool:
         return all(
