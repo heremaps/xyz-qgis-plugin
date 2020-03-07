@@ -24,13 +24,25 @@ from XYZHubConnector.modules.layer import tile_utils
 class TestTileUtils(BaseTestAsync):
 
     @unittest.skip("skip unused")
-    def test_bbox_quad_key(self):
-        rect= (-180,-90,180,90)
-        lst = tile_utils.bboxToListQuadkey(*rect, 0)
-        self.assertEqual(sorted(lst), ['0'])
+    def test_bbox_quadkey(self):
+        tol = 1e-9
+        tolY = 1e-3
+        rect_all = (-180, -90, 180, 90)
+        rect_lowerL = (-180, -90, 0-tol, 0-tolY)
+        rect_lowerR = (0, -90, 180, 0-tolY)
+        rect_upperL = (-180, 0, 0-tol, 90)
+        rect_upperR = (0, 0, 180, 90)
 
-        lst = tile_utils.bboxToListQuadkey(*rect, 1)
-        self.assertEqual(sorted(lst), ['0', '1', '2', '3'])
+        lst = tile_utils.bboxToListQuadkey(*rect_all, 1)
+        self.assertEqual(
+            sorted(tile_utils.bboxToListQuadkey(*rect_all, 1)), 
+            ['0', '1', '2', '3'])
+
+        self.assertEqual(
+            [tile_utils.bboxToListQuadkey(*rect, 1)
+            for rect in [rect_upperL, rect_upperR, rect_lowerR, rect_lowerL]],
+            [['0'], ['1'], ['2'], ['3']]
+            )
 
     # @unittest.skip("skip")
     def test_bbox_row_col(self):
