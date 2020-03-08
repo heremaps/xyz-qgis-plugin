@@ -209,6 +209,8 @@ def parse_tile_id(tile_id, schema="here"):
 
 def bboxToListColRow(x_min,y_min,x_max,y_max,level,schema="here"):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level,schema)
+    # clockwise spiral for web schema, counter-clockwise spiral for web schema
+    # reverse one list to reverse spiral
     lst_row = list(range(r1,r2+1))
     lst_col = list(range(c1,c2+1))
     # print(schema, level, [x_min,y_min,x_max,y_max], lst_col, lst_row)
