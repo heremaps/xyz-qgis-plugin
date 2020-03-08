@@ -44,6 +44,37 @@ class TestTileUtils(BaseTestAsync):
             [['0'], ['1'], ['2'], ['3']]
             )
 
+    def test_bbox_row_col_web(self):
+        tol = 1e-9
+        tolY = 1e-3
+        rect_all = (-180, -90, 180, 90)
+        rect_lowerL = (-180, -90, 0-tol, 0-tolY)
+        rect_lowerR = (0, -90, 180, 0-tolY)
+        rect_upperL = (-180, 0+tol, 0-tol, 90)
+        rect_upperR = (0, 0+tol, 180, 90)
+
+        for rect in [rect_all, rect_lowerL, rect_lowerR, rect_upperL, rect_upperR]:
+            self.assertEqual(
+                sorted(tile_utils.bboxToListColRow(*rect, 0, schema="web")), 
+                ['0_0_0'])
+            
+        self.assertEqual(
+            sorted(tile_utils.bboxToListColRow(*rect_all, 1, schema="web")), 
+            ['1_0_0', '1_0_1', '1_1_0', '1_1_1'])
+            
+        self.assertEqual(
+            [tile_utils.bboxToListColRow(*rect, 1, schema="web")
+            for rect in [rect_upperL, rect_lowerL, rect_upperR, rect_lowerR]], 
+            [['1_0_0'], ['1_0_1'], ['1_1_0'], ['1_1_1']])
+
+        self.assertEqual(
+            len(tile_utils.bboxToListColRow(*rect_all, 2, schema="web")),
+            16)
+
+        # print(
+        #     (tile_utils.bboxToListColRow(*rect_all, 2, schema="web")),
+        # )
+
     # @unittest.skip("skip")
     def test_bbox_row_col(self):
         tol = 1e-9
@@ -159,25 +190,29 @@ class TestTileUtils(BaseTestAsync):
 
     def test_extent_from_row_col(self):
         linesep = "\n "
-        lst_msg = list()
-        lst_check = list()
         level = 1
-        for lon in [-180,-90,0,90,180]:
-            for lat in [-90,-45,0,45,90]:
-                coord = [lon,lat]
-                r, c = tile_utils.coord_to_row_col(coord, level)
-                extent = tile_utils.extent_from_row_col(r,c,level)
-                check = (
-                    (extent[0] <= coord[0] <= extent[2] ) and
-                    (extent[1] <= coord[1] <= extent[3] )
-                    )
-                lst_msg.append(" ".join(map(str,[level,[r,c],"\t",coord,"\t",extent,"\t",
-                    "Ok" if check else "Fail"
-                    ])))
-                lst_check.append(check)
+        for schema in ["here", "web"]:
+            lst_msg = list()
+            lst_check = list()
+            for lon in [-180,-90,0,90,180]:
+                for lat in [-90,-45,0,45,90]:
+                    coord = [lon,lat]
+                    r, c = tile_utils.coord_to_row_col(coord, level, schema)
+                    extent = tile_utils.extent_from_row_col(r, c, level, schema)
+                    check = (
+                        (extent[0] <= coord[0] <= extent[2] ) and
+                        (extent[1] <= coord[1] <= extent[3] )
+                        )
+                    lst_msg.append(" ".join(map(str,
+                        [level,[r,c],"\t",coord,"\t",extent,"\t",
+                        "Ok" if check else "Fail"
+                        ])))
+                    lst_check.append(check)
 
-        self.assertTrue(all(lst_check), "converted extent does not cover input coord" 
-            + linesep + linesep.join(lst_msg))
+            self.assertTrue(all(lst_check), 
+                "schema: %s. " %(schema) +
+                "Converted extent does not cover input coord" +
+                linesep + linesep.join(lst_msg))
 
     @unittest.skip("skip example")
     def test_example_1(self):
