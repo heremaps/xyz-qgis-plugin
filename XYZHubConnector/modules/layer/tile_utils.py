@@ -35,7 +35,7 @@ def coord_to_percent_bing_reversed(coord, level):
         ((longitude + 180) / 360)
     ))
     y_percent = max(0, min(1,
-        1-(0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi))
+        (0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi))
     ))
     return [y_percent, x_percent]
 
@@ -45,7 +45,7 @@ def coord_to_percent_here_mercator(coord, level):
     lon, lat = map(math.radians,coord)
     tan = math.tan(math.pi/4 + lat/2)
     if tan == 0: 
-        return coord_to_percent([lon_,lat_+1e-9],level)
+        return coord_to_percent_here_mercator([lon_,lat_+1e-9],level)
         
     x = lon/math.pi
     y = math.log(tan) / math.pi
@@ -104,8 +104,21 @@ def coord_from_percent_here_simple(y_percent, x_percent, level):
     ))
     return [longitude, latitude]
 
+def coord_from_percent_web_mercator(y_percent, x_percent, level):
+    x = x_percent - 0.5
+    y = 0.5 - y_percent
+    longitude = 360 * x
+    latitude = 90 - 360 * math.atan(math.exp(-y * 2 * math.pi)) / math.pi
+    # y_percent = max(0, min(1,
+    #     1-(0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi))
+    # ))
+    return [longitude, latitude]
+
 def coord_from_percent(y_percent, x_percent, level, schema="here"):
-    return coord_from_percent_here_simple(y_percent,x_percent,level)
+    if schema == "web":
+        return coord_from_percent_web_mercator(y_percent,x_percent,level)
+    else:
+        return coord_from_percent_here_simple(y_percent,x_percent,level)
 
 def extent_from_row_col(row, col, level, schema="here"):
     nrow, ncol = get_row_col_bounds(level, schema)
@@ -114,11 +127,16 @@ def extent_from_row_col(row, col, level, schema="here"):
     c = col/ncol
     c1 = (col+1)/ncol
     if schema == "here":
-        xy_min = coord_from_percent(r,c,level)
-        xy_max = coord_from_percent(r1,c1,level)
+        xy_min = coord_from_percent(r,c,level,schema)
+        xy_max = coord_from_percent(r1,c1,level,schema)
+        extent = xy_min + xy_max
+    elif schema == "web":
+        xy_min = coord_from_percent(r1,c,level,schema)
+        xy_max = coord_from_percent(r,c1,level,schema)
         extent = xy_min + xy_max
     else:
-        extent = [0,0,1,1] # dummy bing
+        extent = [0,0,1,1] # dummy 
+    # print(schema, level, extent, r,c,r1,c1)
     return extent
 
 # vector_tiles_reader, tile_helper.py
@@ -193,6 +211,7 @@ def bboxToListColRow(x_min,y_min,x_max,y_max,level,schema="here"):
     r1,r2,c1,c2 = bboxToLevelRowCol(x_min,y_min,x_max,y_max,level,schema)
     lst_row = list(range(r1,r2+1))
     lst_col = list(range(c1,c2+1))
+    # print(schema, level, [x_min,y_min,x_max,y_max], lst_col, lst_row)
     return [get_tile_format(schema=schema).format(level=level,row=row,col=col)
     for col, row in spiral_iter(lst_col, lst_row)]
 
