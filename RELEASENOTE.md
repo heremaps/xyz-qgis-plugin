@@ -1,3 +1,12 @@
+## Version 1.8.1 (2020-03-10)
+
+⚡️ IMPROVEMENTS ⚡️
+* Loading tile using web mercator schema
+* Supports creation of virtual space
+
+🐛 FIXES 🐛
+* Fix wrong data loaded from virtual space
+
 ## Version 1.8.0 (2020-02-12)
 
 ✨ NEW FEATURE ✨
