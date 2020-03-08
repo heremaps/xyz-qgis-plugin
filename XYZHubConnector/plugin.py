@@ -520,9 +520,10 @@ class XYZHubConnector(object):
             rect = bbox_utils.extent_to_rect(
                 bbox_utils.get_bounding_box(canvas))
             level = tile_utils.get_zoom_for_current_map_scale(canvas)
+        schema = "web"
         kw = dict()
-        kw["tile_schema"] = "here"
-        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level)
+        kw["tile_schema"] = schema
+        kw["tile_ids"] = tile_utils.bboxToListColRow(*rect,level, schema=schema)
         return kw
 
     def start_loading(self, args):
