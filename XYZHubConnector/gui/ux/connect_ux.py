@@ -46,7 +46,7 @@ class ConnectUX(SpaceUX):
         self._set_mask_number(self.lineEdit_max_feat)
         self._set_mask_tags(self.lineEdit_tags)
 
-        self.radioButton_loading_live.setChecked(True)
+        self.radioButton_loading_tile.setChecked(True)
         self.lineEdit_limit.setText("100")
         self.lineEdit_max_feat.setText("1000000")
 
