@@ -81,6 +81,11 @@ class XYZSpaceModel(QJsonTableModel):
         super().__init__(parent)
         self.space_map = dict() # space_id <-> index
         self.token = ""
+    def get_(self, key, index):
+        out = super().get_(key, index)
+        if key is dict:
+            out.pop(self.HEADER_CNT,None)
+        return out
     def set_feat_count (self, space_id, cnt):
         key = self.HEADER_CNT
         if space_id not in self.space_map: return
