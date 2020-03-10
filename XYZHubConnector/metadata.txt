@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.8.0
+version=1.8.1
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,23 +42,13 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.8.0 (2020-02-12)
-
-    ✨ NEW FEATURE ✨
-    * Introducing three loading modes: 
-        * Live loading - interactive mode for visualization of dynamic dataset with full editing capabilities
-        * Incremental loading - interactive mode with caching for visualization and exploration of large dataset
-        * Static loading - mode for importing and analysis of static dataset
+changelog=Version 1.8.1 (2020-03-10)
 
     ⚡️ IMPROVEMENTS ⚡️
-    * Improve interactive loading mode behaviors
-    * Resume loading after open saved project or network interruption
-    * Save loader params into project
-    * Generate unique layer name
+    * Loading tile using web mercator schema
+    * Supports creation of virtual space
 
     🐛 FIXES 🐛
-    * Fix errors when delete layers or close project
-    * Fix errors when opening project
-    * Fix progress bar behavior
+    * Fix wrong data loaded from virtual space
 
     * .. more details on Github repos

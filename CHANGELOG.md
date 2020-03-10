@@ -1,5 +1,16 @@
 # Changelog 
 
+## Version 1.8.1 (2020-03-09)
+
+#### Improvements
+
+* Loading tile using web mercator schema
+* Supports creation of virtual space via json config (Advanced)
+
+#### Bug Fixes
+
+* Fix wrong data loaded from virtual space (here schema)
+
 ## Version 1.8.0 (2020-02-12)
 
 #### New Feature

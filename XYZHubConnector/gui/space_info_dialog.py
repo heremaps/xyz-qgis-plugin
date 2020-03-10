@@ -8,9 +8,11 @@
 #
 ###############################################################################
 
+import json
+
 # from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import pyqtSignal
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import QDialog, QInputDialog
 
 from . import get_ui_class
 # from .token_ux import TokenUX
@@ -33,7 +35,7 @@ class BaseSpaceInfoDialog(QDialog):
     def __init__(self, parent=None):
         """init window"""
         QDialog.__init__(self, parent)
-        
+        self._space_info = dict()
         self.setWindowTitle(self.title)
 
     def get_space_info(self):
@@ -45,9 +47,10 @@ class BaseSpaceInfoDialog(QDialog):
             "license": self.comboBox_license.currentText() or None,
             "copyright": copyright_from_txt(self.lineEdit_copyright.text()),
             }
-        return d
+        return d if not self._space_info else self._space_info
 
     def set_space_info(self, space_info):
+        self._space_info = dict(space_info)
         key_fun={
             "title": self.lineEdit_title.setText,
             "id": self.lineEdit_id.setText,
@@ -98,7 +101,17 @@ class SpaceInfoDialog(SpaceInfoTokenDialog):
         self.groupBox_token.setVisible(False) # no groupBox_token
         self.groupBox_tags.setVisible(False) # no groupBox_tags
 
+        self.btn_advanced.clicked.connect(self.update_space_info_json)
         self.setWindowTitle(self.title)
+        
+    def update_space_info_json(self):
+        # dialog = PlainTextDialog("")
+        space_info = self.get_space_info()
+        txt = json.dumps(space_info,indent=4)
+        txt, ok = QInputDialog.getMultiLineText(None, "Edit Space JSON", "Only change this if you know what you're doing", txt)
+        if ok:
+            space_info = json.loads(txt)
+            self.set_space_info(space_info)
         
 class NewSpaceDialog(SpaceInfoDialog):
     title = "Create new XYZ Space"
