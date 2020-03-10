@@ -45,7 +45,7 @@ deprecated=False
 changelog=Version 1.8.1 (2020-03-10)
 
     ⚡️ IMPROVEMENTS ⚡️
-    * Loading tile using web mercator schema
+    * Loading tile using Web Mercator projection
 
     🐛 FIXES 🐛
     * Fixed wrong data loaded from virtual space, cf. https://www.here.xyz/cli/cli/#virtual-spaces
