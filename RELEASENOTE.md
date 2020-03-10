@@ -1,11 +1,10 @@
 ## Version 1.8.1 (2020-03-10)
 
 ⚡️ IMPROVEMENTS ⚡️
-* Loading tile using web mercator schema
-* Supports creation of virtual space
+* Loading tile using Web Mercator projection
 
 🐛 FIXES 🐛
-* Fix wrong data loaded from virtual space
+* Fixed wrong data loaded from virtual space, cf. https://www.here.xyz/cli/cli/#virtual-spaces
 
 ## Version 1.8.0 (2020-02-12)
 

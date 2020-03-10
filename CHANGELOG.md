@@ -4,8 +4,8 @@
 
 #### Improvements
 
-* Loading tile using web mercator schema
-* Supports creation of virtual space via json config (Advanced)
+* Loading tile using web mercator projection
+* Allow creating and editing space via json config (Advanced)
 
 #### Bug Fixes
 
