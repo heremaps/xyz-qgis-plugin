@@ -141,10 +141,7 @@ class LoadLayerController(BaseLoader):
             return False
         elif self.status == self.ALL_FEAT:
             if not self.params_queue.has_retry():
-                if self.get_feat_cnt() == 0:
-                    self._handle_error(EmptyXYZSpaceError())
-                else:
-                    self._try_finish()
+                self._try_finish()
                 return False
         elif self.status == self.MAX_FEAT:
             self._try_finish()
@@ -356,16 +353,6 @@ class TileLayerLoader(LoadLayerController):
 
         # print_qgis("cache", self.params_queue._cache)
         # print_qgis("queue", self.params_queue._queue)
-
-    def _handle_error(self, err):
-        chain_err = parse_exception_obj(err)
-        if isinstance(chain_err, ChainInterrupt):
-            e, idx = chain_err.args[0:2]
-        else:
-            e = chain_err
-        if isinstance(e, EmptyXYZSpaceError):
-            return
-        super()._handle_error(e)
         
     def _retry(self, reply: QNetworkReply):
         # ignore error, continue run loop
