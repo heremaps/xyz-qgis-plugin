@@ -1,5 +1,27 @@
 # Changelog 
 
+## Version 1.8.2 (2020-06-10)
+
+#### New Features
+
+* Supports self-hosted XYZ Hub Server: token authentication, loading, uploading, editing data, managing spaces
+* Supports Property query and selection (XYZ Hub API)
+* Supports Api Key for HERE Tiles
+
+#### Improvements
+
+* UX improvement: default button when pressing button, combo box selection, etc..
+* Improved layer organization
+* Server/token config is backward-compatible
+* Adds UA of the plugin
+* No longer raise EmptyXYZSpaceError during layer loading
+* Refactored token dialog, token model
+* Refactored components to xyz_qgis module
+
+#### Bug Fixes
+
+* Fix loading error when 'handle' is string
+
 ## Version 1.8.1 (2020-03-09)
 
 #### Improvements
@@ -13,7 +35,7 @@
 
 ## Version 1.8.0 (2020-02-12)
 
-#### New Feature
+#### New Features
 
 * 3 loading modes: 
     * Live loading: interactively refresh features in tiles 

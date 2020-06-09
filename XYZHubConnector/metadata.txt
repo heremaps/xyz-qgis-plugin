@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.8.2-alpha
+version=1.8.2
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,12 +42,15 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.8.1 (2020-03-10)
+changelog=Version 1.8.2 (2020-06-10)
+
+    ✨ NEW FEATURES ✨
+    * Supports self-hosted XYZ Hub Server: token authentication, loading, uploading, editing data, managing spaces
+    * Supports Property query and selection (XYZ Hub API)
+    * Supports Api Key for HERE Tiles
 
     ⚡️ IMPROVEMENTS ⚡️
-    * Loading tile using Web Mercator projection
-
-    🐛 FIXES 🐛
-    * Fixed wrong data loaded from virtual space, cf. https://www.here.xyz/cli/cli/#virtual-spaces
+    * UX improvement
+    * Improved layer organization
 
     * .. more details on Github repos

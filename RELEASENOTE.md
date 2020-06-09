@@ -1,3 +1,14 @@
+## Version 1.8.2 (2020-06-10)
+
+✨ NEW FEATURES ✨
+* Supports self-hosted XYZ Hub Server: token authentication, loading, uploading, editing data, managing spaces
+* Supports Property query and selection (XYZ Hub API)
+* Supports Api Key for HERE Tiles
+
+⚡️ IMPROVEMENTS ⚡️
+* UX improvement
+* Improved layer organization
+
 ## Version 1.8.1 (2020-03-10)
 
 ⚡️ IMPROVEMENTS ⚡️
@@ -8,7 +19,7 @@
 
 ## Version 1.8.0 (2020-02-12)
 
-✨ NEW FEATURE ✨
+✨ NEW FEATURES ✨
 * Introducing three loading modes: 
     * Live loading - interactive mode for visualization of dynamic dataset with full editing capabilities
     * Incremental loading - interactive mode with caching for visualization and exploration of large dataset
