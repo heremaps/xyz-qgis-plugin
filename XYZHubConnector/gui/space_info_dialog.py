@@ -114,6 +114,6 @@ class SpaceInfoDialog(SpaceInfoTokenDialog):
             self.set_space_info(space_info)
         
 class NewSpaceDialog(SpaceInfoDialog):
-    title = "Create new XYZ Space"
+    title = "Create New XYZ Hub Space"
 class EditSpaceDialog(SpaceInfoDialog):
-    title = "Edit XYZ Space"
+    title = "Edit XYZ Hub Space"

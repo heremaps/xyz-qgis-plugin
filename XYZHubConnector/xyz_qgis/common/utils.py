@@ -16,6 +16,9 @@ import gzip
 from qgis.PyQt.uic import loadUiType
 from . import config
 
+def get_current_millis_time():
+    return int(round(time.time() * 1000))
+
 def disconnect_silent(signal):
     ok = True
     try: signal.disconnect()

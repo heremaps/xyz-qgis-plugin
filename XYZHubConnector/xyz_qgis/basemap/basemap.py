@@ -26,10 +26,14 @@ def load_xml(file):
         d = dict(child.attrib)
         map_meta[d["name"]] = d
     return map_meta
-def add_auth(meta, app_id, app_code):
+def add_auth(meta, app_id, app_code, api_key):
     sep = "&" if "?" in meta["url"] else "?"
-    url = "{url}{sep}app_id={app_id}&app_code={app_code}".format(url=meta["url"], sep=sep, app_id=app_id, app_code=app_code)
+    if api_key:
+        url = "{url}{sep}apiKey={api_key}".format(url=meta["url"], sep=sep, api_key=api_key)
+    elif app_id:
+        url = "{url}{sep}app_id={app_id}&app_code={app_code}".format(url=meta["url"], sep=sep, app_id=app_id, app_code=app_code)
     meta["url"] = url
+
 # qgswmscapabilities.cpp
 def parse_uri(meta):
     uri = QgsDataSourceUri()
@@ -39,8 +43,8 @@ def parse_uri(meta):
     return bytes(uri.encodedUri()).decode("utf-8")
 
 
-def add_basemap_layer(meta, app_id, app_code):
-    add_auth(meta, app_id, app_code)
+def add_basemap_layer(meta, app_id, app_code, api_key):
+    add_auth(meta, app_id, app_code, api_key)
     
     name = meta["name"]
     uri = parse_uri(meta)

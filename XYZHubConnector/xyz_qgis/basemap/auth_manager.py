@@ -14,6 +14,7 @@ class AuthManager(object):
     ROOT = "auth"
     APP_ID = "app_id"
     APP_CODE = "app_code"
+    API_KEY = "api_key"
     def __init__(self, ini):
         self.ini = ini
         cp = configparser.ConfigParser()
@@ -25,9 +26,10 @@ class AuthManager(object):
             cp.read_file(f)
         self.cp = cp
 
-    def save(self,app_id,app_code):
+    def save(self,app_id,app_code,api_key):
         self.cp.set(self.ROOT, self.APP_ID, app_id )
         self.cp.set(self.ROOT, self.APP_CODE, app_code )
+        self.cp.set(self.ROOT, self.API_KEY, api_key )
 
         with open(self.ini, "w") as f:
             self.cp.write(f)

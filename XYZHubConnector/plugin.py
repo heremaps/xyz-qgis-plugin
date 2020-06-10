@@ -25,7 +25,7 @@ from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .xyz_qgis.models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
+from .xyz_qgis.models import SpaceConnectionInfo, TokenModel, ServerModel, ServerTokenConfig, LOADING_MODES, InvalidLoadingMode
 from .xyz_qgis.controller import ChainController
 from .xyz_qgis.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
 from .xyz_qgis.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
@@ -41,7 +41,7 @@ from .xyz_qgis.layer import tile_utils, XYZLayer
 from .xyz_qgis.layer.layer_props import QProps
 
 
-from .xyz_qgis.network import NetManager, net_handler
+from .xyz_qgis.network import NetManager, net_handler, net_utils
 
 from .xyz_qgis import basemap
 from .xyz_qgis.common.secret import Secret
@@ -151,6 +151,7 @@ class XYZHubConnector(object):
     def new_session(self):
         self.con_man.reset()
         self.edit_buffer.reset()
+        self.pending_delete_qnodes.clear()
         
         if self.hasGuiInitialized:
             self.pb.hide()
@@ -170,8 +171,6 @@ class XYZHubConnector(object):
         self.map_basemap_meta = basemap.load_default_xml()
         self.auth_manager = AuthManager(config.USER_PLUGIN_DIR +"/auth.ini")
         
-        self.token_model = EditableGroupTokenInfoModel(parent)  #GroupTokenInfoModel
-
         self.network = NetManager(parent)
         
         self.con_man = LoaderManager()
@@ -181,7 +180,10 @@ class XYZHubConnector(object):
         # self.conn_info = SpaceConnectionInfo()
         
         ######## token      
-        self.token_model.load_ini(config.USER_PLUGIN_DIR +"/token.ini")
+        self.token_config = ServerTokenConfig(config.USER_PLUGIN_DIR +"/token.ini", parent)
+        self.token_config.set_default_servers(net_utils.API_URL)
+        self.token_model = self.token_config.get_token_model()
+        self.server_model = self.token_config.get_server_model()
 
         ######## CALLBACK
         
@@ -200,8 +202,10 @@ class XYZHubConnector(object):
         self.lastRect = bbox_utils.extent_to_rect(bbox_utils.get_bounding_box(canvas))
         self.iface.mapCanvas().extentsChanged.connect( self.reload_tile, Qt.QueuedConnection)
 
-        # handle delete xyz layer group
-        QgsProject.instance().layerTreeRoot().willRemoveChildren.connect(self.cb_qnodes_deleted)
+        # handle move, delete xyz layer group
+        self.pending_delete_qnodes = dict()
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.connect(self.cb_qnodes_deleting)
+        QgsProject.instance().layerTreeRoot().removedChildren.connect(self.cb_qnodes_deleted)
         QgsProject.instance().layerTreeRoot().visibilityChanged.connect(self.cb_qnode_visibility_changed)
         
 
@@ -223,7 +227,8 @@ class XYZHubConnector(object):
 
         self.iface.mapCanvas().extentsChanged.disconnect( self.reload_tile)
         
-        QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(self.cb_qnodes_deleted)
+        QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(self.cb_qnodes_deleting)
+        QgsProject.instance().layerTreeRoot().removedChildren.disconnect(self.cb_qnodes_deleted)
         QgsProject.instance().layerTreeRoot().visibilityChanged.disconnect(self.cb_qnode_visibility_changed)
 
         QgsProject.instance().readProject.disconnect( self.import_project)
@@ -392,8 +397,8 @@ class XYZHubConnector(object):
         parent = self.iface.mainWindow()
         dialog = MainDialog(parent)
 
-        dialog.config(self.token_model)
-        dialog.config_secret(self.secret)
+        dialog.config(self.token_model, self.server_model)
+        # dialog.config_secret(self.secret)
         auth = self.auth_manager.get_auth()
         dialog.config_basemap(self.map_basemap_meta, auth)
 
@@ -649,9 +654,9 @@ class XYZHubConnector(object):
 
     def add_basemap_layer(self, args):
         a, kw = parse_qt_args(args)
-        meta, app_id, app_code = a
-        self.auth_manager.save(app_id, app_code)
-        basemap.add_basemap_layer( meta, app_id, app_code)
+        meta, app_id, app_code, api_key = a
+        self.auth_manager.save(app_id, app_code, api_key)
+        basemap.add_basemap_layer( meta, app_id, app_code, api_key)
 
     ############### 
     # import project function
@@ -737,17 +742,23 @@ class XYZHubConnector(object):
         if con:
             con.stop_loading()
 
-    def cb_qnodes_deleted(self, parent, i0, i1):
+    def cb_qnodes_deleting(self, parent, i0, i1):
+        key = (parent,i0,i1)
         is_parent_root = not parent.parent()
         lst = parent.children()
         for i in range(i0, i1+1):
             qnode = lst[i]
             if (is_parent_root and is_xyz_supported_node(qnode)):
                 xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                self.pending_delete_qnodes.setdefault(key, list()).append(xlayer_id)
                 self.con_man.remove_persistent_loader(xlayer_id)
             # is possible to handle vlayer delete here
             # instead of handle in layer.py via callbacks
- 
+
+    def cb_qnodes_deleted(self, parent, i0, i1):
+        key = (parent,i0,i1)
+        for xlayer_id in self.pending_delete_qnodes.pop(key, list()):
+            self.con_man.remove_persistent_loader(xlayer_id)
 
     ############### 
     # Open dialog

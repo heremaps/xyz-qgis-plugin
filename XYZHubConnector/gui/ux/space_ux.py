@@ -13,9 +13,10 @@ from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
 
 from ...xyz_qgis.models import SpaceConnectionInfo, XYZSpaceModel
 from ...xyz_qgis.controller import make_qt_args
-from .token_ux import TokenUX
+from .token_server_ux import TokenWithServerUX
 
-class SpaceUX(TokenUX):
+
+class SpaceUX(TokenWithServerUX):
     """ Base dialog that contains table view of spaces + Token UX
     """
     signal_space_count = pyqtSignal(object)
@@ -24,7 +25,7 @@ class SpaceUX(TokenUX):
         # these are like abstract variables
         self.tableView_space = None
         
-    def config(self, token_model):
+    def config(self, token_model, server_model):
         
         space_model = XYZSpaceModel(self)
 
@@ -36,10 +37,10 @@ class SpaceUX(TokenUX):
         self.tableView_space.setSortingEnabled(True)
 
         ############# connect gui
-        self.tableView_space.pressed.connect(self.cb_table_row_selected)
+        self.tableView_space.selectionModel().currentChanged.connect(self.cb_table_row_selected)
         
         self.btn_use.clicked.connect(self._get_space_model().reset)
-        TokenUX.config(self,token_model)
+        TokenWithServerUX.config(self, token_model, server_model)
 
     def _get_proxy_model(self):
         return self.tableView_space.model()
@@ -50,15 +51,21 @@ class SpaceUX(TokenUX):
         return self._get_proxy_model().mapToSource(index)
         
     def open_token_dialog(self):
-        is_used_token_changed = super().open_token_dialog()
-        if not is_used_token_changed: return
+        is_used_token_modified = super().open_token_dialog()
+        if not is_used_token_modified: return
 
         self._get_space_model().reset()
-        self.token_model.reset_used_token_idx()
+        self.ui_valid_input()
+
+    def open_server_dialog(self):
+        is_used_token_modified = super().open_server_dialog()
+        if not is_used_token_modified: return
+
+        self._get_space_model().reset()
         self.ui_valid_input()
 
     ##### CALLBACK
-    def cb_table_row_selected(self, index):
+    def cb_table_row_selected(self, *a):
         # pending token -> gui
         self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
         self.ui_valid_input()
@@ -84,6 +91,10 @@ class SpaceUX(TokenUX):
         index = self._get_current_index()
         self._get_space_model().set_feat_count(space_id, cnt)
         self.tableView_space.setCurrentIndex(index)
+
+    def cb_comboBox_server_selected(self, index):
+        super().cb_comboBox_server_selected(index)
+        self._get_space_model().reset()
 
     ###### UI function
     def ui_display_spaces(self, obj):

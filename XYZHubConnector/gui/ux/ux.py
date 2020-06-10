@@ -8,9 +8,8 @@
 #
 ###############################################################################
 
-def process_tags(tags):
-    sep = ","
-    return sep.join(s.strip() for s in tags.split(sep))
+def strip_list_string(txt, delim=","):
+    return delim.join(s.strip() for s in txt.split(delim))
 
 class UXDecorator(object):
     def __init__(self):

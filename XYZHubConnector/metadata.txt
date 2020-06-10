@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE XYZ Hub
-version=1.8.1
+version=1.8.2-alpha
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
