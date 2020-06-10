@@ -8,3 +8,9 @@
 #
 ###############################################################################
 
+from .config import Config
+config = Config()
+
+def override_config(ext_config):
+    global config
+    config.set_config(ext_config)

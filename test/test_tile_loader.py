@@ -14,9 +14,9 @@ from test.utils import (BaseTestAsync, BaseTestWorkerAsync,
     add_test_fn_params, get_token_space, 
     get_conn_info, AllErrorsDuringTest)
 from test.test_layer_loader import TestReLoader, TestLoader
-from XYZHubConnector.modules.network import NetManager
-from XYZHubConnector.modules.loader import TileLayerLoader, EmptyXYZSpaceError
-from XYZHubConnector.modules.layer import bbox_utils, tile_utils, layer_utils
+from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.loader import TileLayerLoader, EmptyXYZSpaceError
+from XYZHubConnector.xyz_qgis.layer import bbox_utils, tile_utils, layer_utils
 
 from qgis.core import QgsProject
 from qgis.PyQt.QtCore import QTimer

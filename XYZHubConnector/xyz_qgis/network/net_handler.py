@@ -15,7 +15,7 @@ from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import Qgis, QgsMessageLog # to be removed
 from .net_utils import decode_byte, get_qt_property
 from ..controller import make_qt_args
-from ... import config
+from ..common import config
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("net_handler")

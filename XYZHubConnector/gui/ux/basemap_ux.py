@@ -10,7 +10,7 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ...modules.controller import make_qt_args
+from ...xyz_qgis.controller import make_qt_args
 from .ux import UXDecorator
 
 class BasemapUX(UXDecorator):

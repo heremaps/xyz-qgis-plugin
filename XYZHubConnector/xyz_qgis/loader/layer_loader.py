@@ -24,7 +24,7 @@ from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render, ti
 from ..layer.edit_buffer import LayeredEditBuffer
 from ..network import NetManager, net_handler
 from .loop_loader import BaseLoader, BaseLoop, ParallelFun
-from ...models import SpaceConnectionInfo
+from ..models import SpaceConnectionInfo
 
 
 from ..common.signal import make_print_qgis

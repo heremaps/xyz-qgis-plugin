@@ -15,7 +15,7 @@ from test.utils import (BaseTestAsync, BaseTestWorkerAsync, add_test_fn_params,
 from qgis.testing import start_app, unittest
 
 from qgis.core import QgsRasterLayer, QgsProject
-from XYZHubConnector.modules import basemap
+from XYZHubConnector.xyz_qgis import basemap
 
 import os
 

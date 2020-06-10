@@ -7,7 +7,7 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
-from XYZHubConnector.modules.layer import parser
+from XYZHubConnector.xyz_qgis.layer import parser
 
 
 from qgis.testing import start_app
@@ -78,10 +78,10 @@ def count_reply(total, callback):
 
 if __name__ == "__main__":
     
-    from XYZHubConnector.modules.network import NetManager
-    from XYZHubConnector.modules.network import net_handler
+    from XYZHubConnector.xyz_qgis.network import NetManager
+    from XYZHubConnector.xyz_qgis.network import net_handler
     from qgis.PyQt.QtCore import QEventLoop
-    from XYZHubConnector.models.connection import SpaceConnectionInfo
+    from XYZHubConnector.xyz_qgis.models.connection import SpaceConnectionInfo
     conn_info = SpaceConnectionInfo()
     conn_info.set_(space_id="DicZ8XTR",token="AdOZrFlyIrXLzbAJeN5Lzts")
 

@@ -13,8 +13,8 @@ from qgis.testing import start_app, unittest
 from test.utils import (BaseTestAsync, BaseTestWorkerAsync, 
     add_test_fn_params, get_token_space, 
     get_conn_info, AllErrorsDuringTest)
-from XYZHubConnector.modules.network import NetManager
-from XYZHubConnector.modules.loader import LoadLayerController, ManualInterrupt
+from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.loader import LoadLayerController, ManualInterrupt
 
 from qgis.core import QgsProject
 from qgis.PyQt.QtCore import QTimer

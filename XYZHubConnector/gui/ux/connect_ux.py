@@ -11,8 +11,8 @@
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator, QIntValidator  
 
-from ...modules.controller import make_qt_args
-from ...models import LOADING_MODES
+from ...xyz_qgis.controller import make_qt_args
+from ...xyz_qgis.models import LOADING_MODES
 from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import process_tags
 
