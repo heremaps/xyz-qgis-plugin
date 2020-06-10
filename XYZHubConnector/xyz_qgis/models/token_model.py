@@ -135,6 +135,9 @@ class EditableItemModel(QStandardItemModel):
         """
         return i0 == i1
         
+    def is_protected_data(self, row):
+        return False
+
     # helper
     def _iter_data(self):
         for data in self.cfg:
@@ -297,11 +300,17 @@ class ServerModel(WritableItemModel, UsedToken):
         super().__init__(ini, parser, parent)
         UsedToken.__init__(self)
         self._set_group("servers")
+        self._protected_data = set()
+        
+    def is_protected_data(self, row):
+        data = self.get_data(row)
+        return data in self._protected_data
         
     def set_default_servers(self, default_api_urls):
-        self._init_default_servers([
-            dict(name="HERE Server", server=default_api_urls["PRD"])
-        ])
+        default_servers = [dict(name="HERE Server", server=default_api_urls["PRD"])]
+        self._protected_data = default_servers
+        self._init_default_servers(default_servers)
+
 
     def _init_default_servers(self, server_infos: list):
         existing_server = dict()

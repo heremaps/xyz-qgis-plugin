@@ -90,6 +90,13 @@ class BaseTokenDialog(QDialog, TokenUI):
             self.btn_down,
         ]:
             btn.setEnabled(flag)
+        
+        if self.token_model.is_protected_data(index.row()):
+            for btn in [
+                self.btn_edit,
+                self.btn_delete,
+            ]:
+                btn.setEnabled(False)
 
     def _get_current_token_info(self):
         row = self.tableView.currentIndex().row()
