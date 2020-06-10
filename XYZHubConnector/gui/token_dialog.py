@@ -11,7 +11,7 @@
 from qgis.PyQt.QtWidgets import QDialog
 from . import get_ui_class
 
-from ..models.token_model import GroupTokenInfoModel
+from ..xyz_qgis.models.token_model import GroupTokenInfoModel
 from .util_dialog import ConfirmDialog
 from .token_info_dialog import NewTokenInfoDialog, EditTokenInfoDialog
 from qgis.PyQt.QtGui import QStandardItem

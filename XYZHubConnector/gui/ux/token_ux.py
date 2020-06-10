@@ -11,9 +11,9 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ...models import SpaceConnectionInfo
-from ...models.token_model import GroupTokenModel, ComboBoxProxyModel
-from ...modules.controller import make_qt_args
+from ...xyz_qgis.models import SpaceConnectionInfo
+from ...xyz_qgis.models.token_model import GroupTokenModel, ComboBoxProxyModel
+from ...xyz_qgis.controller import make_qt_args
 from ..token_dialog import TokenDialog
 from ..util_dialog import ConfirmDialog
 from .ux import UXDecorator

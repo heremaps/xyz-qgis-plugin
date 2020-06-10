@@ -40,7 +40,7 @@ def output_to_qt_args(output) -> QtArgs:
 from qgis.core import QgsMessageLog, Qgis
 from qgis.PyQt.QtCore import Qt
 
-from ... import config
+from . import config
 import time
 
 level = ["Info", "Warning", "Critical", "Success", "None"]

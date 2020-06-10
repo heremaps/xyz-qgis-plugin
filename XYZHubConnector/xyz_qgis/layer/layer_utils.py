@@ -13,7 +13,7 @@ from qgis.core import QgsFeatureRequest, QgsProject
 from qgis.PyQt.QtCore import QVariant
 
 
-from ...models import SpaceConnectionInfo
+from ..models import SpaceConnectionInfo
 from ..controller import make_qt_args
 from . import parser
 from .layer_props import QProps

@@ -8,3 +8,11 @@
 #
 ###############################################################################
 
+__author__ = "Minh Nguyen"
+__copyright__ = "Copyright 2019, HERE Europe B.V."
+
+__license__ = "MIT"
+__version__ = "1.8.1"
+__maintainer__ = "Minh Nguyen"
+__email__ = "huyminh.nguyen@here.com"
+__status__ = "Development"

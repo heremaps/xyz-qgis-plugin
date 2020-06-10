@@ -12,7 +12,7 @@ from qgis.core import QgsMapLayerProxyModel
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator
 
-from ...modules.controller import make_qt_args
+from ...xyz_qgis.controller import make_qt_args
 from ..util_dialog import ConfirmDialog
 from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import process_tags

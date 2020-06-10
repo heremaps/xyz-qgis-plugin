@@ -8,4 +8,4 @@
 #
 ###############################################################################
 
-from ..utils import get_ui_class
+from ..xyz_qgis.common.utils import get_ui_class

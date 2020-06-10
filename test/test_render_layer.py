@@ -19,7 +19,7 @@ from test import test_parser
 from qgis.testing import unittest
 from qgis.core import QgsWkbTypes, QgsProject
 
-from XYZHubConnector.modules.layer import XYZLayer, parser, render
+from XYZHubConnector.xyz_qgis.layer import XYZLayer, parser, render
 
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):

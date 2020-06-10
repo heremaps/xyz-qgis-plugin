@@ -17,7 +17,7 @@ from test.utils import (BaseTestAsync, TestFolder, format_long_args,
 
 from qgis.core import QgsFields, QgsVectorLayer
 from qgis.testing import unittest
-from XYZHubConnector.modules.layer import tile_utils
+from XYZHubConnector.xyz_qgis.layer import tile_utils
 
 
 # import unittest

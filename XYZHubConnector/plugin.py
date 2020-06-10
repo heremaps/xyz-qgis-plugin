@@ -20,41 +20,41 @@ from qgis.PyQt.QtWidgets import QAction, QToolButton, QWidgetAction
 from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
 
 from . import config
-from . import utils
 
 from .gui.space_dialog import MainDialog
 from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
-from .modules.controller import ChainController
-from .modules.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
-from .modules.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
+from .xyz_qgis.models import SpaceConnectionInfo, TokenModel, GroupTokenInfoModel, EditableGroupTokenInfoModel, LOADING_MODES, InvalidLoadingMode
+from .xyz_qgis.controller import ChainController
+from .xyz_qgis.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
+from .xyz_qgis.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
     LoadLayerController, UploadLayerController, EditSyncController,
     TileLayerLoader, LiveTileLayerLoader)
 
-from .modules.layer.edit_buffer import EditBuffer
-from .modules.layer import bbox_utils
-from .modules.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
+from .xyz_qgis.layer.edit_buffer import EditBuffer
+from .xyz_qgis.layer import bbox_utils
+from .xyz_qgis.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
     is_xyz_supported_node, get_customProperty_str, iter_group_node, updated_xyz_node)
     
-from .modules.layer import tile_utils, XYZLayer
-from .modules.layer.layer_props import QProps
+from .xyz_qgis.layer import tile_utils, XYZLayer
+from .xyz_qgis.layer.layer_props import QProps
 
 
-from .modules.network import NetManager, net_handler
+from .xyz_qgis.network import NetManager, net_handler
 
-from .modules import basemap
-from .modules.common.secret import Secret
-from .modules.basemap.auth_manager import AuthManager
+from .xyz_qgis import basemap
+from .xyz_qgis.common.secret import Secret
+from .xyz_qgis.basemap.auth_manager import AuthManager
 
-from .modules.common.error import format_traceback
+from .xyz_qgis.common.error import format_traceback
+from .xyz_qgis.common import utils
 
 PLUGIN_NAME = config.PLUGIN_NAME
 
 LOG_TO_FILE = 1
 
-from .modules.common.signal import (make_print_qgis, cb_log_qgis, 
+from .xyz_qgis.common.signal import (make_print_qgis, cb_log_qgis, 
     connect_global_error_signal, disconnect_global_error_signal)
 print_qgis = make_print_qgis("plugin")
 
@@ -67,7 +67,7 @@ class XYZHubConnector(object):
         import sys
         print(sys.version)
         self.iface = iface
-        self.web_menu = "&XYZ Hub Connector"
+        self.web_menu = "&{name}".format(name=config.PLUGIN_FULL_NAME)
         self.hasGuiInitialized = False
         self.init_modules()
         self.obj = self
@@ -104,7 +104,7 @@ class XYZHubConnector(object):
 
         ######## Add the toolbar + button
         self.toolbar = self.iface.addToolBar(PLUGIN_NAME)
-        self.toolbar.setObjectName("XYZ Hub Connector")
+        self.toolbar.setObjectName(config.PLUGIN_FULL_NAME)
 
         self.actions_menu = [self.action_connect, self.action_sync_edit, self.action_clear_cache] 
 

@@ -10,7 +10,7 @@
 
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 
-from ...modules.controller import make_qt_args
+from ...xyz_qgis.controller import make_qt_args
 from ..space_info_dialog import EditSpaceDialog, NewSpaceDialog
 from ..util_dialog import ConfirmDialog
 from .space_ux import SpaceUX, SpaceConnectionInfo
