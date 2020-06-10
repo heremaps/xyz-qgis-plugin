@@ -17,11 +17,18 @@ from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtCore import QBuffer, QByteArray
+from qgis.PyQt.QtCore import QT_VERSION_STR
+from qgis.PyQt.Qt import PYQT_VERSION_STR
+from qgis.core import Qgis
+import platform
+from ..common import config
 
 API_CIT_URL = "https://xyz.cit.api.here.com/hub"
 API_PRD_URL = "https://xyz.api.here.com/hub"
 API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
 API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
+
+USER_AGENT = "xyz-qgis-plugin/{plugin_version} QGIS/{qgis_version} Python/{py_version} Qt/{qt_version}".format(plugin_version=config.PLUGIN_VERSION, qgis_version=Qgis.QGIS_VERSION, py_version=platform.python_version(), qt_version=QT_VERSION_STR)
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("net_utils")
@@ -43,7 +50,8 @@ def _make_headers(token, **params):
     h = {
         "Authorization": "Bearer %s"% token,
         "Accept" : "*/*",
-        "Accept-Encoding": "gzip"
+        "Accept-Encoding": "gzip",
+        "User-Agent": USER_AGENT
     }
     h.update(params)
     return h
@@ -79,10 +87,11 @@ def make_buffer( obj):
     buffer.open(buffer.ReadOnly)
     return buffer
 def make_query_url( url, **kw):
-    query = "&".join(
+    raw_queries = list(kw.pop("raw_queries", list()))
+    query = "&".join(raw_queries + [
         "%s=%s"%(k,v)
         for k,v in kw.items() if not v is None
-    )
+    ])
     if len(query): 
         url = "%s?%s"%(url, query)
     url = QUrl(url)
@@ -104,7 +113,7 @@ def make_conn_request(conn_info, endpoint, req_type="normal", **kw):
 
     """
     token, space_id = conn_info.get_xyz_space()
-    api_url = API_URL[conn_info.server]
+    api_url = conn_info.get_("server", API_URL["PRD"]).rstrip("/")
     url = api_url + endpoint.format(space_id=space_id)
     url = make_query_url(url, **kw)
     header = HEADER_EXTRA_MAP.get(req_type,dict())

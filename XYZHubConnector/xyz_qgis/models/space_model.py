@@ -10,13 +10,8 @@
 
 
 from qgis.PyQt.QtCore import QAbstractTableModel, Qt, QVariant
-def parse_copyright(v):
-    if not isinstance(v, list): return v
-    lst = [
-        ". ".join(el[j] for j in ["label","alt"] if j in el)
-        for el in v
-    ]
-    return lst
+from .connection import parse_copyright
+
 
 class QJsonTableModel(QAbstractTableModel):
     _header = list()

@@ -52,7 +52,8 @@ class ManageUX(SpaceUX):
 
     def ui_new_space(self):
         token = self.get_input_token()
-        self.conn_info.set_(token=token)
+        server = self.get_input_server()
+        self.conn_info.set_(token=token, server=server)
         conn_info = SpaceConnectionInfo(self.conn_info)
 
         dialog = NewSpaceDialog(self)
@@ -63,11 +64,12 @@ class ManageUX(SpaceUX):
 
     def ui_edit_space(self):
         token = self.get_input_token()
+        server = self.get_input_server()
         index = self._get_current_index()
         space_id = self._get_space_model().get_("id",index)
         space_info = self._get_space_model().get_(dict,index)
 
-        self.conn_info.set_(token=token,space_id=space_id)
+        self.conn_info.set_(token=token, space_id=space_id, server=server)
         conn_info = SpaceConnectionInfo(self.conn_info)
 
         dialog = EditSpaceDialog(self)
@@ -80,11 +82,12 @@ class ManageUX(SpaceUX):
 
     def ui_del_space(self):
         token = self.get_input_token()
+        server = self.get_input_server()
         index = self._get_current_index()
         space_id = self._get_space_model().get_("id",index)
         title = self._get_space_model().get_("title",index)
         
-        self.conn_info.set_(token=token,space_id=space_id)
+        self.conn_info.set_(token=token, space_id=space_id, server=server)
         
         dialog = ConfirmDialog("Do you want to Delete space: %s?"%title)
         ret = dialog.exec_()
