@@ -10,7 +10,7 @@
 
 
 import configparser
-from typing import Any, List, Mapping
+from typing import List, Mapping
 
 from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
@@ -116,7 +116,7 @@ class EditableItemModel(QStandardItemModel):
 
     def _cb_item_removed(self, root, i0, i1):
         if not self._is_valid_single_selection(i0, i1): return
-        data = self.cached_data.pop(i0)
+        self.cached_data.pop(i0)
 
     def _cb_item_inserted(self, root, i0, i1):
         if not self._is_valid_single_selection(i0, i1): return

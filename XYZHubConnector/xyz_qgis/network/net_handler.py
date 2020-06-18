@@ -16,6 +16,7 @@ from qgis.core import Qgis, QgsMessageLog # to be removed
 from .net_utils import decode_byte, get_qt_property
 from ..controller import make_qt_args
 from ..common import config
+from ..models.connection import mask_token
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("net_handler")
@@ -43,12 +44,12 @@ def check_status(reply):
     url = reply.request().url().toString()
 
     if err > 0:
-        msg = "%s: %s: %s. %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, token, space_id, url)
+        msg = "%s: %s: %s. %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, mask_token(token), space_id, url)
         QgsMessageLog.logMessage( 
             "Network Error! : %s"%msg, config.TAG_PLUGIN, Qgis.Warning
         )
     else:
-        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, token, space_id, url)
+        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, mask_token(token), space_id, url)
         QgsMessageLog.logMessage(
             "Network Ok! : %s"%msg, config.TAG_PLUGIN, Qgis.Success
         )

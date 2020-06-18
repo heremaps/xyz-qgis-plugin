@@ -27,6 +27,7 @@ class ConnectUX(SpaceUX):
     signal_space_bbox = pyqtSignal(object) # deprecate
     signal_space_tile = pyqtSignal(object)
     def __init__(self, *a):
+        SpaceUX.__init__(self, *a)
         # these are like abstract variables
         self.radioButton_loading_live = None
         self.radioButton_loading_tile = None
@@ -39,6 +40,8 @@ class ConnectUX(SpaceUX):
         self.lineEdit_max_feat = None
         self.lineEdit_tags = None
         self.comboBox_similarity_threshold = None
+        self.filter_dialog = None
+
     def config(self, *a):
         # super().config(*a)
 

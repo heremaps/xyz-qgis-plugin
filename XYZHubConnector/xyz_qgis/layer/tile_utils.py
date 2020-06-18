@@ -29,7 +29,7 @@ def coord_to_percent_bing_reversed(coord, level):
     longitude, latitude = coord
     sinLatitude = math.sin((latitude * math.pi) / 180)
     if abs(sinLatitude) == 1:
-        return coord_to_percent_bing_reversed([longitude, latitude+1e-9], level)
+        return coord_to_percent_bing_reversed([longitude, latitude+1e-6], level)
 
     x_percent = max(0, min(1,
         ((longitude + 180) / 360)
@@ -44,14 +44,14 @@ def coord_to_percent_here_mercator(coord, level):
     lon_, lat_ = coord
     lon, lat = map(math.radians,coord)
     tan = math.tan(math.pi/4 + lat/2)
-    if tan == 0: 
-        return coord_to_percent_here_mercator([lon_,lat_+1e-9],level)
-        
+    if tan == 0:
+        return coord_to_percent_here_mercator([lon_,lat_+1e-6],level)
+
     x = lon/math.pi
     y = math.log(tan) / math.pi
     xmin, xmax = -1, 1
     fnY = lambda lat: math.log(math.tan(math.pi/4 + lat/2)) / math.pi
-    ymin, ymax = map(fnY,map(math.radians,[-(90-1e-9), 90-1e-9]))
+    ymin, ymax = map(fnY,map(math.radians,[-(90-1e-6), 90-1e-6]))
     col_percent = (x - xmin) / (xmax-xmin)
     row_percent = max(0,min(1, (y - ymin) / (ymax-ymin))) # incorrect scale
     return [row_percent, col_percent]

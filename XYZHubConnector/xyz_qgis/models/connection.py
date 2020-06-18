@@ -9,6 +9,9 @@
 ###############################################################################
 
 
+def mask_token(token):
+    return "{:.7}***".format(token)
+
 def parse_copyright(v):
     if not isinstance(v, list): return v
     lst = [

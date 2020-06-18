@@ -20,6 +20,19 @@ from . import get_ui_class
 from ..xyz_qgis.models import SpaceConnectionInfo
 from ..xyz_qgis.controller import make_qt_args
 
+SUPPORTED_SPACE_LICENSES = [
+    "afl-3.0", "apache-2.0", "artistic-2.0",
+    "bs1-1.0", "bsd-2-clause", "bsd-3-clause",
+    "bsd-3-clause-clear", "cc", "cc0-1.0",
+    "cc-by-4.0", "cc-by-sa-4.0", "wtfpl",
+    "ecl-2.0", "epl-1.0", "eupl-1.1",
+    "agpl-3.0", "gpl", "gpl-2.0", "gpl-3.0",
+    "lgpl", "lgpl-2.1", "lgpl-3.0", "isc",
+    "lppl-1.3c", "ms-pl", "mit", "mpl-2.0",
+    "osl-3.0", "postgresql", "ofl-1.1",
+    "ncsa", "unlicense", "zlib"
+]
+
 # EditSpaceLayerDialogUI and EditSpaceDialogUI: most of the components are same
 EditSpaceDialogUI = get_ui_class("edit_space_dialog.ui")
 # EditSpaceLayerDialogUI = get_ui_class("edit_space_layer_dialog.ui")
@@ -68,20 +81,7 @@ class SpaceInfoTokenDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
         BaseSpaceInfoDialog.__init__(self,*a)
         EditSpaceDialogUI.setupUi(self,self)
         
-        self.comboBox_license.addItems(
-            sorted([
-                "", "afl-3.0", "apache-2.0", "artistic-2.0",
-                "bs1-1.0", "bsd-2-clause", "bsd-3-clause",
-                "bsd-3-clause-clear", "cc", "cc0-1.0",
-                "cc-by-4.0", "cc-by-sa-4.0", "wtfpl",
-                "ecl-2.0", "epl-1.0", "eupl-1.1",
-                "agpl-3.0", "gpl", "gpl-2.0", "gpl-3.0",
-                "lgpl", "lgpl-2.1", "lgpl-3.0", "isc",
-                "lppl-1.3c", "ms-pl", "mit", "mpl-2.0",
-                "osl-3.0", "postgresql", "ofl-1.1",
-                "ncsa", "unlicense", "zlib"
-            ])
-        )
+        self.comboBox_license.addItems([""] + list(sorted(SUPPORTED_SPACE_LICENSES)))
         self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
         self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
         self.ui_enable_btn()

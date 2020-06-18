@@ -29,19 +29,6 @@ QGS_SPECIAL_KEYS = [QGS_ID, QGS_XYZ_ID]
 XYZ_SPECIAL_KEYS = ["@ns:com:here:xyz"]
 ALL_SPECIAL_KEYS = set(QGS_SPECIAL_KEYS).union(XYZ_SPECIAL_KEYS)
 
-def unique_field_name(name, i):
-    return name # disable
-    if name.startswith("@"):
-        return name
-    return name + ".%s"%i 
-def normal_field_name(name):
-    return name # disable
-    if name.startswith("@"):
-        return name
-    parts = name.split(".")
-    if len(parts) > 1 and parts[-1].isdigit():
-        return ".".join(parts[0:-1])
-    return name
 
 PAYLOAD_LIMIT = int(1e7) # Amazon API limit: 10485760
 URL_LIMIT = 2000 # max url length: 2000
@@ -125,25 +112,32 @@ def make_transformer(crs_src, crs_dst):
     crs_src, crs_dst = map(_crs, [crs_src, crs_dst])
     return QgsCoordinateTransform(crs_src, crs_dst, QgsProject.instance())
 
-def feature_to_xyz_json(feature, is_new=False, ignore_null=True):
+def make_valid_xyz_json_geom(geom: dict):
+    coord_str = json.dumps(geom["coordinates"])
+    coord = json.loads(coord_str.replace("null", "0.0"))
+    geom["coordinates"] = coord
+    return geom
+
+def feature_to_xyz_json(features, is_new=False, ignore_null=True):
     def _xyz_props(props):
         # for all key start with @ (internal): str to dict (disabled)
         # k = "@ns:com:here:xyz"
         new_props = dict()
         for t in props.keys():
-            # drop @ field, for consistency
+            # drop @ fields for upload
             if t.startswith("@ns:com:here:xyz"): continue
+            if t.startswith("@"): continue
             if ignore_null and props[t] is None: continue
             k = normal_field_name(t)
             new_props[k] = props[t]
 
-            # # disabled
-            # if not k.startswith("@"): continue
-            # v = new_props[k]
-            # if isinstance(v,str): # no need to handle json str in props
-            #     # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
-            #     try: new_props[k] = json.loads(v)
-            #     except json.JSONDecodeError: pass # naively handle error
+            # always handle json string in props
+            v = new_props[k]
+            if isinstance(v, str):
+                # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
+                try: new_props[k] = json.loads(v)
+                except json.JSONDecodeError: pass
+
         return new_props
     def _single_feature(feat):
         # existing feature json
@@ -169,7 +163,7 @@ def feature_to_xyz_json(feature, is_new=False, ignore_null=True):
         if geom_ is None: 
             # print_qgis(obj)
             return obj
-        obj["geometry"] = geom_
+        obj["geometry"] = make_valid_xyz_json_geom(geom_)
 
         # bbox = geom.boundingBox()
         # # print_qgis("bbox: %s"%bbox.toString())
@@ -181,11 +175,11 @@ def feature_to_xyz_json(feature, is_new=False, ignore_null=True):
         #     obj["bbox"] = [bbox.xMinimum(), bbox.yMinimum(), bbox.xMaximum(), bbox.yMaximum()]
         return obj
         
-    assert isinstance(feature,(list, tuple))
+    assert isinstance(features, (list, tuple))
     exist_feat_id = set()
     return [
         _single_feature(ft) 
-        for ft in feature
+        for ft in features
     ]
 
 # https://github.com/qgis/QGIS/blob/f3e9aaf79a9282b28a605abd0dadaab9951050c8/python/plugins/processing/algs/qgis/ui/FieldsMappingPanel.py
@@ -252,10 +246,6 @@ def fields_similarity(ref_names, orig_names, names):
     
     High score means 2 given fields are similar and should be merged
     """
-    # ref_names = ref_fields.names() # filtered special keys
-    # names = fields.names() # or renamed props
-    if has_case_different_dupe(ref_names, orig_names):
-        return 0
     ref_names = filter_props_names(ref_names)
     names = filter_props_names(names)
     same_names = set(ref_names).intersection(names)
@@ -272,17 +262,23 @@ def new_fields_gpkg():
     fields.append(
         make_field_from_type_name(QGS_ID, "Integer64"))
     return fields
+def unique_field_name(name, new_name_fmt="{name}_{idx}"):
+    if name.lower() not in QGS_SPECIAL_KEYS: return name
+    upper_idx = "".join(str(i) for i, s in enumerate(name) if s.isupper())
+    new_name = new_name_fmt.format(name=name, idx=upper_idx)
+    return new_name
+def normal_field_name(name):
+    key = "_".join(name.split("_")[0:-1])
+    if key.lower() not in QGS_SPECIAL_KEYS: return name
+    return key
 def rename_special_props(props):
     """
     rename json properties that duplicate qgis special keys
     """
-    new_name_fmt = "{old}_{upper_idx}"
-    for old in props:
-        if old.lower() not in QGS_SPECIAL_KEYS: continue
-        upper_idx = "".join(str(i) for i, s in enumerate(old) if s.isupper())
-        new_name = new_name_fmt.format(
-            old=old, upper_idx=upper_idx)
-        props[new_name] = props.pop(old, None) # rename fid in props
+    for key in props:
+        if key.lower() not in QGS_SPECIAL_KEYS: continue
+        new_name = unique_field_name(key)
+        props[new_name] = props.pop(key, None) # rename fid in props
 def _attrs(props):
     """ Convert types to string, because QgsField cannot handle
     """
@@ -412,7 +408,7 @@ def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
     if map_fields is None: map_fields = dict()
     # map_feat = dict()
     map_feat = dict(
-        (k, [list() for i in enumerate(v)])
+        (k, [list() for _ in enumerate(v)])
         for k, v in map_fields.items())
 
     for ft in lst_feat:

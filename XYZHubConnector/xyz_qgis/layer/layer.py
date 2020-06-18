@@ -389,10 +389,16 @@ class XYZLayer(object):
         options.ct = QgsCoordinateTransform(vlayer.sourceCrs(), vlayer.sourceCrs(), QgsProject.instance())
         options.layerName = db_layer_name
         options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer # update mode
-        err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        if hasattr(QgsVectorFileWriter, "writeAsVectorFormatV2"):
+            err = QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, fname, vlayer.transformContext(), options)
+        else:
+            err = QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
         if err[0] == QgsVectorFileWriter.ErrCreateDataSource : 
             options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
-            err=QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+            if hasattr(QgsVectorFileWriter, "writeAsVectorFormatV2"):
+                err = QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, fname, vlayer.transformContext(), options)
+            else:
+                err = QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
         if err[0] != QgsVectorFileWriter.NoError:
             raise Exception("%s: %s"%err)
         

@@ -39,11 +39,15 @@ def get_feat_iter(vlayer):
 def get_feat_upload_from_iter_args(feat_iter, vlayer):
     a = get_feat_upload_from_iter(feat_iter, vlayer)
     return make_qt_args(*a)
-def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid=list(), lst_xyz_id=list()):
+def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid: list = None, lst_xyz_id: list = None):
     """ get feature as geojson from iter. Also return lst_fid ordering
     optinal input: lst_fid order and lst_xyz_id mapping
     ensure same order as lst_fid
     """
+    if lst_fid is None:
+        lst_fid = list()
+    if lst_xyz_id is None:
+        lst_xyz_id = list()
     map_feat = dict(map(lambda ft: (ft.id(), ft), feat_iter))
     if len(map_feat) == 0:
         return list(), list()

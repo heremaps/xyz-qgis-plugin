@@ -25,7 +25,7 @@ from ..layer.edit_buffer import LayeredEditBuffer
 from ..network import NetManager, net_handler
 from .loop_loader import BaseLoader, BaseLoop, ParallelFun
 from ..models import SpaceConnectionInfo
-
+from ..models.connection import mask_token
 
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("layer_loader")
@@ -45,7 +45,8 @@ class InvalidXYZLayerError(Exception):
     pass
 class ManualInterrupt(Exception):
     pass
-    
+
+
 class LoadLayerController(BaseLoader):
     """ Load XYZ space into several qgis layer separated by Geometry type.
     If space is empty, no layer shall be created.
@@ -169,7 +170,7 @@ class LoadLayerController(BaseLoader):
         name = self.layer.get_name()
         msg = (
             "%s features loaded. "%(self.get_feat_cnt()) +
-            "Layer: %s. Token: %s"%(name, token)
+            "Layer: %s. Token: %s"%(name, mask_token(token))
             )
         self.signal.results.emit( make_qt_args(msg))
     ##### custom fun
@@ -369,7 +370,7 @@ class TileLayerLoader(LoadLayerController):
         msg = (
             "%s/%s tiles loaded. "%(cnt, total) +
             "%s features loaded. "%(self.feat_cnt) +
-            "Layer: %s. Token: %s"%(name, token)
+            "Layer: %s. Token: %s"%(name, mask_token(token))
             )
         self.signal.results.emit( make_qt_args(msg))
 
@@ -497,7 +498,7 @@ class UploadLayerController(BaseLoop):
         token, space_id = self.conn_info.get_xyz_space()
         title = self.conn_info.get_("title")
         tags = self.fixed_params.get("addTags","")
-        msg = "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, token)
+        msg = "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, mask_token(token))
         self.signal.results.emit( make_qt_args(msg))
 
     def _handle_error(self, err):
@@ -558,7 +559,7 @@ class EditSyncController(UploadLayerController):
         title = self.conn_info.get_("title")
         tags = self.fixed_params.get("addTags","")
         msg = "added/modified: %s. removed: %s. "%(self.feat_cnt, self.feat_cnt_del)
-        msg += "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, token) 
+        msg += "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, mask_token(token))
         self.signal.results.emit( make_qt_args(msg))
 
 

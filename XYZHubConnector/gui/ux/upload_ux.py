@@ -23,10 +23,13 @@ class UploadUX(SpaceUX):
     signal_upload_space = pyqtSignal(object)
     
     def __init__(self, *a):
+        SpaceUX.__init__(self, *a)
         # these are like abstract variables
         self.btn_upload = None
         self.lineEdit_tags_upload = None
         self.mMapLayerComboBox = None
+        self.vlayer = None
+
     def config(self, *a):
         # super().config(*a)
         self.vlayer = None

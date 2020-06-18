@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import QRegExp, pyqtSignal
+from qgis.PyQt.QtCore import pyqtSignal
 
 from ...xyz_qgis.controller import make_qt_args
 from ..space_info_dialog import EditSpaceDialog, NewSpaceDialog
@@ -25,11 +25,13 @@ class ManageUX(SpaceUX):
     signal_del_space = pyqtSignal(object)
     
     def __init__(self, *a):
+        SpaceUX.__init__(self, *a)
         # these are like abstract variables
         self.btn_new = None
         self.btn_edit = None
         self.btn_delete = None
         self.checkBox_manage = None
+
     def config(self, *a):
         # super().config(*a)
 

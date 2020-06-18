@@ -330,7 +330,7 @@ class LayeredEditBuffer(object):
             self.update_synced_feat(fid, feat)
         # disable rollback_tracker
             
-    def cb_pre_commit(self):
+    def cb_pre_commit(self, *a):
         self.update_xyz_id_added_from_cache()
         
         print_qgis("pre_commit should happen before idx")

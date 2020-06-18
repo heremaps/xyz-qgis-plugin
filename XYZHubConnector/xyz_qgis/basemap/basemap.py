@@ -13,6 +13,8 @@ import xml.etree.ElementTree as ET
 
 from qgis.core import QgsDataSourceUri, QgsProject, QgsRasterLayer
 
+OLD_BASEMAP_ENDPOINT = "api.here.com"
+NEW_BASEMAP_ENDPOINT = "ls.hereapi.com"
 
 def load_default_xml():
     d = os.path.dirname(__file__)
@@ -28,8 +30,10 @@ def load_xml(file):
     return map_meta
 def add_auth(meta, app_id, app_code, api_key):
     sep = "&" if "?" in meta["url"] else "?"
+    url = None
     if api_key:
         url = "{url}{sep}apiKey={api_key}".format(url=meta["url"], sep=sep, api_key=api_key)
+        url = url.replace(OLD_BASEMAP_ENDPOINT, NEW_BASEMAP_ENDPOINT)
     elif app_id:
         url = "{url}{sep}app_id={app_id}&app_code={app_code}".format(url=meta["url"], sep=sep, app_id=app_id, app_code=app_code)
     meta["url"] = url

@@ -1,0 +1,6 @@
+curations:
+  license_findings:
+  - path: "XYZHubConnector/gui/space_info_dialog.py"
+    reason: "CODE"
+    comment: "The scanner matches a list of licenses"
+    concluded_license: "MIT"
