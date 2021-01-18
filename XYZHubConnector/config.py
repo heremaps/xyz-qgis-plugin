@@ -25,6 +25,6 @@ USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
 TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
 LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
 
-os.makedirs(TMP_DIR,exist_ok=True)
+os.makedirs(TMP_DIR, exist_ok=True)
 
 override_config(dict(filter(lambda kv: kv[0].isupper(), locals().items())))

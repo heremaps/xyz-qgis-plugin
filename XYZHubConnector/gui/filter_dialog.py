@@ -29,7 +29,7 @@ class FilterDialog(BaseTokenDialog):
             policy.setRetainSizeWhenHidden(True)
             btn.setSizePolicy(policy)
             btn.setVisible(False)
-        
+
     def _make_delete_message(self, token_info):
         return "Do you want to Delete ?"
 

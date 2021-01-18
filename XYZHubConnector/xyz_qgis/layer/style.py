@@ -9,7 +9,7 @@
 ###############################################################################
 from .parser import QGS_XYZ_ID
 
-template_layer_qml="""
+template_layer_qml = """
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
 <qgis version="3.4.4-Madeira" styleCategories="AllStyleCategories">
   <editable>

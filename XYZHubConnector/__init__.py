@@ -17,7 +17,9 @@ __maintainer__ = "Minh Nguyen"
 __email__ = "huyminh.nguyen@here.com"
 __status__ = "Development"
 
+
 def classFactory(iface):
     """invoke plugin"""
     from .plugin import XYZHubConnector
+
     return XYZHubConnector(iface)
