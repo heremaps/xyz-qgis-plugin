@@ -1,3 +1,12 @@
+## Version 1.8.3 (2021-02-08)
+
+⚡️ IMPROVEMENTS ⚡️
+* Updates HERE Tiles
+
+🐛 FIXES 🐛
+* Handles nested properties when uploading data
+* Fixes compatibility with QGIS 3.10, 3.16
+
 ## Version 1.8.2 (2020-06-10)
 
 ✨ NEW FEATURES ✨

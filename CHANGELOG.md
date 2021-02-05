@@ -1,5 +1,18 @@
 # Changelog 
 
+## Version 1.8.3 (2021-02-08)
+
+#### Improvements
+
+* Updates HERE Tiles
+* Mask token in messages and logs
+
+#### Bug Fixes
+
+* Handles nested JSON properties when uploading data
+* Fixes compatibility with QGIS 3.10, 3.16
+* Fixes parsing z-altitude coordinates
+
 ## Version 1.8.2 (2020-06-10)
 
 #### New Features
