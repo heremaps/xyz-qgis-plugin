@@ -4,7 +4,7 @@
 
 #### Improvements
 
-* Updates HERE Tiles
+* Updates HERE Tiles service URL
 * Mask token in messages and logs
 
 #### Bug Fixes

@@ -1,7 +1,7 @@
 ## Version 1.8.3 (2021-02-08)
 
 ⚡️ IMPROVEMENTS ⚡️
-* Updates HERE Tiles
+* Updates HERE Tiles service URL
 
 🐛 FIXES 🐛
 * Handles nested properties when uploading data
