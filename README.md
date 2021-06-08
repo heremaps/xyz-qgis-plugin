@@ -1,7 +1,7 @@
 # XYZ Hub Connector - QGIS plugin
 
 
-XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin that allows users to connect and to update data directly into [HERE XYZ Hub](https://www.here.xyz/). QGIS users can easily and quickly publish their work and analysis in vectorized format to the XYZ platform. Public and personal XYZ space data can be loaded into QGIS for further analysis and visualization.
+XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [HERE Data Hub](https://www.here.xyz/) spaces and from Interactive Map Layer inside the HERE Platform (experimental) directly on a map.
 
 ![new connection](res/new-connection.png)
 
