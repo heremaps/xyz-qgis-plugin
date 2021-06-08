@@ -1,3 +1,12 @@
+## Version 1.8.4 (2021-06-08)
+
+✨ NEW FEATURES ✨
+* Supports HERE Platform Interactive Map Layers - IML (experimental)
+* Enables loading, editing data in IML (experimental)
+
+🐛 FIXES 🐛
+* Minor bug fixes
+
 ## Version 1.8.3 (2021-02-08)
 
 ⚡️ IMPROVEMENTS ⚡️

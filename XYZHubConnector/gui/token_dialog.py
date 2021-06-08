@@ -15,7 +15,6 @@ from ..xyz_qgis.models.token_model import (
 from .base_token_dialog import BaseTokenDialog
 from .ux.server_ux import ServerUX
 
-
 class TokenDialog(BaseTokenDialog, ServerUX):
     
     def __init__(self, parent=None):
@@ -41,3 +40,4 @@ class TokenDialog(BaseTokenDialog, ServerUX):
         ServerUX.cb_comboBox_server_selected(self, index)
         self.tableView.selectRow(0)
         self.ui_enable_btn()
+

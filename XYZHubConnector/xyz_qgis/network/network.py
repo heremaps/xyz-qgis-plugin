@@ -13,28 +13,54 @@ from qgis.PyQt.QtCore import QObject, QTimer
 from qgis.PyQt.QtNetwork import QNetworkAccessManager
 
 from .net_utils import make_conn_request, set_qt_property, prepare_new_space_info, make_payload, make_buffer
+from .net_handler import NetworkHandler
 
 TIMEOUT_COUNT = 1000
 
 ##########
 
 class NetManager(QObject):
+    API_CIT_URL = "https://xyz.cit.api.here.com/hub"
+    API_PRD_URL = "https://xyz.api.here.com/hub"
+    API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
+    API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
+
+    ENDPOINTS = {
+        "space_meta": "/spaces/{space_id}",
+        "statistics": "/spaces/{space_id}/statistics",
+        "count": "/spaces/{space_id}/count",
+        "edit_space": "/spaces/{space_id}",
+        "del_space": "/spaces/{space_id}",
+        "list_spaces": "/spaces",
+        "add_space": "/spaces",
+        "load_features_bbox": "/spaces/{space_id}/bbox",
+        "load_features_iterate": "/spaces/{space_id}/iterate",
+        "load_features_search": "/spaces/{space_id}/search",
+        "load_features_tile": "/spaces/{space_id}/tile/{tile_schema}/{tile_id}",
+        "add_features": "/spaces/{space_id}/features",
+        "del_features": "/spaces/{space_id}/features",
+    }
+
     def __init__(self, parent):
         super().__init__(parent)
         self.network = QNetworkAccessManager(self)
 
     #############
-    def _pre_send_request(self,conn_info, endpoint, kw_request=dict()):
-        assert(isinstance(endpoint,str))
-        request = make_conn_request(conn_info, endpoint,**kw_request)
+    def _pre_send_request(self, conn_info, endpoint_key: str, kw_path=dict(), kw_request=dict()):
+        token, space_id = conn_info.get_xyz_space()
+
+        api_url = conn_info.get_("server", self.API_URL["PRD"]).rstrip("/")
+        endpoint = self.ENDPOINTS[endpoint_key]
+        url = api_url + endpoint.format(space_id=space_id, **kw_path)
+        request = make_conn_request(url, token, **kw_request)
         return request
 
     def _post_send_request(self, reply, conn_info, kw_prop=dict()):
         set_qt_property(reply, conn_info=conn_info, **kw_prop)
 
-    def _send_request(self,conn_info, endpoint, kw_request=dict(), kw_prop=dict()):
+    def _send_request(self, conn_info, endpoint_key, kw_path=dict(), kw_request=dict(), kw_prop=dict()):
         
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info, endpoint_key, kw_path=kw_path, kw_request=kw_request)
 
         reply = self.network.get(request)
 
@@ -55,38 +81,36 @@ class NetManager(QObject):
         return self._get_space_(conn_info, "space_meta")
 
     def _get_space_(self, conn_info, reply_tag):
-        tag = "/" + reply_tag if reply_tag != "space_meta" else ""
-        
-        endpoint = "/spaces/{space_id}" + tag
+        endpoint_key = reply_tag
         kw_request = dict()
         kw_prop = dict(reply_tag=reply_tag)
-        return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
         
     def list_spaces(self, conn_info):
-        endpoint = "/spaces"
+        endpoint_key = "list_spaces"
         kw_request = dict(includeRights="true")
         kw_prop = dict(reply_tag="spaces")
-        return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
         
     def add_space(self, conn_info, space_info):
         space_info = prepare_new_space_info(space_info)
         
-        endpoint = "/spaces"
+        endpoint_key = "add_space"
         kw_request = dict(req_type="json")
         kw_prop = dict(reply_tag="add_space")
 
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info,endpoint_key,kw_request=kw_request)
         reply = self.network.post(request, make_payload(space_info))
 
         self._post_send_request(reply,conn_info, kw_prop=kw_prop)
         return reply
     def edit_space(self, conn_info, space_info):
-                
-        endpoint = "/spaces/{space_id}"
+        
+        endpoint_key = "edit_space"
         kw_request = dict(req_type="json")
         kw_prop = dict(reply_tag="edit_space")
 
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info,endpoint_key,kw_request=kw_request)
         buffer = make_buffer(space_info)
         reply = self.network.sendCustomRequest(request, b"PATCH", buffer)
         buffer.setParent(reply)
@@ -96,11 +120,11 @@ class NetManager(QObject):
         
     def del_space(self, conn_info):
         
-        endpoint = "/spaces/{space_id}"
+        endpoint_key = "del_space"
         kw_request = dict()
         kw_prop = dict(reply_tag="del_space")
 
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info,endpoint_key,kw_request=kw_request)
         reply = self.network.sendCustomRequest(request, b"DELETE")
 
         self._post_send_request(reply,conn_info, kw_prop=kw_prop)
@@ -139,34 +163,33 @@ class NetManager(QObject):
 
     def load_features_bbox(self, conn_info, bbox, **kw):
         reply_tag = "bbox"
-        endpoint = "/spaces/{space_id}/bbox"
+        endpoint_key = "load_features_bbox"
         self._process_queries(kw)
         kw_request = dict(bbox, **kw)
         kw_prop = dict(reply_tag=reply_tag, bbox=bbox, **kw)
-        return self._send_request(conn_info, endpoint, kw_request=kw_request, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
 
     def load_features_tile(self, conn_info, tile_id="0", tile_schema="quadkey", **kw):
         reply_tag = "tile"
         kw_tile = dict(tile_schema=tile_schema, tile_id=tile_id)
-        tile_url = "tile/{tile_schema}/{tile_id}".format(**kw_tile)
-        endpoint = "/spaces/{space_id}/" + tile_url
+        endpoint_key = "load_features_tile"
         self._process_queries(kw)
         kw_prop = dict(reply_tag=reply_tag, **dict(kw, **kw_tile))
-        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_path=kw_tile, kw_request=kw, kw_prop=kw_prop)
 
     def load_features_iterate(self, conn_info, **kw):
         reply_tag = kw.pop("reply_tag","iterate")
-        endpoint = "/spaces/{space_id}/iterate"
+        endpoint_key = "load_features_iterate"
         self._process_queries(kw)
         kw_prop = dict(reply_tag=reply_tag, **kw)
-        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw, kw_prop=kw_prop)
 
     def load_features_search(self, conn_info, **kw):
         reply_tag = kw.pop("reply_tag","search")
-        endpoint = "/spaces/{space_id}/search"
+        endpoint_key = "load_features_search"
         self._process_queries(kw)
         kw_prop = dict(reply_tag=reply_tag, **kw)
-        return self._send_request(conn_info, endpoint, kw_request=kw, kw_prop=kw_prop)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw, kw_prop=kw_prop)
         
     ###### feature function
     def add_features(self, conn_info, added_feat, **kw):
@@ -180,12 +203,12 @@ class NetManager(QObject):
     def _add_features(self, conn_info, added_feat, send_request, **kw):
         # POST, payload: list of FeatureCollection
         
-        endpoint = "/spaces/{space_id}/features"
+        endpoint_key = "add_features"
         if "tags" in kw: kw["addTags"] = kw["tags"]
         kw_request = dict(req_type="geo", **kw) # kw: query
         kw_prop = dict(reply_tag="add_feat")
         kw_prop.update(kw)
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info,endpoint_key,kw_request=kw_request)
         
         payload = make_payload(added_feat)
         reply = send_request(request, payload)
@@ -199,13 +222,20 @@ class NetManager(QObject):
         query_del = {"id": ",".join(str(i) for i in removed_feat)}
         kw.update(query_del)
 
-        endpoint = "/spaces/{space_id}/features"
+        endpoint_key = "del_features"
         kw_request = dict(kw) # kw: query
         kw_prop = dict(reply_tag="del_feat")
 
-        request = self._pre_send_request(conn_info,endpoint,kw_request=kw_request)
+        request = self._pre_send_request(conn_info,endpoint_key,kw_request=kw_request)
     
         reply = self.network.sendCustomRequest(request, b"DELETE")
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         return reply
+
+    #################
+    # Network Handler
+    #################
+
+    def on_received(self, reply):
+        return NetworkHandler.on_received(reply)

@@ -56,3 +56,28 @@ def archive_log_file():
         pass
 
 archive_log_file()
+
+def read_properties_file(filepath, separator="=", commentcharacter="#") -> dict:
+    """Read properties file in a dictionary.
+
+    :param filepath: path of properties file
+    :param separator: the separator of the properties file with default as '='
+    :param commentcharacter: comment character in the properties file to be ignored. Default value
+        is '#'.
+    :return: the dictionary of properties
+    :rtype: dict
+
+    Example:
+
+    >>> read_properties_file('credentials.properties')
+    """
+    credentials_properties = dict()
+    with open(filepath, "rb") as file_handler:
+        for line in file_handler:
+            decoded_line = line.decode("utf-8").strip()
+            if decoded_line and not decoded_line.startswith(commentcharacter):
+                key_value = decoded_line.split(separator)
+                key = key_value[0].strip()
+                value = separator.join(key_value[1:]).strip()
+                credentials_properties[key] = value
+    return credentials_properties

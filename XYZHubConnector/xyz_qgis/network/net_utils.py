@@ -23,11 +23,6 @@ from qgis.core import Qgis
 import platform
 from ..common import config
 
-API_CIT_URL = "https://xyz.cit.api.here.com/hub"
-API_PRD_URL = "https://xyz.api.here.com/hub"
-API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
-API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
-
 USER_AGENT = "xyz-qgis-plugin/{plugin_version} QGIS/{qgis_version} Python/{py_version} Qt/{qt_version}".format(plugin_version=config.PLUGIN_VERSION, qgis_version=Qgis.QGIS_VERSION, py_version=platform.python_version(), qt_version=QT_VERSION_STR)
 
 from ..common.signal import make_print_qgis
@@ -48,11 +43,14 @@ def decode_byte(byt):
     return byt, txt, obj
 def _make_headers(token, **params):
     h = {
-        "Authorization": "Bearer %s"% token,
         "Accept" : "*/*",
         "Accept-Encoding": "gzip",
         "User-Agent": USER_AGENT
     }
+    if token:
+        h.update({
+            "Authorization": "Bearer %s"% token,
+        })
     h.update(params)
     return h
 def make_request(url, token, **header):
@@ -103,7 +101,7 @@ HEADER_EXTRA_MAP = dict(
     json={"Content-Type": "application/json"},
     gzip={"Accept-Encoding": "gzip"}
 )
-def make_conn_request(conn_info, endpoint, req_type="normal", **kw):
+def make_conn_request(url, token, req_type="normal", **kw):
     """Make request from conn_info (token,space_id,api_url, auth,etc.) 
     :param: req_type: type of request:
         "normal": normal
@@ -112,11 +110,8 @@ def make_conn_request(conn_info, endpoint, req_type="normal", **kw):
         "json"
 
     """
-    token, space_id = conn_info.get_xyz_space()
-    api_url = conn_info.get_("server", API_URL["PRD"]).rstrip("/")
-    url = api_url + endpoint.format(space_id=space_id)
     url = make_query_url(url, **kw)
-    header = HEADER_EXTRA_MAP.get(req_type,dict())
+    header = HEADER_EXTRA_MAP.get(req_type, dict())
     return make_request(url, token, **header)
 
 ##########################################

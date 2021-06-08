@@ -17,34 +17,44 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 
 GroupedData = Mapping[str, List[Mapping]]
 
+
 class UsedToken():
     def __init__(self):
         self.invalid_idx = -1
         self.used_token_idx = self.invalid_idx
         self._is_used_token_changed = False
+
     def set_invalid_token_idx(self, invalid_idx):
         self.invalid_idx = invalid_idx
         self.reset_used_token_idx()
+
     def get_invalid_token_idx(self):
         return self.invalid_idx
+
     def set_used_token_idx(self, idx):
         self.used_token_idx = idx
         self._is_used_token_changed = False
+
     def get_used_token_idx(self):
         return self.used_token_idx
+
     def reset_used_token_idx(self):
         self.used_token_idx = self.invalid_idx
         self._is_used_token_changed = True
+
     def is_used_token_idx(self, idx):
         return (
-            idx != self.get_invalid_token_idx()
-            and idx == self.get_used_token_idx()
+                idx != self.get_invalid_token_idx()
+                and idx == self.get_used_token_idx()
         )
+
     def modify_token_idx(self, idx):
         flag = idx == self.get_used_token_idx()
         self._is_used_token_changed = self._is_used_token_changed or flag
+
     def is_used_token_modified(self):
         return self._is_used_token_changed
+
 
 def make_config_parser():
     """ ConfigParser for managing token/server
@@ -53,10 +63,11 @@ def make_config_parser():
     parser.optionxform = str
     return parser
 
+
 class EditableItemModel(QStandardItemModel):
     INFO_KEYS = []
     TOKEN_KEY = ""
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.cached_data = list()
@@ -70,14 +81,17 @@ class EditableItemModel(QStandardItemModel):
     def get_data(self, row):
         return dict(
             [k, self.get_text(row, col)]
-            for col, k in enumerate(self.INFO_KEYS)
+            for col, k in enumerate(self.get_info_keys())
         )
+
+    def get_info_keys(self):
+        return self.INFO_KEYS
 
     def get_submitted_data(self):
         return list(self.cfg)
 
     def items_from_data(self, data: dict):
-        return [data.get(k,"") for k in self.INFO_KEYS]
+        return [data.get(k, "") for k in self.get_info_keys()]
 
     def refresh_model(self):
         self._refresh_model()
@@ -86,18 +100,24 @@ class EditableItemModel(QStandardItemModel):
         self._submit_cache()
 
     def _config_callback(self):
-        try: self.rowsInserted.disconnect()
-        except TypeError: pass
-        try: self.rowsAboutToBeRemoved.disconnect()
-        except TypeError: pass
+        try:
+            self.rowsInserted.disconnect()
+        except TypeError:
+            pass
+        try:
+            self.rowsAboutToBeRemoved.disconnect()
+        except TypeError:
+            pass
 
         self.rowsInserted.connect(self._cb_item_inserted)
 
         # persistent remove (uncomment next line)
         self.rowsAboutToBeRemoved.connect(self._cb_item_removed)
 
-        try: self.itemChanged.disconnect()
-        except TypeError: pass
+        try:
+            self.itemChanged.disconnect()
+        except TypeError:
+            pass
         self.dataChanged.connect(self._cb_item_changed)
 
     def _submit_cache(self):
@@ -106,11 +126,11 @@ class EditableItemModel(QStandardItemModel):
     def _refresh_model(self):
         self.cached_data = list()
         self.clear()
-        
-        self.setHorizontalHeaderLabels(self.INFO_KEYS)
+
+        self.setHorizontalHeaderLabels(self.get_info_keys())
         it = self.invisibleRootItem()
         # it.appendRow(QStandardItem())
-        
+
         for data in self._iter_data():
             it.appendRow([QStandardItem(t) for t in self.items_from_data(data)])
 
@@ -134,7 +154,7 @@ class EditableItemModel(QStandardItemModel):
         """ check for valid single selection (no text input)
         """
         return i0 == i1
-        
+
     def is_protected_data(self, row):
         return False
 
@@ -143,23 +163,23 @@ class EditableItemModel(QStandardItemModel):
         for data in self.cfg:
             if not self._validate_data(data): continue
             yield data
-    
+
     def _validate_data(self, data):
         return data and data.get(self.TOKEN_KEY)
+
 
 class GroupEditableItemModel(EditableItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.cfg: GroupedData = dict()
         self.group_key = ""
-        
+
     def from_dict(self, data: GroupedData):
         self.cfg = {
             k: list(filter(self._validate_data, lst))
             for k, lst in data.items()
         }
-        
-        
+
     def to_dict(self) -> GroupedData:
         return dict(self.cfg)
 
@@ -182,14 +202,32 @@ class GroupEditableItemModel(EditableItemModel):
             if not self._validate_data(data): continue
             yield data
 
+
+class TokenInfoSerializer:
+
+    def __init__(self, serialize_keys=("value", "name"), delim=","):
+        self.serialize_keys = serialize_keys
+        self.delim = delim
+
+    def deserialize(self, line):
+        infos = line.split(self.delim, maxsplit=len(self.serialize_keys) - 1)
+        return dict(zip(self.serialize_keys, (i.strip().rstrip(self.delim) for i in infos)))
+
+    def serialize(self, token_info):
+        lst_txt = [token_info.get(k, "").strip() for k in self.serialize_keys]
+        return self.delim.join(lst_txt)
+
+
 class ConfigParserMixin():
-    SERIALIZE_KEYS = ("value","name")
+    SERIALIZE_KEYS = ("value", "name")
     DELIM = ","
-    def __init__(self, ini, cfg: configparser.ConfigParser, serialize_keys=("value","name"), delim=","):
+
+    def __init__(self, ini, cfg: configparser.ConfigParser, serialize_keys=("value", "name"), delim=","):
         self.ini = ini
         self.cfg = cfg
         self.SERIALIZE_KEYS = serialize_keys
         self.DELIM = delim
+        self.DEFAULT_SERIALIZER = TokenInfoSerializer(serialize_keys, delim)
 
     def set_ini(self, ini):
         self.ini = ini
@@ -223,16 +261,19 @@ class ConfigParserMixin():
         with open(self.ini, "w") as f:
             self.cfg.write(f)
 
-    def deserialize(self, line):
-        infos = line.split(self.DELIM,maxsplit=1)
-        return dict(zip(self.SERIALIZE_KEYS, map(str.strip, infos)))
+    def deserialize(self, line, serializer: TokenInfoSerializer = None):
+        if not serializer:
+            serializer = self.DEFAULT_SERIALIZER
+        return serializer.deserialize(line)
 
-    def serialize_data(self, token_info):
-        lst_txt = [token_info.get(k,"").strip() for k in self.SERIALIZE_KEYS]
-        return self.DELIM.join(lst_txt)
+    def serialize_data(self, token_info, serializer: TokenInfoSerializer = None):
+        if not serializer:
+            serializer = self.DEFAULT_SERIALIZER
+        return serializer.serialize(token_info)
+
 
 class WritableItemModel(GroupEditableItemModel):
-    SERIALIZE_KEYS = ("value","name")
+    SERIALIZE_KEYS = ("value", "name")
 
     # load_ini - load_from_file
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
@@ -256,12 +297,14 @@ class WritableItemModel(GroupEditableItemModel):
     def submit_cache(self):
         self.write_to_file()
 
+
 class TokenModel(WritableItemModel, UsedToken):
     """ Grouped Token Model, Cached changes and write to file at the end
     """
-    INFO_KEYS = ["name","token"]
-    SERIALIZE_KEYS = ["token","name"]
+    INFO_KEYS = ["name", "token"]
+    SERIALIZE_KEYS = ["token", "name"]
     TOKEN_KEY = "token"
+
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
         super().__init__(ini, parser, parent)
         UsedToken.__init__(self)
@@ -292,8 +335,8 @@ class TokenModel(WritableItemModel, UsedToken):
 
 
 class ServerModel(WritableItemModel, UsedToken):
-    INFO_KEYS = ["name","server"]
-    SERIALIZE_KEYS = ["server","name"]
+    INFO_KEYS = ["name", "server"]
+    SERIALIZE_KEYS = ["server", "name"]
     TOKEN_KEY = "server"
 
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
@@ -301,24 +344,23 @@ class ServerModel(WritableItemModel, UsedToken):
         UsedToken.__init__(self)
         self._set_group("servers")
         self._protected_data = set()
-        
+
     def is_protected_data(self, row):
         data = self.get_data(row)
         return data in self._protected_data
-        
+
     def set_default_servers(self, default_api_urls):
         default_servers = [dict(name="HERE Server", server=default_api_urls["PRD"])]
         self._protected_data = default_servers
         self._init_default_servers(default_servers)
 
-
     def _init_default_servers(self, server_infos: list):
         existing_server = dict()
         for idx, data in enumerate(self._iter_data()):
             existing_server.setdefault(data["server"], list()).append(idx)
-        
+
         it = self.invisibleRootItem()
-        
+
         # # remove existing default server
         # removed_idx = sorted(sum((
         #     existing_server.get(sv, list())
@@ -350,7 +392,7 @@ class ServerTokenConfig():
         model.load_from_file()
         model.set_default_servers(self.default_api_urls)
         return model
-        
+
     def get_token_model(self):
         model = TokenModel(self.ini, self.parser, self.parent)
         model.load_from_file()
@@ -367,27 +409,39 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         self.token_key = token_key
         self.named_token = named_token
         self.nonamed_token = nonamed_token
+
     def set_keys(self, keys):
         """ set header keys
         """
         self.keys = keys
         self.col_name = self.get_key_index("name")
         self.col_token = self.get_key_index(self.token_key)
+
     def get_key_index(self, key):
         return self.keys.index(key)
+
     def get_value(self, row, col, role):
         return self.sourceModel().item(row, col).data(role)
+
     def get_text(self, row, col):
         return self.sourceModel().item(row, col).text().strip()
+
     def get_token(self, row):
         it = self.sourceModel().item(row, self.col_token)
         return it.text().strip() if it else ""
+
+    def get_display_msg(self, row):
+        name = self.get_text(row, self.col_name)
+        token = self.get_text(row, self.col_token)
+        if token:
+            msg = self.named_token.format(name=name, token=token) if name else self.nonamed_token.format(token=token)
+            return msg
+        return None
+
     def data(self, index, role):
         val = super().data(index, role)
         if role == Qt.DisplayRole:
-            name = self.get_text(index.row(), self.col_name)
-            token = self.get_text(index.row(), self.col_token)
-            if token:
-                msg = self.named_token.format(name=name, token=token) if name else self.nonamed_token.format(token=token)
+            msg = self.get_display_msg(index.row())
+            if msg:
                 return QVariant(msg)
         return val

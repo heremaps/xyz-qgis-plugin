@@ -93,7 +93,7 @@ class XYZLayer(object):
 
     def _save_meta_node(self, qnode):
         qnode.setCustomProperty(QProps.LAYER_META, json.dumps(self.meta, ensure_ascii=False))
-        qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_dict(), ensure_ascii=False))
+        qnode.setCustomProperty(QProps.CONN_INFO, json.dumps(self.conn_info.to_project_dict(), ensure_ascii=False))
         qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
         self._save_params_to_node(qnode)
         
@@ -237,6 +237,8 @@ class XYZLayer(object):
         """ returns reference to existing mutable map_fields
         """
         return self.map_fields
+    def get_conn_info(self):
+        return self.conn_info
     def get_feat_cnt(self):
         cnt = 0
         for vlayer in self.iter_layer():

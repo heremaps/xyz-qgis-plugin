@@ -57,14 +57,14 @@ class UploadUX(SpaceUX):
 
         tags = strip_list_string(self.lineEdit_tags_upload.text().strip())
         kw = dict(tags=tags) if len(tags) else dict()
-
+        space_name = meta.get("title") or meta.get("name")
         dialog = ConfirmDialog("\n".join([
             "Attribute and geometry type are adjusted after data is loaded into QGIS.",
             "Uploaded data might have different geojson format than expected !\n",
             "From Layer:\t%s",
             "To Space:  \t%s",
             "Tags:      \t%s",
-            ]) % (self.vlayer.name(), meta["title"], tags),
+            ]) % (self.vlayer.name(), space_name, tags),
             title="Confirm Upload"
         )
         ret = dialog.exec_()

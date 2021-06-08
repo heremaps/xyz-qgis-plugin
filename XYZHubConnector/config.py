@@ -9,6 +9,7 @@
 ###############################################################################
 
 import os
+import sys
 
 from qgis.core import QgsApplication
 
@@ -24,7 +25,16 @@ USER_DIR = os.path.abspath(QgsApplication.qgisSettingsDirPath())
 USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
 TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
 LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
+EXTERNAL_LIB_DIR = os.path.join(PLUGIN_DIR, "external")
 
 os.makedirs(TMP_DIR,exist_ok=True)
 
 override_config(dict(filter(lambda kv: kv[0].isupper(), locals().items())))
+
+def load_external_lib():
+    if EXTERNAL_LIB_DIR not in sys.path:
+        sys.path.insert(0, EXTERNAL_LIB_DIR)
+
+def unload_external_lib():
+    if EXTERNAL_LIB_DIR in sys.path:
+        sys.path.remove(EXTERNAL_LIB_DIR)

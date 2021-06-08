@@ -11,7 +11,7 @@
 
 from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
 
-from ...xyz_qgis.models import SpaceConnectionInfo, XYZSpaceModel
+from ...xyz_qgis.models import SpaceConnectionInfo, XYZSpaceModel, API_TYPES
 from ...xyz_qgis.controller import make_qt_args
 from .token_server_ux import TokenWithServerUX
 
@@ -70,16 +70,16 @@ class SpaceUX(TokenWithServerUX):
         self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
         self.ui_valid_input()
 
-    def cb_display_spaces(self, obj, *a, **kw):
+    def cb_display_spaces(self, conn_info, obj, *a, **kw):
         # this function can be put into dialog
         # self.ui_valid_token()
-        conn_info = SpaceConnectionInfo(self.conn_info)
-        lst_id = self.ui_display_spaces(obj)
-        if lst_id is not None:
-            for space_id in lst_id:
-                conn_info = SpaceConnectionInfo(conn_info)
-                conn_info.set_(space_id=space_id)
-                self.signal_space_count.emit( make_qt_args(conn_info))
+        self.conn_info = SpaceConnectionInfo(conn_info)
+        self.ui_display_spaces(obj)
+        if obj is None: return
+        for meta in obj:
+            conn_info = SpaceConnectionInfo(self.conn_info)
+            conn_info.set_(space_id=meta.get("id"), catalog_hrn=meta.get("catalog_hrn")) # TODO: refactor
+            self.signal_space_count.emit( make_qt_args(conn_info))
     def cb_display_space_count(self, conn_info, obj):
         token, space_id = conn_info.get_xyz_space()
         if token != self.get_input_token(): return
@@ -94,11 +94,18 @@ class SpaceUX(TokenWithServerUX):
 
     def cb_comboBox_server_selected(self, index):
         super().cb_comboBox_server_selected(index)
-        self._get_space_model().reset()
+        api_type = self.token_model.get_api_type()
+        space_model = self._get_space_model()
+        if api_type == API_TYPES.PLATFORM:
+            header = space_model.FIXED_HEADER_PLATFORM
+        else:
+            header = space_model.FIXED_HEADER_DATAHUB
+        space_model.set_fixed_header(header)
+        space_model.reset()
 
     ###### UI function
     def ui_display_spaces(self, obj):
-        return self._get_space_model().set_obj(obj)
+        self._get_space_model().set_obj(obj)
 
     def ui_valid_input(self, *a):
         """ Returns true when token is succesfully connected and a space is selected

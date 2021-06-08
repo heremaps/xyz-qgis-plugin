@@ -27,20 +27,27 @@ class NameValueDialog(QDialog, TokenEditUI):
         self.lineEdit_token.textChanged.connect(self.ui_enable_btn)
         self.ui_enable_btn()
         
-    def ui_enable_btn(self):
+    def ui_enable_btn(self, *a):
         flag = all([
-            self.lineEdit_name.text().strip(),
-            self.lineEdit_token.text().strip()
+            self.get_name(),
+            self.get_value()
             ])
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
+
+    def get_value(self):
+        return self.lineEdit_token.text().strip()
+
+    def get_name(self):
+        return self.lineEdit_name.text().strip()
+
 
 class TokenInfoDialog(NameValueDialog):
     txt_value="Token"
     def get_info(self):
         d = {
-            "name": self.lineEdit_name.text(),
-            "token": self.lineEdit_token.text(),
+            "name": self.get_name(),
+            "token": self.get_value(),
         }
         return d
     def set_info(self, token_info):
@@ -48,17 +55,17 @@ class TokenInfoDialog(NameValueDialog):
         self.lineEdit_token.setText(token_info.get("token",""))
         
 class NewTokenInfoDialog(TokenInfoDialog):
-    title = "Add New XYZ Hub Token"
+    title = "Add New HERE Token"
 class EditTokenInfoDialog(TokenInfoDialog):
-    title = "Edit XYZ Hub Token"
+    title = "Edit HERE Token"
 
 
 class ServerInfoDialog(NameValueDialog):
     txt_value="Server"
     def get_info(self):
         d = {
-            "name": self.lineEdit_name.text(),
-            "server": self.lineEdit_token.text(),
+            "name": self.get_name(),
+            "server": self.get_value(),
         }
         return d
     def set_info(self, token_info):
@@ -66,7 +73,7 @@ class ServerInfoDialog(NameValueDialog):
         self.lineEdit_token.setText(token_info.get("server",""))
         
 class NewServerInfoDialog(ServerInfoDialog):
-    title = "Add New XYZ Hub Server"
+    title = "Add New HERE Server"
     
 class EditServerInfoDialog(ServerInfoDialog):
-    title = "Edit XYZ Hub Server"
+    title = "Edit HERE Server"

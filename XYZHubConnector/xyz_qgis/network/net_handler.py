@@ -9,8 +9,7 @@
 ###############################################################################
 
 
-from qgis.PyQt.QtCore import QObject
-from qgis.PyQt.QtNetwork import QNetworkRequest
+from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 
 from qgis.core import Qgis, QgsMessageLog # to be removed
 from .net_utils import decode_byte, get_qt_property
@@ -21,105 +20,181 @@ from ..models.connection import mask_token
 from ..common.signal import make_print_qgis
 print_qgis = make_print_qgis("net_handler")
 
-class NetworkError(Exception): 
-    pass
-class NetworkTimeout(Exception): 
-    pass
 
 ############# reply handler
-    
-def get_status(reply):
-    return reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-def get_reason(reply):
-    return reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+class NetworkResponse():
+    def __init__(self, reply: QNetworkReply):
+        self.reply = reply
+        self.body_qbytearray = None
+        self.body_bytes: bytes = None
+        self.body_txt: str = None
+        self.body_json: dict = None
+        self._is_body_read = False
+    def _read_body(self):
+        if not self._is_body_read:
+            self.body_qbytearray = self.reply.readAll()
+            self.body_bytes, self.body_txt, self.body_json = decode_byte(self.body_qbytearray)
+            self._is_body_read = True
+    def get_body_qbytearray(self):
+        self._read_body()
+        return self.body_qbytearray
+    def get_body_txt(self):
+        self._read_body()
+        return self.body_txt
+    def get_body_json(self):
+        self._read_body()
+        return self.body_json
+    def get_body_bytes(self):
+        self._read_body()
+        return self.body_bytes
+    def get_reply(self):
+        return self.reply
+    def get_status(self):
+        return self.reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+    def get_reason(self):
+        return self.reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+    def get_error(self):
+        return self.reply.error()
+    def get_error_string(self):
+        return self.reply.errorString()
+    def get_url(self):
+        return self.reply.request().url().toString()
+    def get_qt_property(self, keys):
+        return get_qt_property(self.reply, keys)
+    def log_status(self):
+        err = self.get_error()
+        err_str = self.get_error_string()
+        status = self.get_status()
+        reason = self.get_reason()
 
-def check_status(reply):
-    err = reply.error()
-    err_str = reply.errorString()
-    status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-    reason = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
-    
-    conn_info, reply_tag = get_qt_property(reply,["conn_info", "reply_tag"])
-    token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
-    url = reply.request().url().toString()
+        conn_info, reply_tag = self.get_qt_property(["conn_info", "reply_tag"])
+        token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
+        url = self.get_url()
 
-    if err > 0:
-        msg = "%s: %s: %s. %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, mask_token(token), space_id, url)
-        QgsMessageLog.logMessage( 
-            "Network Error! : %s"%msg, config.TAG_PLUGIN, Qgis.Warning
-        )
-    else:
-        msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, mask_token(token), space_id, url)
-        QgsMessageLog.logMessage(
-            "Network Ok! : %s"%msg, config.TAG_PLUGIN, Qgis.Success
-        )
-    return reply_tag, status, reason, err, err_str
+        if err > 0:
+            msg = "%s: %s: %s. %s. %s - %s. request: %s"%(reply_tag, status, reason, err_str, mask_token(token), space_id, url)
+            QgsMessageLog.logMessage(
+                "Network Error! : %s"%msg, config.TAG_PLUGIN, Qgis.Warning
+            )
+        else:
+            msg = "%s: %s: %s. %s - %s. request: %s"%(reply_tag, status, reason, mask_token(token), space_id, url)
+            QgsMessageLog.logMessage(
+                "Network Ok! : %s"%msg, config.TAG_PLUGIN, Qgis.Success
+            )
+        return reply_tag, status, reason, err, err_str
+    def __del__(self):
+        self.reply.deleteLater()
 
 def on_received(reply):
-    reply_tag, status, reason, err, err_str = check_status( reply)
-    url = reply.request().url().toString()
-    if err == reply.OperationCanceledError: # operation canceled
-        reason = "Timeout"
-        body = ""
-        raise NetworkTimeout(reply_tag, status, reason, body, err_str, url, reply)
-    elif err > 0:
-        raw = reply.readAll()
-        byt, body, obj = decode_byte( raw)
-        raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
-    return _onReceived( reply)
+    return NetworkHandler.on_received(reply)
+    # return iml_on_received(reply)
 
-def _onReceived(reply):
+# def iml_on_received(reply):
+#     from ..iml.network.net_handler import IMLNetworkHandler
+#     return IMLNetworkHandler.on_received(reply)
 
-    print_qgis("Receiving")
-    raw = reply.readAll()
-    byt, txt, obj = decode_byte( raw)
-    conn_info, reply_tag = get_qt_property(reply,["conn_info", "reply_tag"])
-    token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
-    limit, handle, meta = get_qt_property(reply,["limit", "handle", "meta"])
-    tile_schema, tile_id = get_qt_property(reply,["tile_schema", "tile_id"])
+class NetworkHandler():
+    @classmethod
+    def handle_error(cls, resp: NetworkResponse):
+        resp.log_status()
 
-    args = list()
-    kw = dict()
-    
-    if reply_tag == "spaces":
-        print_qgis(txt)
-        args = [obj]
-    elif reply_tag in ("tile","bbox","iterate","search"):
-        print_qgis(txt[:100])
-        print_qgis(txt[-10:])
+        reply_tag, = resp.get_qt_property(["reply_tag"])
+        err = resp.get_error()
+        err_str = resp.get_error_string()
+        status = resp.get_status()
+        reason = resp.get_reason()
+        url = resp.get_url()
 
-        print_qgis("feature count:%s"%len(obj["features"]) if "features" in obj else "no features key")
-        print_qgis(obj.keys())
+        if err == resp.get_reply().OperationCanceledError: # operation canceled
+            raise NetworkTimeout(resp)
+            # reason = "Timeout"
+            # body = ""
+            # raise NetworkTimeout(reply_tag, status, reason, body, err_str, url, reply)
+        elif err > 0:
+            body = resp.get_body_txt()
+            raise NetworkError(resp)
+            # raise NetworkError(reply_tag, status, reason, body, err_str, url, reply)
 
-        args = [obj]
-        if reply_tag == "tile":
-            kw = dict(limit=limit, tile_schema=tile_schema, tile_id=tile_id)
+    @classmethod
+    def on_received(cls, reply):
+        response = NetworkResponse(reply)
+        cls.handle_error(response)
+        return cls.on_received_impl(response)
+
+    @classmethod
+    def on_received_impl(cls, response):
+        print_qgis("Receiving")
+        raw = response.get_body_qbytearray()
+        txt = response.get_body_txt()
+        obj = response.get_body_json()
+        conn_info, reply_tag = response.get_qt_property(["conn_info", "reply_tag"])
+        token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
+        limit, handle, meta = response.get_qt_property(["limit", "handle", "meta"])
+        tile_schema, tile_id = response.get_qt_property(["tile_schema", "tile_id"])
+
+        args = list()
+        kw = dict()
+
+        if reply_tag == "spaces":
+            print_qgis(txt)
+            args = [conn_info, obj]
+        elif reply_tag in ("tile","bbox","iterate","search"):
+            print_qgis(txt[:100])
+            print_qgis(txt[-10:])
+
+            print_qgis("feature count:%s"%len(obj["features"]) if "features" in obj else "no features key")
+            print_qgis(obj.keys())
+
+            args = [obj]
+            if reply_tag == "tile":
+                kw = dict(limit=limit, tile_schema=tile_schema, tile_id=tile_id)
+            else:
+                kw = dict(handle=handle, limit=limit)
+
+        elif reply_tag in ("init_layer",):
+            print_qgis(txt[:100])
+            print_qgis(txt[-10:])
+            args = [txt, raw]
+        elif reply_tag in ("add_feat","del_feat","sync_feat"):
+            #TODO: error handling, rollback layer, but already commited  !?!
+            if len(txt):
+                print_qgis("updated features")
+            else:
+                print_qgis("added/removed features")
+            print_qgis(txt[:100])
+
+            args = [obj]
+        elif reply_tag in ("add_space","edit_space","del_space"):
+
+            args = [conn_info, obj]
+        elif reply_tag in ("statistics", "count", "space_meta"):
+            print_qgis(txt[:100])
+            args = [conn_info, obj]
         else:
-            kw = dict(handle=handle, limit=limit)
-            
-    elif reply_tag in ("init_layer"):
-        print_qgis(txt[:100])
-        print_qgis(txt[-10:])
-        args = [txt, raw]
-    elif reply_tag in ("add_feat","del_feat","sync_feat"):
-        #TODO: error handling, rollback layer, but already commited  !?!
-        if len(txt):
-            print_qgis("updated features")
-        else:
-            print_qgis("added/removed features")
-        print_qgis(txt[:100])
-        
-        args = [obj]
-    elif reply_tag in ("add_space","edit_space","del_space"):
+            print_qgis(reply_tag)
+            print_qgis(txt[:100])
+        # response.get_reply().deleteLater() #
+        # return make_qt_args(reply_tag, *args, **kw)
+        return make_qt_args(*args, **kw)
 
-        args = [conn_info, obj]
-    elif reply_tag in ("statistics", "count","space_meta"):
-        print_qgis(txt[:100])
-        args = [conn_info, obj]
-    else:
-        print_qgis(reply_tag)
-        print_qgis(txt[:100])
-    reply.deleteLater()
-    # return make_qt_args(reply_tag, *args, **kw)
-    return make_qt_args(*args, **kw)
-    
+############# Exception
+
+class NetworkError(Exception):
+    def __init__(self, response: NetworkResponse):
+        super().__init__(response)
+        self.response = response
+    def get_response(self):
+        return self.response
+    def get_reason(self):
+        return self.get_response().get_reason()
+    def get_body(self):
+        return self.get_response().get_body()
+
+class NetworkTimeout(NetworkError):
+    def get_reason(self):
+        return "Timeout"
+    # def get_body(self):
+    #     return ""
+
+class NetworkUnauthorized(NetworkError):
+    pass

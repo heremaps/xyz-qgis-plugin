@@ -17,5 +17,8 @@ fi
 # headless mode
 export QT_QPA_PLATFORM=offscreen
 
+CURRENT_DIR="$(pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd "$SCRIPT_DIR"
 echo Running $py_args..
-"$PYTHON_QGIS" $py_args
+"$PYTHON_QGIS" $py_args; cd "$CURRENT_DIR"

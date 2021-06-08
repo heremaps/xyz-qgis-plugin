@@ -12,7 +12,7 @@
 from qgis.testing import start_app, unittest 
 from test.utils import (BaseTestAsync, BaseTestWorkerAsync, 
     add_test_fn_params, get_token_space, 
-    get_conn_info, AllErrorsDuringTest)
+    get_conn_info, AllErrorsDuringTest, slow_test)
 from XYZHubConnector.xyz_qgis.network import NetManager
 from XYZHubConnector.xyz_qgis.loader import LoadLayerController, ManualInterrupt
 
@@ -81,14 +81,8 @@ class TestLoader(BaseTestWorkerAsync):
 
 
     def _test_load_large_layer(self, n_parallel, **kw_start):
-        # load connection
-        # conn_info_src = get_conn_info("playground-building")
-        # meta = dict(id="unittest",title="unittest", description="playground-building")
-        # feat_cnt = 137798
-        # self._test_load_layer(conn_info_src, meta, feat_cnt, n_parallel, limit)
 
-
-        conn_info_src = get_conn_info("uom_world_carto")
+        conn_info_src = get_conn_info("here_world_carto")
         meta = dict(id="unittest",title="unittest", description="uom_world_carto")
         feat_cnt = 50573442 
         kw = dict(kw_start)
@@ -97,14 +91,16 @@ class TestLoader(BaseTestWorkerAsync):
             ))
         self.subtest_load_layer(conn_info_src, meta, feat_cnt, n_parallel, **kw)
 
-        # # taking very long
-        # conn_info_src = get_conn_info("uom_world_road")
-        # meta = dict(id="unittest",title="unittest", description="uom_world_road")
-        # feat_cnt = None
-        # self._test_load_layer(conn_info_src, meta, feat_cnt, n_parallel, limit)
+        conn_info_src = get_conn_info("here_world_road")
+        meta = dict(id="unittest",title="unittest", description="uom_world_road")
+        feat_cnt = None
+        kw = dict(kw_start)
+        kw.update(dict(
+            max_feat=2000
+            ))
+        self.subtest_load_layer(conn_info_src, meta, feat_cnt, n_parallel, **kw)
 
-
-        conn_info_src = get_conn_info("uom_world_building")
+        conn_info_src = get_conn_info("here_world_building")
         meta = dict(id="unittest",title="unittest", description="uom_world_building")
         feat_cnt = None
         kw = dict(kw_start)

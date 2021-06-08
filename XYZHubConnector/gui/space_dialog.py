@@ -20,7 +20,7 @@ from .ux import ConnectUX, ManageUX, SpaceUX, UploadUX, BasemapUX, SettingUX
 ConnDialogUI = get_ui_class('tab_dialog.ui')
 
 class MainDialog(QDialog, ConnDialogUI, ConnectUX, ManageUX, UploadUX, SpaceUX, BasemapUX, SettingUX):
-    title="XYZ Hub Connection"
+    title="HERE Connection"
     def __init__(self, parent=None):
         """init window"""
         QDialog.__init__(self, parent)

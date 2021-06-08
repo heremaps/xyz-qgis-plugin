@@ -89,7 +89,7 @@ class LoopController(ChainController):
     Base controller that execute repeatedly chain of async functions. 
     LoopController should be extended and reimplemented
     """
-    def config_fun(self, lst_fun: QtArgs) -> None:
+    def config_fun(self, lst_fun: List[AsyncFun]) -> None:
         """
         Args:
             lst_fun: list of AsyncFun

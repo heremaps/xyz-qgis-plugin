@@ -10,15 +10,9 @@
 
 import json
 
-# from qgis.core import QgsSettings
-from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog, QInputDialog
 
 from . import get_ui_class
-# from .token_ux import TokenUX
-
-from ..xyz_qgis.models import SpaceConnectionInfo
-from ..xyz_qgis.controller import make_qt_args
 
 SUPPORTED_SPACE_LICENSES = [
     "afl-3.0", "apache-2.0", "artistic-2.0",
@@ -33,87 +27,92 @@ SUPPORTED_SPACE_LICENSES = [
     "ncsa", "unlicense", "zlib"
 ]
 
-# EditSpaceLayerDialogUI and EditSpaceDialogUI: most of the components are same
 EditSpaceDialogUI = get_ui_class("edit_space_dialog.ui")
-# EditSpaceLayerDialogUI = get_ui_class("edit_space_layer_dialog.ui")
+
+
 def copyright_from_txt(txt):
     return [dict(label=txt)] if len(txt) > 0 else None
 
-def txt_from_copyright(obj):
-    return obj[0].get("label") if isinstance(obj,list) and len(obj) > 0 else ""
 
-class BaseSpaceInfoDialog(QDialog):
-    title = "XYZ"
+def txt_from_copyright(obj):
+    return obj[0].get("label") if isinstance(obj, list) and len(obj) > 0 else ""
+
+
+class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
+    title = "Dialog"
 
     def __init__(self, parent=None):
-        """init window"""
         QDialog.__init__(self, parent)
+        self._config_ui()
         self._space_info = dict()
+
+    def _config_ui(self):
+        EditSpaceDialogUI.setupUi(self, self)
         self.setWindowTitle(self.title)
+        self.comboBox_license.addItems([""] + list(sorted(SUPPORTED_SPACE_LICENSES)))
+
+        self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
+        self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
+        self.btn_advanced.clicked.connect(self.update_space_info_json)
+        self.ui_enable_btn()
 
     def get_space_info(self):
-        d = {
-            "title": self.lineEdit_title.text(),
-            "id": self.lineEdit_id.text(),
-            "description": self.plainTextEdit_description.toPlainText(),
-            "shared": self.checkBox_shared.isChecked(),
-            "license": self.comboBox_license.currentText() or None,
-            "copyright": copyright_from_txt(self.lineEdit_copyright.text()),
-            }
-        return d if not self._space_info else self._space_info
+        d = self._get_space_info()
+        return dict(self._space_info, **d)
 
     def set_space_info(self, space_info):
         self._space_info = dict(space_info)
-        key_fun={
+        fn_mapping = self._get_space_info_fn_mapping()
+        for k, fn in fn_mapping.items():
+            fn(space_info.get(k,""))
+
+    def update_space_info_json(self):
+        space_info = self.get_space_info()
+        txt = json.dumps(space_info, indent=4)
+        txt, ok = QInputDialog.getMultiLineText(
+            None, "Edit Space JSON",
+            "Only change this if you know what you're doing",
+            txt
+        )
+        if ok:
+            space_info = json.loads(txt)
+            self.set_space_info(space_info)
+
+    def ui_enable_btn(self):
+        flag = self._is_valid_input()
+        self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
+        self.buttonBox.button(self.buttonBox.Ok).clearFocus()
+
+    def _is_valid_input(self):
+        return all([
+            self.lineEdit_title.text().strip(),
+            self.plainTextEdit_description.toPlainText()
+        ])
+
+    def _get_space_info(self):
+        return {
+            "title": self.lineEdit_title.text().strip(),
+            "id": self.lineEdit_id.text().strip(),
+            "description": self.plainTextEdit_description.toPlainText().strip(),
+            "shared": self.checkBox_shared.isChecked(),
+            "license": self.comboBox_license.currentText() or None,
+            "copyright": copyright_from_txt(self.lineEdit_copyright.text().strip()),
+        }
+
+    def _get_space_info_fn_mapping(self):
+        return {
             "title": self.lineEdit_title.setText,
             "id": self.lineEdit_id.setText,
             "description": self.plainTextEdit_description.setPlainText,
             "shared": self.checkBox_shared.setChecked,
             "license": self.comboBox_license.setCurrentText,
-            "copyright": lambda obj: self.lineEdit_copyright.setText( txt_from_copyright(obj)),
-            }
-        for k, fun in key_fun.items():
-            if k in space_info:
-                fun(space_info[k])
+            "copyright": lambda obj: self.lineEdit_copyright.setText(txt_from_copyright(obj)),
+        }
 
-class SpaceInfoTokenDialog(BaseSpaceInfoDialog, EditSpaceDialogUI):
-    def __init__(self, *a):
-        BaseSpaceInfoDialog.__init__(self,*a)
-        EditSpaceDialogUI.setupUi(self,self)
-        
-        self.comboBox_license.addItems([""] + list(sorted(SUPPORTED_SPACE_LICENSES)))
-        self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
-        self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
-        self.ui_enable_btn()
-    def ui_enable_btn(self):
-        flag = all([
-            self.lineEdit_title.text().strip(),
-            self.plainTextEdit_description.toPlainText()
-            ])
-        self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
-        self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
-        
-class SpaceInfoDialog(SpaceInfoTokenDialog):
-    def __init__(self, parent=None):
-        SpaceInfoTokenDialog.__init__(self, parent)
-        
-        self.groupBox_token.setVisible(False) # no groupBox_token
-        self.groupBox_tags.setVisible(False) # no groupBox_tags
-
-        self.btn_advanced.clicked.connect(self.update_space_info_json)
-        self.setWindowTitle(self.title)
-        
-    def update_space_info_json(self):
-        # dialog = PlainTextDialog("")
-        space_info = self.get_space_info()
-        txt = json.dumps(space_info,indent=4)
-        txt, ok = QInputDialog.getMultiLineText(None, "Edit Space JSON", "Only change this if you know what you're doing", txt)
-        if ok:
-            space_info = json.loads(txt)
-            self.set_space_info(space_info)
-        
 class NewSpaceDialog(SpaceInfoDialog):
-    title = "Create New XYZ Hub Space"
+    title = "Create New HERE Space"
+
+
 class EditSpaceDialog(SpaceInfoDialog):
-    title = "Edit XYZ Hub Space"
+    title = "Edit HERE Space"

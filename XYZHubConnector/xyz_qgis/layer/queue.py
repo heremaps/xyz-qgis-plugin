@@ -51,7 +51,10 @@ class SimpleQueue(ParamsQueue):
         self._queue = list(lst)
         self.idx = 0
 
-        
+class SimpleRetryQueue(SimpleQueue):
+    def retry_params(self):
+        self.idx -= 1 
+
 class CachedQueue(ParamsQueue):
     """ Params queue that cache params based on key, 
     ie. params with cached value for the given key will not be returned

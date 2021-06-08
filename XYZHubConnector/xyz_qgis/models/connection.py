@@ -21,6 +21,7 @@ def parse_copyright(v):
     return lst
 
 class SpaceConnectionInfo(object):
+    EXCLUDE_PROJECT_KEYS = ["here_client_secret"]
     def __init__(self, conn_info=None):
         if conn_info is None:
             self.obj = dict()
@@ -49,9 +50,13 @@ class SpaceConnectionInfo(object):
     def get_xyz_space(self):
         return self.get_("token"), self.get_("space_id")
     def get_(self, key, default=None):
-        if key is dict: return self.obj
+        if key is dict: return dict(self.obj)
         else: return self.obj.get(key, default)
     def set_server(self, server):
         self.set_(server=server)
         # sv = server.strip().upper()
         # self.server = sv
+    def to_project_dict(self):
+        d = self.to_dict()
+        for ex in self.EXCLUDE_PROJECT_KEYS: d.pop(ex, "")
+        return d

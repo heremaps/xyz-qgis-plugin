@@ -29,7 +29,7 @@ class LoadSpaceController(ChainController):
     def _config(self, network):
         self.config_fun([
             NetworkFun( network.list_spaces), 
-            WorkerFun( net_handler.on_received, self.pool),
+            WorkerFun( network.on_received, self.pool),
         ])
 
 class StatSpaceController(ChainController):
@@ -48,7 +48,7 @@ class StatSpaceController(ChainController):
         self.config_fun([
             NetworkFun( network.get_statistics), 
             # NetworkFun( network.get_count), 
-            WorkerFun( net_handler.on_received, self.pool),
+            WorkerFun( network.on_received, self.pool),
         ])
 
 class DeleteSpaceController(ChainController):
@@ -66,7 +66,7 @@ class DeleteSpaceController(ChainController):
     def _config(self, network):
         self.config_fun([
             NetworkFun( network.del_space), 
-            WorkerFun( net_handler.on_received, self.pool),
+            WorkerFun( network.on_received, self.pool),
         ])
 
 class EditSpaceController(ChainController):
@@ -85,7 +85,7 @@ class EditSpaceController(ChainController):
     def _config(self, network):
         self.config_fun([
             NetworkFun( network.edit_space), 
-            WorkerFun( net_handler.on_received, self.pool),
+            WorkerFun( network.on_received, self.pool),
         ])
 
 class CreateSpaceController(ChainController):
@@ -103,5 +103,5 @@ class CreateSpaceController(ChainController):
     def _config(self, network):
         self.config_fun([
             NetworkFun( network.add_space), 
-            WorkerFun( net_handler.on_received, self.pool),
+            WorkerFun( network.on_received, self.pool),
         ])

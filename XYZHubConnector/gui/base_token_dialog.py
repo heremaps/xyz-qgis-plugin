@@ -18,13 +18,14 @@ from .util_dialog import ConfirmDialog
 
 TokenUI = get_ui_class('token_dialog.ui')
 
+
 class BaseTokenDialog(QDialog, TokenUI):
-    title = "Setup XYZ Hub Token"
+    title = "Setup HERE Token"
     message = ""
     token_info_keys = ["name", "token"]
     NewInfoDialog = NewTokenInfoDialog
     EditInfoDialog = EditTokenInfoDialog
-    
+
     def __init__(self, parent=None):
         """init window"""
         QDialog.__init__(self, parent)
@@ -41,7 +42,7 @@ class BaseTokenDialog(QDialog, TokenUI):
         self.token_model.set_server(server)
 
     def config(self, token_model: TokenModel):
-        self._config( token_model)
+        self._config(token_model)
         self.tableView.setSelectionMode(self.tableView.SingleSelection)
         self.tableView.setSelectionBehavior(self.tableView.SelectRows)
         self.tableView.setEditTriggers(self.tableView.NoEditTriggers)
@@ -50,18 +51,18 @@ class BaseTokenDialog(QDialog, TokenUI):
         # dont use pressed, activated
         self.tableView.selectionModel().currentChanged.connect(self.ui_enable_btn)
 
-        self.btn_add.clicked.connect( self.ui_add_token)
-        self.btn_edit.clicked.connect( self.ui_edit_token)
-        self.btn_delete.clicked.connect( self.ui_delete_token)
-        self.btn_up.clicked.connect( self.ui_move_token_up)
-        self.btn_down.clicked.connect( self.ui_move_token_down)
+        self.btn_add.clicked.connect(self.ui_add_token)
+        self.btn_edit.clicked.connect(self.ui_edit_token)
+        self.btn_delete.clicked.connect(self.ui_delete_token)
+        self.btn_up.clicked.connect(self.ui_move_token_up)
+        self.btn_down.clicked.connect(self.ui_move_token_down)
 
     def _config(self, token_model: TokenModel):
         self.token_model = token_model
-        self.tableView.setModel( token_model)
-        self.accepted.connect( token_model.submit_cache)
-        self.rejected.connect( token_model.refresh_model)
-        
+        self.tableView.setModel(token_model)
+        self.accepted.connect(token_model.submit_cache)
+        self.rejected.connect(token_model.refresh_model)
+
     def exec_(self):
         # self.tableView.resizeColumnsToContents()
         # self.tableView.clearFocus()
@@ -72,14 +73,19 @@ class BaseTokenDialog(QDialog, TokenUI):
             idx = self.tableView.currentIndex().row()
             if idx >= 0: self.set_active_idx(idx)
         return ret
-    def set_active_idx(self,idx):
+
+    def set_active_idx(self, idx):
         self._active_idx = idx
+
     def get_active_idx(self):
         return self._active_idx
+
     def set_active_server_idx(self, idx):
         self._active_server_idx = idx
+
     def get_active_server_idx(self):
         return self._active_server_idx
+
     def ui_enable_btn(self, *a):
         index = self.tableView.currentIndex()
         flag = index.isValid()
@@ -90,7 +96,7 @@ class BaseTokenDialog(QDialog, TokenUI):
             self.btn_down,
         ]:
             btn.setEnabled(flag)
-        
+
         if self.token_model.is_protected_data(index.row()):
             for btn in [
                 self.btn_edit,
@@ -103,16 +109,16 @@ class BaseTokenDialog(QDialog, TokenUI):
         return self.token_model.get_data(row)
 
     def _make_delete_message(self, token_info):
-        token_msg = ", ".join("%s: %s"%it for it in token_info.items())
-        return "Do you want to Delete token (%s)?"%token_msg
-        
+        token_msg = ", ".join("%s: %s" % it for it in token_info.items())
+        return "Do you want to Delete token (%s)?" % token_msg
+
     def ui_add_token(self):
         dialog = self.NewInfoDialog(self)
         ret = dialog.exec_()
         if ret != dialog.Accepted: return
 
         self._add_token(dialog.get_info())
-        self.tableView.selectRow(self.token_model.rowCount()-1)
+        self.tableView.selectRow(self.token_model.rowCount() - 1)
 
     def ui_edit_token(self):
         dialog = self.EditInfoDialog(self)
@@ -138,8 +144,8 @@ class BaseTokenDialog(QDialog, TokenUI):
         it = self.token_model.takeRow(row)
         self.modify_token_idx(row)
 
-        row = max(row-1,0)
-        self.token_model.insertRow(max(row,0), it)
+        row = max(row - 1, 0)
+        self.token_model.insertRow(max(row, 0), it)
         self.tableView.selectRow(row)
         self.modify_token_idx(row)
 
@@ -148,7 +154,7 @@ class BaseTokenDialog(QDialog, TokenUI):
         it = self.token_model.takeRow(row)
         self.modify_token_idx(row)
 
-        row = min(row+1, self.token_model.rowCount())
+        row = min(row + 1, self.token_model.rowCount())
         self.token_model.insertRow(row, it)
         self.tableView.selectRow(row)
         self.modify_token_idx(row)
@@ -158,15 +164,15 @@ class BaseTokenDialog(QDialog, TokenUI):
             QStandardItem(token_info[k])
             for k in self.token_info_keys
         ])
-    
+
     def _edit_token(self, token_info: dict):
         row = self.tableView.currentIndex().row()
-        self.token_model.insertRow(row+1, [
+        self.token_model.insertRow(row + 1, [
             QStandardItem(token_info[k])
             for k in self.token_info_keys
         ])
         it = self.token_model.takeRow(row)
         self.modify_token_idx(row)
-        
+
     def modify_token_idx(self, idx):
         self.token_model.modify_token_idx(idx)

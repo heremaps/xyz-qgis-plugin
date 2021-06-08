@@ -43,13 +43,70 @@ Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can
 
 + `Manage` : create new space, edit or delete existing space.
 
-+ `Map Tile` : create HERE Map Tile layer given valid `app_id` and `app_code`.
++ `Map Tile` : create HERE Map Tile layer given valid `app_id` and `app_code`. Alternatively, `api_key` can also be used.
 
 + `Settings` :
 
     + `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
 
 When the user make some edits to the loaded layer, the changes can be pushed to XYZ Hub via the button `Push changes` in the toolbar.
+
+### Configure Server connection
+
+Official Data Hub server is predefined under name "HERE Server" and thus is not required to be created. The following steps are only required for self-hosted Data Hub server and HERE Platform server.
+
+1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+2. Press the "Setup" button and then "Setup Server" to add a new server. 
+3. Click "Add" to add a new server.
+4. Select server type
+
+    a. Server Type: DATAHUB, enter "HERE self-hosted Data Hub" as the name and your Data Hub URL as the server.
+
+    b. Server Type: PLATFORM, enter "HERE platform" as the name and PLATFORM_PRD as the server.
+
+5. Click on OK to save the new server and OK again to return to the setup screen.
+
+### Add HERE Data Hub Token
+
+1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+2. Press the "Setup", ensure that "HERE Server" is selected in the Server drop down.
+3. Click on "Add" to add your token.
+4. Enter a name and corresponding Data Hub token created previously according to the guide https://www.here.xyz/api/getting-token/
+5. Click on OK to save the token, and close the connection window
+
+### Add HERE Platform Credentials
+
+1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+2. Press the "Setup", ensure that "HERE Platform" is selected in the Server drop down.
+3. Click on "Add" to add your credentials.
+4. Enter "My credentials" as the name.
+5. Select a credentials.properties containing your HERE Platform app credentials (typically location in `{USER_HOME}/.here/credentials.properties`
+6. If you don't already have an app or a credentials.properties file then you can follow "platform credentials" section of this guide to create one: https://developer.here.com/documentation/java-scala-dev/dev_guide/topics/get-credentials.html
+7. Grant access on the data to the HERE platform app so that it can access your project.  Do so by following this guide: https://developer.here.com/documentation/identity-access-management/dev_guide/topics/manage-projects.html
+8. Click on OK to save the credentials, and close the connection window
+
+### Load Your Data from HERE Platform
+
+1. Create a new project (Project → New), save the project
+2. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer"
+3. From the Connection drop down, select the "HERE Platform" connection and the "My Credentials" credentials that you created previously
+4. Click "Connect"
+5. Select one or more Interactive Map Layer entries
+6. Click on "Load" to load the data
+
+**Note:** You can also add background map tiles via the "Map Tile" tab. You will need to use your credentials from https://developer.here.com/.
+
+## Testing
+
+Test with unittest
+```
+./runTest.sh -m unittest test
+```
+
+Test with pytest-xdist
+```
+./runTest.sh -m pytest -n 2 test
+```
 
 ## Development
 
@@ -61,6 +118,6 @@ e.g. `sh makeBuild.sh 1.5.5`.
 [CHANGELOG](CHANGELOG.md)
 ## License
 
-Copyright (C) 2020 HERE Europe B.V.
+Copyright (C) 2019-2021 HERE Europe B.V.
 
 This project is licensed under the MIT license - see the [LICENSE](./LICENSE) file in the root of this project for license details.

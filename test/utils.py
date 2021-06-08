@@ -42,7 +42,7 @@ class BaseTestAsync(unittest.TestCase):
     def tearDownClass(cls):
         pass
         # cls.app.quit() # useless
-        # stop_app() # NameError: name 'QGISAPP' is not defined
+        # stop_app() # NameError: name "QGISAPP" is not defined
         # cls.app.exitQgis() # crash when run unittest (all module)
         # del cls.app 
     def setUp(self):
@@ -195,6 +195,10 @@ def add_test_fn_params(cls,fn_name,*a,**kw):
         new_name = "test_" + new_name
     setattr(cls, new_name, _fn)
 
+# decorator
+def slow_test(func):
+    return unittest.skipIf(os.environ.get("SKIP_SLOW_TESTS"), "Skipping slow test")(func)
+
 
 def flatten(lst):
     def _flatten(lst):
@@ -301,7 +305,7 @@ def get_token_space(key):
 def get_conn_info(key):
     conn_info = SpaceConnectionInfo()
     token, space_id, server = get_token_space(key)
-    server = net_utils.API_URL.get(server,server)
+    server = NetManager.API_URL.get(server, server)
     if token is not None:
         conn_info.set_(token=token,space_id=space_id,server=server)
     return conn_info

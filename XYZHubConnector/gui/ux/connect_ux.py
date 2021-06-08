@@ -45,10 +45,10 @@ class ConnectUX(SpaceUX):
     def config(self, *a):
         # super().config(*a)
 
-        self.ui_enable_tile_mode(False)
+        self.ui_enable_static_mode(False)
 
         self.btn_load.clicked.connect(self.start_connect)
-        self.radioButton_loading_single.toggled.connect(self.ui_enable_tile_mode)
+        self.radioButton_loading_single.toggled.connect(self.ui_enable_static_mode)
 
         self.filter_dialog = FilterDialog(self)
         self.filter_dialog.config(FilterModel())
@@ -143,13 +143,13 @@ class ConnectUX(SpaceUX):
         for btn in [self.btn_load]:
             btn.setEnabled(flag)
             btn.clearFocus()
-    def ui_enable_tile_mode(self, flag):
+    def ui_enable_static_mode(self, flag):
         self.lineEdit_max_feat.setEnabled( flag)
 
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
-        self.conn_info.set_(**meta, token=self.get_input_token(), server=self.get_input_server())
+        self.conn_info.set_(**meta)
         conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
 

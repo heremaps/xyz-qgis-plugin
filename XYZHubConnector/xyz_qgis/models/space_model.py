@@ -51,6 +51,8 @@ class QJsonTableModel(QAbstractTableModel):
             self.header = self._header + ([k for k in obj[0].keys() if k not in self._header])
         self.obj = obj
         self.endResetModel()
+    def get_obj(self):
+        return self.obj
 
     #### Set/Get space selection (not needed anymore)
     def set_selected_index(self, index):
@@ -71,7 +73,9 @@ class QJsonTableModel(QAbstractTableModel):
 class XYZSpaceModel(QJsonTableModel):
     HEADER_CNT = "feat_cnt"
     HEADER_RIGHT = "rights"
-    _header = ["id", "title","description",HEADER_CNT,"license","copyright", HEADER_RIGHT,"owner"]
+    FIXED_HEADER_DATAHUB = ["id", "title", "description",HEADER_CNT,"license","copyright", HEADER_RIGHT,"owner"]
+    FIXED_HEADER_PLATFORM = ["catalog", "id", "name", "description", "summary"]
+    _header = FIXED_HEADER_DATAHUB
     def __init__(self, parent):
         super().__init__(parent)
         self.space_map = dict() # space_id <-> index
@@ -93,9 +97,11 @@ class XYZSpaceModel(QJsonTableModel):
         self.space_map = dict()
         for i, s in enumerate(obj):
             self.space_map[s["id"]] = i
-        return self.space_map.keys()
         
     def set_token(self, token):
         self.token = token
     def get_token(self):
         return self.token
+
+    def set_fixed_header(self, headers):
+        self._header = list(headers)

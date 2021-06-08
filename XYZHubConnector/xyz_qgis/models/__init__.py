@@ -11,4 +11,4 @@
 from .connection import SpaceConnectionInfo, parse_copyright
 from .space_model import XYZSpaceModel
 from .token_model import TokenModel, ServerModel, ServerTokenConfig
-from .loading_mode import LOADING_MODES, InvalidLoadingMode
+from .loading_mode import LOADING_MODES, InvalidLoadingMode, API_TYPES, InvalidApiType

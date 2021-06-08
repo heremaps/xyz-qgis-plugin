@@ -9,15 +9,16 @@
 ###############################################################################
 
 from .base_token_dialog import BaseTokenDialog
+from .iml.iml_token_info_dialog import NewIMLServerInfoDialog, EditIMLServerInfoDialog
 from .token_info_dialog import EditServerInfoDialog, NewServerInfoDialog
 
 
 class ServerDialog(BaseTokenDialog):
-    title = "Setup XYZ Hub Server"
+    title = "Setup HERE Server"
     message = ""
     token_info_keys = ["name", "server"]
-    NewInfoDialog = NewServerInfoDialog
-    EditInfoDialog = EditServerInfoDialog
+    NewInfoDialog = NewIMLServerInfoDialog
+    EditInfoDialog = EditIMLServerInfoDialog
     
     def _make_delete_message(self, token_info):
         token_msg = ", ".join("%s: %s"%it for it in token_info.items())

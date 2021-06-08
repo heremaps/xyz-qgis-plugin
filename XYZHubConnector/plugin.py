@@ -8,40 +8,38 @@
 #
 ###############################################################################
 
-import logging
-import time
-
 from qgis.core import QgsProject, QgsApplication
 from qgis.core import Qgis, QgsMessageLog
 
 from qgis.PyQt.QtCore import QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QToolButton, QWidgetAction
-from qgis.PyQt.QtWidgets import QProgressBar, QSizePolicy
+from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QProgressBar
 
 from . import config
 
 from .gui.space_dialog import MainDialog
-from .gui.space_info_dialog import EditSpaceDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
 
-from .xyz_qgis.models import SpaceConnectionInfo, TokenModel, ServerModel, ServerTokenConfig, LOADING_MODES, InvalidLoadingMode
-from .xyz_qgis.controller import ChainController
-from .xyz_qgis.controller import AsyncFun, parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
+from .xyz_qgis.models import LOADING_MODES, InvalidLoadingMode, API_TYPES, InvalidApiType, ServerTokenConfig
+from .xyz_qgis.controller import parse_qt_args, make_qt_args, make_fun_args, parse_exception_obj, ChainInterrupt
 from .xyz_qgis.loader import (LoaderManager, EmptyXYZSpaceError, ManualInterrupt, InitUploadLayerController, 
     LoadLayerController, UploadLayerController, EditSyncController,
     TileLayerLoader, LiveTileLayerLoader)
 
 from .xyz_qgis.layer.edit_buffer import EditBuffer
 from .xyz_qgis.layer import bbox_utils
-from .xyz_qgis.layer.layer_utils import (is_xyz_supported_layer, get_feat_upload_from_iter,
-    is_xyz_supported_node, get_customProperty_str, iter_group_node, updated_xyz_node)
+from .xyz_qgis.layer.layer_utils import (is_xyz_supported_layer, is_xyz_supported_node, get_customProperty_str, iter_group_node, updated_xyz_node)
     
 from .xyz_qgis.layer import tile_utils, XYZLayer
 from .xyz_qgis.layer.layer_props import QProps
 
 
-from .xyz_qgis.network import NetManager, net_handler, net_utils
+from .xyz_qgis.network import NetManager, net_handler
+from .xyz_qgis.iml.loader import IMLTileLayerLoader, IMLLiveTileLayerLoader, IMLUploadLayerController, \
+    IMLInitUploadLayerController, IMLLayerLoader
+from .xyz_qgis.iml.network import IMLNetworkManager
+from .xyz_qgis.iml.models import IMLServerTokenConfig
 
 from .xyz_qgis import basemap
 from .xyz_qgis.common.secret import Secret
@@ -49,6 +47,7 @@ from .xyz_qgis.basemap.auth_manager import AuthManager
 
 from .xyz_qgis.common.error import format_traceback
 from .xyz_qgis.common import utils
+from .xyz_qgis.common.here_credentials import HereCredentials, update_conn_info_from_here_credentials
 
 PLUGIN_NAME = config.PLUGIN_NAME
 
@@ -81,13 +80,13 @@ class XYZHubConnector(object):
 
         icon = QIcon("%s/%s" % (config.PLUGIN_DIR,"images/xyz.png"))
         icon_bbox = QIcon("%s/%s" % (config.PLUGIN_DIR,"images/bbox.svg"))
-        self.action_connect = QAction(icon, "XYZ Hub Connection", parent)
+        self.action_connect = QAction(icon, "Add HERE Layer", parent)
         self.action_connect.setWhatsThis(
             QCoreApplication.translate(PLUGIN_NAME, "WhatsThis message" ))
         self.action_connect.setStatusTip(
             QCoreApplication.translate(PLUGIN_NAME, "status tip message" ))
 
-        self.action_sync_edit = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/sync.svg")), "Push changes to XYZ Hub", parent)
+        self.action_sync_edit = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/sync.svg")), "Push changes to server", parent)
 
         self.action_clear_cache = QAction( QIcon("%s/%s" % (config.PLUGIN_DIR,"images/delete.svg")), "Clear cache", parent)
 
@@ -172,16 +171,20 @@ class XYZHubConnector(object):
         self.auth_manager = AuthManager(config.USER_PLUGIN_DIR +"/auth.ini")
         
         self.network = NetManager(parent)
-        
+        self.network_iml = IMLNetworkManager(parent)
+        self.api_network_mapping = {
+            API_TYPES.DATAHUB: self.network,
+            API_TYPES.PLATFORM: self.network_iml,
+        }
         self.con_man = LoaderManager()
-        self.con_man.config(self.network)
+        self.con_man.config(self.api_network_mapping)
         self.edit_buffer = EditBuffer()
         ######## data flow
         # self.conn_info = SpaceConnectionInfo()
         
         ######## token      
-        self.token_config = ServerTokenConfig(config.USER_PLUGIN_DIR +"/token.ini", parent)
-        self.token_config.set_default_servers(net_utils.API_URL)
+        self.token_config = IMLServerTokenConfig(config.USER_PLUGIN_DIR +"/token.ini", parent)
+        self.token_config.set_default_servers(NetManager.API_URL)
         self.token_model = self.token_config.get_token_model()
         self.server_model = self.token_config.get_server_model()
 
@@ -241,6 +244,8 @@ class XYZHubConnector(object):
         if LOG_TO_FILE:
             QgsApplication.messageLog().messageReceived.disconnect(cb_log_qgis)
         # close_file_logger()
+
+        config.unload_external_lib()
         pass
     def unload(self):
         """teardown"""
@@ -333,7 +338,17 @@ class XYZHubConnector(object):
         self.show_err_msgbar(err)
 
     def show_net_err(self, err):
-        reply_tag, status, reason, body, err_str, url = err.args[:6]
+        # reply_tag, status, reason, body, err_str, url = err.args[:6]
+        
+        err_str = err.get_response().get_error_string()
+        status = err.get_response().get_status()
+        url = err.get_response().get_url()
+        reason = err.get_reason()
+        body = err.get_response().get_body_txt()
+
+        conn_info, reply_tag = err.get_response().get_qt_property(["conn_info", "reply_tag"])
+        token, space_id = conn_info.get_xyz_space() if not conn_info is None else (None, None)
+
         if reply_tag in ["count", "statistics"]: # too many error
             # msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
             return 1
@@ -402,28 +417,29 @@ class XYZHubConnector(object):
         auth = self.auth_manager.get_auth()
         dialog.config_basemap(self.map_basemap_meta, auth)
 
-        con = self.con_man.make_con("create")
-        con.signal.finished.connect( dialog.btn_use.clicked.emit ) # can be optimized !!
-        con.signal.error.connect( self.cb_handle_error_msg )
+        for api_type in API_TYPES:
+            con = self.con_man.make_con("create", api_type)
+            con.signal.finished.connect( dialog.btn_use.clicked.emit ) # can be optimized !!
+            con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.make_con("list")
-        con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
-        con.signal.error.connect( self.cb_handle_error_msg )
-        con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
-        con.signal.finished.connect( dialog.cb_enable_token_ui )
-        con.signal.finished.connect( dialog.ui_valid_token )
+            con = self.con_man.make_con("list", api_type)
+            con.signal.results.connect( make_fun_args(dialog.cb_display_spaces) )
+            con.signal.error.connect( self.cb_handle_error_msg )
+            con.signal.error.connect( lambda e: dialog.cb_enable_token_ui() )
+            con.signal.finished.connect( dialog.cb_enable_token_ui )
+            con.signal.finished.connect( dialog.ui_valid_token )
 
-        con = self.con_man.make_con("edit")
-        con.signal.finished.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
+            con = self.con_man.make_con("edit", api_type)
+            con.signal.finished.connect( dialog.btn_use.clicked.emit )
+            con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.make_con("delete")
-        con.signal.results.connect( dialog.btn_use.clicked.emit )
-        con.signal.error.connect( self.cb_handle_error_msg )
+            con = self.con_man.make_con("delete", api_type)
+            con.signal.results.connect( dialog.btn_use.clicked.emit )
+            con.signal.error.connect( self.cb_handle_error_msg )
 
-        con = self.con_man.make_con("stat")
-        con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
-        con.signal.error.connect( self.cb_handle_error_msg )
+            con = self.con_man.make_con("stat", api_type)
+            con.signal.results.connect( make_fun_args(dialog.cb_display_space_count) )
+            con.signal.error.connect( self.cb_handle_error_msg )
 
         ############ clear cache btn
         dialog.signal_clear_cache.connect( self.open_clear_cache_dialog)
@@ -438,48 +454,63 @@ class XYZHubConnector(object):
 
         ############ Use Token btn        
         dialog.signal_use_token.connect( lambda a: self.con_man.finish_fast())
-        dialog.signal_use_token.connect(self.start_use_token)
+        dialog.signal_use_token.connect(lambda a: self.start_use_token(a, dialog))
 
         ############ get count        
         dialog.signal_space_count.connect(self.start_count_feat, Qt.QueuedConnection) # queued -> non-blocking ui
 
         ############ connect btn        
-        # dialog.signal_space_connect.connect(self.start_load_layer)
+        # dialog.signal_space_connect.connect(self.start_load_layer) #unused
         dialog.signal_space_connect.connect(self.start_loading)
-        dialog.signal_space_tile.connect(self.start_load_tile)
+        # dialog.signal_space_tile.connect(self.start_load_tile) #unused
 
         ############ upload btn        
         dialog.signal_upload_space.connect(self.start_upload_space)
         
         return dialog
     def start_new_space(self, args):
-        con = self.con_man.get_con("create")
+        api_type = self.get_api_type_from_qt_args(args)
+        con = self.con_man.get_con("create", api_type)
         con.start_args(args)
 
     def start_edit_space(self, args):
-        con = self.con_man.get_con("edit")
+        api_type = self.get_api_type_from_qt_args(args)
+        con = self.con_man.get_con("edit", api_type)
         con.start_args(args)
 
     def start_delete_space(self, args):
-        con = self.con_man.get_con("delete")
+        api_type = self.get_api_type_from_qt_args(args)
+        con = self.con_man.get_con("delete", api_type)
         con.start_args(args)
 
-    def start_use_token(self, args):
-        con = self.con_man.get_con("list")
+    def start_use_token(self, args, dialog):
+        # iml
+        conn_info = self.get_conn_info_from_qt_args(args)
+        try:
+            self.load_here_credentials(conn_info)
+        except Exception as e:
+            self.show_err_msgbar(e)
+            dialog.cb_enable_token_ui()
+            return
+        # common
+        api_type = self.get_api_type_from_qt_args(args)
+        con = self.con_man.get_con("list", api_type)
         con.start_args(args)
 
     def start_count_feat(self, args):
-        con = self.con_man.get_con("stat")
+        api_type = self.get_api_type_from_qt_args(args)
+        con = self.con_man.get_con("stat", api_type)
         con.start_args(args)
 
     def start_upload_space(self, args):
-        con_upload = UploadLayerController(self.network, n_parallel=2)
+        api_type = self.get_api_type_from_qt_args(args)
+        con_upload = self.make_loader_from_api_type("upload", api_type, n_parallel=2)
         self.con_man.add_on_demand_controller(con_upload)
         # con_upload.signal.finished.connect( self.make_cb_success("Uploading finish") )
         con_upload.signal.results.connect( self.make_cb_success_args("Uploading finish", dt=4))
         con_upload.signal.error.connect( self.cb_handle_error_msg )
-        
-        con = InitUploadLayerController(self.network)
+
+        con = self.make_loader_from_api_type("init_upload", api_type) #TODO: refactor it into upload controller
         self.con_man.add_on_demand_controller(con)
 
         con.signal.results.connect( con_upload.start_args)
@@ -487,12 +518,14 @@ class XYZHubConnector(object):
 
         con.start_args(args)
     def start_load_layer(self, args):
+        #unused
         # create new con
         # config
         # run
         
-        ############ connect btn        
-        con_load = LoadLayerController(self.network, n_parallel=1)
+        ############ connect btn
+        api_type = self.get_api_type_from_qt_args(args)
+        con_load = self.make_loader_from_api_type("load", api_type, n_parallel=1)
         self.con_man.add_on_demand_controller(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Loading finish") )
         con_load.signal.results.connect( self.make_cb_success_args("Loading finish") )
@@ -503,6 +536,7 @@ class XYZHubConnector(object):
 
         # con.signal.results.connect( self.layer_man.add_args) # IMPORTANT
     def start_load_tile(self, args):
+        #unused
         # rect = (-180,-90,180,90)
         # level = 0
         a, kw = parse_qt_args(args)
@@ -510,7 +544,8 @@ class XYZHubConnector(object):
         # kw["limit"] = 100
 
         ############ connect btn        
-        con_load = TileLayerLoader(self.network, n_parallel=1)
+        api_type = self.get_api_type_from_qt_args(args)
+        con_load = self.make_loader_from_api_type("tile", api_type, n_parallel=1)
         self.con_man.add_persistent_loader(con_load)
         # con_load.signal.finished.connect( self.make_cb_success("Tiles loaded") )
         con_load.signal.results.connect( self.make_cb_success_args("Tiles loaded", dt=2) )
@@ -534,8 +569,9 @@ class XYZHubConnector(object):
     def start_loading(self, args):
         a, kw = parse_qt_args(args)
         loading_mode = kw.get("loading_mode")
+        conn_info = self.get_conn_info_from_qt_args(args)
         try:
-            con_load = self.make_loader_from_mode(loading_mode)
+            con_load = self.make_loader_from_mode(loading_mode, conn_info)
         except Exception as e:
             self.show_err_msgbar(e)
             return
@@ -670,19 +706,51 @@ class XYZHubConnector(object):
         #     # truncate all feature 
         #     con.restart()
 
-    def make_loader_from_mode(self, loading_mode, layer=None):
+    def make_loader_from_api_type(self, key, api_type, **kw_loader):
+        network = self.api_network_mapping[api_type]
+        cls_mapping = {
+            API_TYPES.DATAHUB: {
+                "edit": EditSyncController,
+                "upload": UploadLayerController,
+                "init_upload": InitUploadLayerController,
+                "load": LoadLayerController, # unused
+                "tile": TileLayerLoader, # unused
+            },
+            API_TYPES.PLATFORM: {
+                "edit": EditSyncController,
+                "upload": IMLUploadLayerController,
+                "init_upload": IMLInitUploadLayerController,
+            }
+        }
+        C = cls_mapping[api_type][key]
+        con = C(network, **kw_loader)
+        return con
+
+    def make_loader_from_mode(self, loading_mode, conn_info, layer=None):
         if loading_mode not in LOADING_MODES:
             raise InvalidLoadingMode(loading_mode)
-        option = dict(zip(LOADING_MODES, [
-            (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
-            (LoadLayerController, self.con_man.add_static_loader, self.make_cb_success_args("Loading finish", dt=3))
-            ])).get(loading_mode)
-        if not option:
-            return
+        option = None
 
+        api_type = self.get_api_type_from_conn_info(conn_info)
+
+        if api_type == API_TYPES.DATAHUB:
+            option = dict(zip(LOADING_MODES, [
+                (LiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+                (TileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+                (LoadLayerController, self.con_man.add_static_loader, self.make_cb_success_args("Loading finish", dt=3))
+                ])).get(loading_mode)
+        elif api_type == API_TYPES.PLATFORM:
+            option = dict(zip(LOADING_MODES, [
+                (IMLLiveTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+                (IMLTileLayerLoader, self.con_man.add_persistent_loader, self.make_cb_success_args("Tiles loaded", dt=2)),
+                (IMLLayerLoader, self.con_man.add_static_loader, self.make_cb_success_args("Loading finish", dt=3))
+                ])).get(loading_mode)
+        else:
+            raise InvalidApiType(api_type)
+
+        network = self.api_network_mapping[api_type]
         loader_class, fn_register, cb_success_args = option
-        con_load = loader_class(self.network, n_parallel=1, layer=layer)
+        con_load = loader_class(network, n_parallel=1, layer=layer)
         con_load.signal.results.connect( cb_success_args)
         con_load.signal.error.connect( self.cb_handle_error_msg )
 
@@ -714,8 +782,9 @@ class XYZHubConnector(object):
                 "loading disabled " +
                 "(layer: %s)" % layer.get_name())
             return
-            
-        return self.make_loader_from_mode(loading_mode, layer=layer)
+        conn_info = layer.get_conn_info()
+        self.load_here_credentials(conn_info)
+        return self.make_loader_from_mode(loading_mode, conn_info, layer=layer)
 
     def init_all_layer_loader(self):
         cnt = 0
@@ -785,11 +854,11 @@ class XYZHubConnector(object):
 
         lst_added_feat, removed_ids = layer_buffer.get_sync_feat()
         conn_info = layer_buffer.get_conn_info()
-
+        api_type = self.get_api_type_from_conn_info(conn_info)
         # print_qgis("lst_added_feat: ",lst_added_feat)
         # print_qgis("removed_feat: ", removed_ids)
 
-        con = EditSyncController(self.network)
+        con = self.make_loader_from_api_type("edit", api_type)
         self.con_man.add_on_demand_controller(con)
         con.signal.finished.connect( layer_buffer.sync_complete)
         con.signal.results.connect( self.make_cb_success_args("Sync edit finish") )
@@ -798,4 +867,45 @@ class XYZHubConnector(object):
         con.start(conn_info, layer_buffer, lst_added_feat, removed_ids)
 
         # self.edit_buffer.reset(vlayer.id())
-    
+
+    ###############
+    # Utils
+    ###############
+
+    def get_conn_info_from_qt_args(self, args):
+        a, kw = parse_qt_args(args)
+        conn_info = a[0]
+        return conn_info
+
+    def get_api_type_from_qt_args(self, args):
+        conn_info = self.get_conn_info_from_qt_args(args)
+        return self.get_api_type_from_conn_info(conn_info)
+
+    def get_api_type_from_conn_info(self, conn_info):
+        credentials_file = conn_info.get_("here_credentials")
+        if credentials_file:
+            api_type = API_TYPES.PLATFORM
+        else:
+            api_type = API_TYPES.DATAHUB
+        return api_type
+
+    def load_here_credentials(self, conn_info):
+        credentials_file = conn_info.get_("here_credentials")
+        credentials = None
+        if credentials_file:
+            credentials = HereCredentials.from_file(credentials_file)
+            update_conn_info_from_here_credentials(conn_info, credentials)
+        return credentials
+
+    def load_here_credentials_args_with_dialog(self, args, dialog):
+        conn_info = self.get_conn_info_from_qt_args(args)
+        api_type = self.get_api_type_from_conn_info(conn_info)
+        credentials = None
+        try:
+            credentials = self.load_here_credentials(conn_info)
+        except Exception as e:
+            self.show_err_msgbar(e)
+            dialog.cb_enable_token_ui()
+        return credentials, api_type
+
+
