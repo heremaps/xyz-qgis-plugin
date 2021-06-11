@@ -20,12 +20,13 @@ from .ux import strip_list_string
 
 
 class ConnectUX(SpaceUX):
-    """ Dialog that contains table view of spaces + Token UX + Param input + Connect UX
-    """
-    title="XYZ Hub Connection"
+    """Dialog that contains table view of spaces + Token UX + Param input + Connect UX"""
+
+    title = "XYZ Hub Connection"
     signal_space_connect = pyqtSignal(object)
-    signal_space_bbox = pyqtSignal(object) # deprecate
+    signal_space_bbox = pyqtSignal(object)  # deprecate
     signal_space_tile = pyqtSignal(object)
+
     def __init__(self, *a):
         SpaceUX.__init__(self, *a)
         # these are like abstract variables
@@ -53,8 +54,8 @@ class ConnectUX(SpaceUX):
         self.filter_dialog = FilterDialog(self)
         self.filter_dialog.config(FilterModel())
         self.btn_filter.clicked.connect(self.open_filter_dialog)
-        
-        self._set_mask_number(self.lineEdit_limit,0,100000)
+
+        self._set_mask_number(self.lineEdit_limit, 0, 100000)
         self._set_mask_number(self.lineEdit_max_feat)
         self._set_mask_tags(self.lineEdit_tags)
 
@@ -67,46 +68,64 @@ class ConnectUX(SpaceUX):
             ("maximal", 100),
             ("balanced", 80),
         ]:
-            self.comboBox_similarity_threshold.addItem(text,data)
+            self.comboBox_similarity_threshold.addItem(text, data)
         self.comboBox_similarity_threshold.setCurrentIndex(2)
-        self.comboBox_similarity_threshold.setToolTip("\n".join([
-            "Features with similar set of properties are merged into the same layer",
-            " + balanced: features with similar properties are merged, balanced layers",
-            " + maximal: no feature is merged, as many layers",
-            " + single: all features are merged into 1 layer",
-        ]))
+        self.comboBox_similarity_threshold.setToolTip(
+            "\n".join(
+                [
+                    "Features with similar set of properties are merged into the same layer",
+                    " + balanced: features with similar properties are merged, balanced layers",
+                    " + maximal: no feature is merged, as many layers",
+                    " + single: all features are merged into 1 layer",
+                ]
+            )
+        )
 
-        for btn, msg in zip([
-            self.radioButton_loading_live, 
-            self.radioButton_loading_tile, 
-            self.radioButton_loading_single
-        ],[
-            "\n".join([
-                "Live loading: Interactively refresh features in the current canvas. ",
-                "Useful for visualizing and editing dynamic dataset"
-            ]),
-            "\n".join([
-                "Incremental loading: Interactively refresh and cache features in the current canvas. ",
-                "Useful for visualizing and exploring large dataset"
-            ]),
-            "\n".join([
-                "Static loading: Load and cache all features in space. ",
-                "Useful for importing and analysis of static dataset"
-            ]),
-        ]):
+        for btn, msg in zip(
+            [
+                self.radioButton_loading_live,
+                self.radioButton_loading_tile,
+                self.radioButton_loading_single,
+            ],
+            [
+                "\n".join(
+                    [
+                        "Live loading: Interactively refresh features in the current canvas. ",
+                        "Useful for visualizing and editing dynamic dataset",
+                    ]
+                ),
+                "\n".join(
+                    [
+                        "Incremental loading: Interactively refresh and cache features in the "
+                        "current canvas. ",
+                        "Useful for visualizing and exploring large dataset",
+                    ]
+                ),
+                "\n".join(
+                    [
+                        "Static loading: Load and cache all features in space. ",
+                        "Useful for importing and analysis of static dataset",
+                    ]
+                ),
+            ],
+        ):
             btn.setToolTip(msg)
         self.lineEdit_max_feat.setToolTip("Maximum limit of features to be loaded")
         self.lineEdit_limit.setToolTip("Number of features loaded per request")
         self.lineEdit_selection.setToolTip("Load only the selected properties of features")
         self.btn_filter.setToolTip("Query features by property")
-            
+
     def _get_loading_mode(self) -> str:
-        for mode, box in zip(LOADING_MODES, [
-            self.radioButton_loading_live, 
-            self.radioButton_loading_tile, 
-            self.radioButton_loading_single
-        ]):
-            if box.isChecked(): return mode
+        for mode, box in zip(
+            LOADING_MODES,
+            [
+                self.radioButton_loading_live,
+                self.radioButton_loading_tile,
+                self.radioButton_loading_single,
+            ],
+        ):
+            if box.isChecked():
+                return mode
         return LOADING_MODES[0]
 
     def _get_filters(self):
@@ -116,7 +135,16 @@ class ConnectUX(SpaceUX):
         return filters or None
 
     def get_params(self):
-        key = ["tags","limit","max_feat","similarity_threshold","similarity_mode","loading_mode","selection","filters"]
+        key = [
+            "tags",
+            "limit",
+            "max_feat",
+            "similarity_threshold",
+            "similarity_mode",
+            "loading_mode",
+            "selection",
+            "filters",
+        ]
         val = [
             strip_list_string(self.lineEdit_tags.text().strip()),
             self.lineEdit_limit.text().strip(),
@@ -125,34 +153,37 @@ class ConnectUX(SpaceUX):
             self.comboBox_similarity_threshold.currentText(),
             self._get_loading_mode(),
             strip_list_string(self.lineEdit_selection.text().strip()),
-            self._get_filters()
+            self._get_filters(),
         ]
         fn = [str, int, int, int, str, str, str, list]
-        return dict( 
-            (k, f(v)) for k,v,f in zip(key,val,fn) if v is not None and len(str(v)) > 0
-            )
-    def _set_mask_number(self, lineEdit, lo:int=0, hi:int=None):
+        return dict(
+            (k, f(v)) for k, v, f in zip(key, val, fn) if v is not None and len(str(v)) > 0
+        )
+
+    def _set_mask_number(self, lineEdit, lo: int = 0, hi: int = None):
         validator = QIntValidator()
         validator.setBottom(lo)
-        if hi: validator.setTop(hi)
+        if hi:
+            validator.setTop(hi)
         lineEdit.setValidator(validator)
+
     def _set_mask_tags(self, lineEdit):
         lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
-        
+
     def ui_enable_ok_button(self, flag):
         for btn in [self.btn_load]:
             btn.setEnabled(flag)
             btn.clearFocus()
+
     def ui_enable_static_mode(self, flag):
-        self.lineEdit_max_feat.setEnabled( flag)
+        self.lineEdit_max_feat.setEnabled(flag)
 
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
         self.conn_info.set_(**meta)
         conn_info = SpaceConnectionInfo(self.conn_info)
-        self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
-
+        self.signal_space_connect.emit(make_qt_args(conn_info, meta, **self.get_params()))
 
         # if self.radioButton_loading_live.isChecked():
         #     self.signal_space_tile.emit( make_qt_args(conn_info, meta, **self.get_params() ))

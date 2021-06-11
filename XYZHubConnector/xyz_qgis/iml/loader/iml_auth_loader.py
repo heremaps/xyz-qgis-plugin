@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import QThreadPool
 from ...common.error import parse_exception_obj
 from ...network import net_handler
 from ...iml.network import IMLNetworkManager
-from ...loader.layer_loader import (AsyncFun)
+from ...loader.layer_loader import AsyncFun
 
 from ...controller import ChainController, NetworkFun, WorkerFun, ChainInterrupt
 
@@ -32,11 +32,13 @@ class IMLAuthLoader(ChainController):
         super().start(conn_info)
 
     def _config(self, network: IMLNetworkManager):
-        self.config_fun([
-            NetworkFun(network.auth),
-            WorkerFun(network.on_received, self.pool),
-            AsyncFun(self._update_auth),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.auth),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_auth),
+            ]
+        )
 
     def _update_auth(self, conn_info, obj):
         token = obj.get("accessToken")
@@ -50,17 +52,19 @@ class IMLAuthLoader(ChainController):
 
 class IMLProjectScopedAuthLoader(IMLAuthLoader):
     def _config(self, network: IMLNetworkManager):
-        self.config_fun([
-            NetworkFun(network.auth),
-            WorkerFun(network.on_received, self.pool),
-            AsyncFun(self._update_auth),
-            NetworkFun(network.get_project),
-            WorkerFun(network.on_received, self.pool),
-            AsyncFun(self._update_project_hrn),
-            NetworkFun(network.auth_project),
-            WorkerFun(network.on_received, self.pool),
-            AsyncFun(self._update_auth),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.auth),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_auth),
+                NetworkFun(network.get_project),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_project_hrn),
+                NetworkFun(network.auth_project),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_auth),
+            ]
+        )
 
     def _update_project_hrn(self, conn_info, project):
         if project:
@@ -76,7 +80,7 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
             e = chain_err
         if isinstance(e, net_handler.NetworkError):
             status = e.get_response().get_status()
-            reply_tag, = e.get_response().get_qt_property(["reply_tag"])
+            (reply_tag,) = e.get_response().get_qt_property(["reply_tag"])
             if reply_tag == "get_project" and status in (404,):
                 # if no home project found, finish safely
                 # iml somehow works with no-scoped token in this case

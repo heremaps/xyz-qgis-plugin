@@ -14,15 +14,13 @@ from ...models.token_model import TokenModel, ServerTokenConfig, ComboBoxProxyMo
 
 
 def get_api_type(server):
-    return (API_TYPES.PLATFORM
-            if server.lower().startswith(API_TYPES.PLATFORM)
-            else API_TYPES.DATAHUB
-            )
+    return (
+        API_TYPES.PLATFORM if server.lower().startswith(API_TYPES.PLATFORM) else API_TYPES.DATAHUB
+    )
 
 
 class IMLTokenModel(TokenModel):
-    """ Grouped Token Model, Cached changes and write to file at the end
-    """
+    """Grouped Token Model, Cached changes and write to file at the end"""
 
     def get_api_type(self):
         server = self.get_server()
@@ -38,9 +36,10 @@ class IMLServerTokenConfig(ServerTokenConfig):
 
 
 class IMLComboBoxProxyModel(ComboBoxProxyModel):
-
     def __init__(self, token_key="token", named_token="{name}", nonamed_token="<noname token>"):
-        ComboBoxProxyModel.__init__(self, token_key, named_token=named_token, nonamed_token=nonamed_token)
+        ComboBoxProxyModel.__init__(
+            self, token_key, named_token=named_token, nonamed_token=nonamed_token
+        )
 
     def get_token(self, row):
         api_type = self.sourceModel().get_api_type()

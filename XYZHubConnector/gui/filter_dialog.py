@@ -17,7 +17,9 @@ class FilterDialog(BaseTokenDialog):
     # refactor tokendialog for resuability
 
     title = "Query Features By Property"
-    message = "Multiple property names represent AND operation. Multiple values represent OR operation."
+    message = (
+        "Multiple property names represent AND operation. Multiple values represent OR operation."
+    )
     token_info_keys = ["name", "operator", "values"]
     NewInfoDialog = NewFilterInfoDialog
     EditInfoDialog = EditFilterInfoDialog
@@ -29,7 +31,7 @@ class FilterDialog(BaseTokenDialog):
             policy.setRetainSizeWhenHidden(True)
             btn.setSizePolicy(policy)
             btn.setVisible(False)
-        
+
     def _make_delete_message(self, token_info):
         return "Do you want to Delete ?"
 

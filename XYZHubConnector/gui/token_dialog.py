@@ -9,14 +9,12 @@
 ###############################################################################
 
 
-from ..xyz_qgis.models.token_model import (
-    TokenModel,
-    ServerModel)
+from ..xyz_qgis.models.token_model import TokenModel, ServerModel
 from .base_token_dialog import BaseTokenDialog
 from .ux.server_ux import ServerUX
 
+
 class TokenDialog(BaseTokenDialog, ServerUX):
-    
     def __init__(self, parent=None):
         """init window"""
         super().__init__(parent)
@@ -31,13 +29,14 @@ class TokenDialog(BaseTokenDialog, ServerUX):
         BaseTokenDialog.config(self, token_model)
 
     def config_server(self, server_model: ServerModel, comboBox_server_url):
-        self.comboBox_server_url.currentIndexChanged[int].connect(comboBox_server_url.setCurrentIndex)
-        ServerUX.config(self, server_model) # trigger outer server combo box first
-        
+        self.comboBox_server_url.currentIndexChanged[int].connect(
+            comboBox_server_url.setCurrentIndex
+        )
+        ServerUX.config(self, server_model)  # trigger outer server combo box first
+
         self.btn_server.clicked.connect(self.open_server_dialog)
-        
+
     def cb_comboBox_server_selected(self, index):
         ServerUX.cb_comboBox_server_selected(self, index)
         self.tableView.selectRow(0)
         self.ui_enable_btn()
-

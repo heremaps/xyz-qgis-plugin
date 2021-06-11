@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 GroupedData = Mapping[str, List[Mapping]]
 
 
-class UsedToken():
+class UsedToken:
     def __init__(self):
         self.invalid_idx = -1
         self.used_token_idx = self.invalid_idx
@@ -43,10 +43,7 @@ class UsedToken():
         self._is_used_token_changed = True
 
     def is_used_token_idx(self, idx):
-        return (
-                idx != self.get_invalid_token_idx()
-                and idx == self.get_used_token_idx()
-        )
+        return idx != self.get_invalid_token_idx() and idx == self.get_used_token_idx()
 
     def modify_token_idx(self, idx):
         flag = idx == self.get_used_token_idx()
@@ -57,8 +54,7 @@ class UsedToken():
 
 
 def make_config_parser():
-    """ ConfigParser for managing token/server
-    """
+    """ConfigParser for managing token/server"""
     parser = configparser.ConfigParser(allow_no_value=True, delimiters=("*",))
     parser.optionxform = str
     return parser
@@ -79,10 +75,7 @@ class EditableItemModel(QStandardItemModel):
         return it.text().strip() if it else "None"
 
     def get_data(self, row):
-        return dict(
-            [k, self.get_text(row, col)]
-            for col, k in enumerate(self.get_info_keys())
-        )
+        return dict([k, self.get_text(row, col)] for col, k in enumerate(self.get_info_keys()))
 
     def get_info_keys(self):
         return self.INFO_KEYS
@@ -135,24 +128,26 @@ class EditableItemModel(QStandardItemModel):
             it.appendRow([QStandardItem(t) for t in self.items_from_data(data)])
 
     def _cb_item_removed(self, root, i0, i1):
-        if not self._is_valid_single_selection(i0, i1): return
+        if not self._is_valid_single_selection(i0, i1):
+            return
         self.cached_data.pop(i0)
 
     def _cb_item_inserted(self, root, i0, i1):
-        if not self._is_valid_single_selection(i0, i1): return
+        if not self._is_valid_single_selection(i0, i1):
+            return
         data = self.get_data(i0)
         self.cached_data.insert(i0, data)
 
     def _cb_item_changed(self, idx_top_left, idx_bot_right):
         i0 = idx_top_left.row()
         i1 = idx_bot_right.row()
-        if not self._is_valid_single_selection(i0, i1): return
+        if not self._is_valid_single_selection(i0, i1):
+            return
         data = self.get_data(i0)
         self.cached_data[i0] = data
 
     def _is_valid_single_selection(self, i0, i1):
-        """ check for valid single selection (no text input)
-        """
+        """check for valid single selection (no text input)"""
         return i0 == i1
 
     def is_protected_data(self, row):
@@ -161,7 +156,8 @@ class EditableItemModel(QStandardItemModel):
     # helper
     def _iter_data(self):
         for data in self.cfg:
-            if not self._validate_data(data): continue
+            if not self._validate_data(data):
+                continue
             yield data
 
     def _validate_data(self, data):
@@ -175,10 +171,7 @@ class GroupEditableItemModel(EditableItemModel):
         self.group_key = ""
 
     def from_dict(self, data: GroupedData):
-        self.cfg = {
-            k: list(filter(self._validate_data, lst))
-            for k, lst in data.items()
-        }
+        self.cfg = {k: list(filter(self._validate_data, lst)) for k, lst in data.items()}
 
     def to_dict(self) -> GroupedData:
         return dict(self.cfg)
@@ -190,7 +183,8 @@ class GroupEditableItemModel(EditableItemModel):
         self.cfg.pop(self.group_key, None)
         self.cfg[self.group_key] = list()
         for data in self.cached_data:
-            if not self._validate_data(data): continue
+            if not self._validate_data(data):
+                continue
             self.cfg[self.group_key].append(data)
 
     def _set_group(self, key):
@@ -199,12 +193,12 @@ class GroupEditableItemModel(EditableItemModel):
     # helper
     def _iter_data(self):
         for data in self.cfg.get(self.group_key, list()):
-            if not self._validate_data(data): continue
+            if not self._validate_data(data):
+                continue
             yield data
 
 
 class TokenInfoSerializer:
-
     def __init__(self, serialize_keys=("value", "name"), delim=","):
         self.serialize_keys = serialize_keys
         self.delim = delim
@@ -218,11 +212,13 @@ class TokenInfoSerializer:
         return self.delim.join(lst_txt)
 
 
-class ConfigParserMixin():
+class ConfigParserMixin:
     SERIALIZE_KEYS = ("value", "name")
     DELIM = ","
 
-    def __init__(self, ini, cfg: configparser.ConfigParser, serialize_keys=("value", "name"), delim=","):
+    def __init__(
+        self, ini, cfg: configparser.ConfigParser, serialize_keys=("value", "name"), delim=","
+    ):
         self.ini = ini
         self.cfg = cfg
         self.SERIALIZE_KEYS = serialize_keys
@@ -237,7 +233,8 @@ class ConfigParserMixin():
 
     def update_config(self, data: GroupedData):
         for section, options in data.items():
-            if not section.strip(): continue
+            if not section.strip():
+                continue
             self.cfg.remove_section(section)
             self.cfg.add_section(section)
             for option in options:
@@ -257,7 +254,8 @@ class ConfigParserMixin():
     def write_to_file(self):
         # clean unwanted sections
         for s in self.cfg.sections():
-            if not s.strip(): self.cfg.remove_section(s)
+            if not s.strip():
+                self.cfg.remove_section(s)
         with open(self.ini, "w") as f:
             self.cfg.write(f)
 
@@ -299,8 +297,8 @@ class WritableItemModel(GroupEditableItemModel):
 
 
 class TokenModel(WritableItemModel, UsedToken):
-    """ Grouped Token Model, Cached changes and write to file at the end
-    """
+    """Grouped Token Model, Cached changes and write to file at the end"""
+
     INFO_KEYS = ["name", "token"]
     SERIALIZE_KEYS = ["token", "name"]
     TOKEN_KEY = "token"
@@ -313,12 +311,13 @@ class TokenModel(WritableItemModel, UsedToken):
     def set_default_servers(self, default_api_urls):
         self._migrate_server_aliases(default_api_urls)
         url = default_api_urls.get(self.group_key)
-        if url: self._set_group(url)
+        if url:
+            self._set_group(url)
         self._refresh_model()
 
     def set_server(self, server):
-        """ Set server will submit the cache of the current group (server), then switch to the new server and refresh
-        """
+        """Set server will submit the cache of the current group (server), then switch to the
+        new server and refresh"""
         # print("set_server", server)
         self.reset_used_token_idx()
         self.submit_cache()
@@ -372,15 +371,15 @@ class ServerModel(WritableItemModel, UsedToken):
 
         # add default server
         for i, server_info in enumerate(server_infos):
-            if server_info["server"] in existing_server: continue
-            if not self._validate_data(server_info): continue
-            it.insertRow(i, [
-                QStandardItem(t) for t in self.items_from_data(server_info)
-            ])
+            if server_info["server"] in existing_server:
+                continue
+            if not self._validate_data(server_info):
+                continue
+            it.insertRow(i, [QStandardItem(t) for t in self.items_from_data(server_info)])
         self.submit_cache()
 
 
-class ServerTokenConfig():
+class ServerTokenConfig:
     def __init__(self, ini, parent=None):
         self.parent = parent
         self.ini = ini
@@ -404,15 +403,16 @@ class ServerTokenConfig():
 
 
 class ComboBoxProxyModel(QIdentityProxyModel):
-    def __init__(self, token_key="token", named_token="{name}", nonamed_token="<noname token> {token}"):
+    def __init__(
+        self, token_key="token", named_token="{name}", nonamed_token="<noname token> {token}"
+    ):
         super().__init__()
         self.token_key = token_key
         self.named_token = named_token
         self.nonamed_token = nonamed_token
 
     def set_keys(self, keys):
-        """ set header keys
-        """
+        """set header keys"""
         self.keys = keys
         self.col_name = self.get_key_index("name")
         self.col_token = self.get_key_index(self.token_key)
@@ -434,7 +434,11 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         name = self.get_text(row, self.col_name)
         token = self.get_text(row, self.col_token)
         if token:
-            msg = self.named_token.format(name=name, token=token) if name else self.nonamed_token.format(token=token)
+            msg = (
+                self.named_token.format(name=name, token=token)
+                if name
+                else self.nonamed_token.format(token=token)
+            )
             return msg
         return None
 

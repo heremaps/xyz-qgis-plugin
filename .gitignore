@@ -3,7 +3,7 @@ __pycache__
 *.pyc
 .rope*
 .vscode
-.*
+.idea/
 
 ### build files
 *.zip
