@@ -14,9 +14,13 @@ from typing import Dict
 from qgis.PyQt.QtCore import QObject, Qt, pyqtSignal
 
 from ..controller import BasicSignal
-from .space_loader import (CreateSpaceController, DeleteSpaceController,
-                           EditSpaceController, LoadSpaceController,
-                           StatSpaceController)
+from .space_loader import (
+    CreateSpaceController,
+    DeleteSpaceController,
+    EditSpaceController,
+    LoadSpaceController,
+    StatSpaceController,
+)
 from ..iml.loader import IMLSpaceController
 from ..models.loading_mode import API_TYPES
 
@@ -80,8 +84,7 @@ class LoaderPool(object):
 
 
 class ControllerManager(object):
-    """ simply store a list of Controller object inside
-    """
+    """simply store a list of Controller object inside"""
 
     def __init__(self):
         self.signal = CanvasSignal()
@@ -93,15 +96,17 @@ class ControllerManager(object):
         self.ld_pool.reset()
 
     def add_on_demand_controller(self, con, show_progress=True):
-        """ background controller will not get affected when finish_fast()
-        """
-        callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
+        """background controller will not get affected when finish_fast()"""
+        callbacks = (
+            [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
+        )
         return self._add_cb(con, callbacks)
 
     def add(self, con, show_progress=True):
-        """ controller will be forced to finish from the pool when finish_fast()
-        """
-        callbacks = [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
+        """controller will be forced to finish from the pool when finish_fast()"""
+        callbacks = (
+            [self.ld_pool.start_dispatch, self.ld_pool.try_finish] if show_progress else None
+        )
         return self._add_cb(con, callbacks)
 
     def _add_cb(self, con, callbacks):
@@ -142,7 +147,7 @@ class LayerControllerManager(ControllerManager):
 
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
-            # assert con.layer is not None 
+            # assert con.layer is not None
             self._layer_ptr[con.layer.get_id()] = ptr
 
         return _register_xyz_layer
@@ -151,7 +156,8 @@ class LayerControllerManager(ControllerManager):
         return self._lst.get(self._layer_ptr.get(xlayer_id))
 
     def get_interactive_loader(self, xlayer_id):
-        if self._layer_ptr.get(xlayer_id) in self._static_ptr: return
+        if self._layer_ptr.get(xlayer_id) in self._static_ptr:
+            return
         return self.get_loader(xlayer_id)
 
     def get_all_static_loader(self):
@@ -163,7 +169,9 @@ class LayerControllerManager(ControllerManager):
         return ptr
 
     def add_persistent_loader(self, con, show_progress=True):
-        callbacks = [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
+        callbacks = (
+            [self.ld_pool.start_dispatch_bg, self.ld_pool.try_finish_bg] if show_progress else None
+        )
 
         ptr = self._add(con)
         # con.signal.finished.connect( self.make_deregister_cb(ptr))
@@ -176,8 +184,7 @@ class LayerControllerManager(ControllerManager):
 
         cb_register_layer = self.make_register_xyz_layer_cb(con, ptr)
         if con.layer is None:
-            con.signal.progress.connect(cb_register_layer,
-                                        Qt.QueuedConnection)
+            con.signal.progress.connect(cb_register_layer, Qt.QueuedConnection)
         else:
             cb_register_layer()
 
@@ -224,10 +231,14 @@ class LoaderManager(LayerControllerManager):
     def make_con(self, key, api_type=API_TYPES.DATAHUB):
         if api_type not in self._map_fun_cls:
             raise Exception(
-                "Unknown api_type: %s (Available api_types: %s)" % (key, ", ".join(self._map_fun_cls.keys())))
+                "Unknown api_type: %s (Available api_types: %s)"
+                % (key, ", ".join(self._map_fun_cls.keys()))
+            )
         if key not in self._map_fun_cls[api_type]:
             raise Exception(
-                "Unknown key: %s (Available keys: %s)" % (key, ", ".join(self._map_fun_cls[api_type].keys())))
+                "Unknown key: %s (Available keys: %s)"
+                % (key, ", ".join(self._map_fun_cls[api_type].keys()))
+            )
         C = self._map_fun_cls[api_type][key]
         network = self._api_network_mapping[api_type]
         con = C(network)

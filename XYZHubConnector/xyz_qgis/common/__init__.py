@@ -9,7 +9,9 @@
 ###############################################################################
 
 from .config import Config
+
 config = Config()
+
 
 def override_config(ext_config):
     global config

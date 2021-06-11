@@ -16,7 +16,7 @@ from . import get_ui_class
 from .token_info_dialog import EditTokenInfoDialog, NewTokenInfoDialog
 from .util_dialog import ConfirmDialog
 
-TokenUI = get_ui_class('token_dialog.ui')
+TokenUI = get_ui_class("token_dialog.ui")
 
 
 class BaseTokenDialog(QDialog, TokenUI):
@@ -71,7 +71,8 @@ class BaseTokenDialog(QDialog, TokenUI):
         ret = super().exec_()
         if ret == self.Accepted:
             idx = self.tableView.currentIndex().row()
-            if idx >= 0: self.set_active_idx(idx)
+            if idx >= 0:
+                self.set_active_idx(idx)
         return ret
 
     def set_active_idx(self, idx):
@@ -115,7 +116,8 @@ class BaseTokenDialog(QDialog, TokenUI):
     def ui_add_token(self):
         dialog = self.NewInfoDialog(self)
         ret = dialog.exec_()
-        if ret != dialog.Accepted: return
+        if ret != dialog.Accepted:
+            return
 
         self._add_token(dialog.get_info())
         self.tableView.selectRow(self.token_model.rowCount() - 1)
@@ -125,7 +127,8 @@ class BaseTokenDialog(QDialog, TokenUI):
         token_info = self._get_current_token_info()
         dialog.set_info(token_info)
         ret = dialog.exec_()
-        if ret != dialog.Accepted: return
+        if ret != dialog.Accepted:
+            return
 
         self._edit_token(dialog.get_info())
 
@@ -134,7 +137,8 @@ class BaseTokenDialog(QDialog, TokenUI):
         token_info = self.token_model.get_data(row)
         dialog = ConfirmDialog(self._make_delete_message(token_info))
         ret = dialog.exec_()
-        if ret != dialog.Ok: return
+        if ret != dialog.Ok:
+            return
 
         self.token_model.takeRow(row)
         self.modify_token_idx(row)
@@ -160,17 +164,13 @@ class BaseTokenDialog(QDialog, TokenUI):
         self.modify_token_idx(row)
 
     def _add_token(self, token_info: dict):
-        self.token_model.appendRow([
-            QStandardItem(token_info[k])
-            for k in self.token_info_keys
-        ])
+        self.token_model.appendRow([QStandardItem(token_info[k]) for k in self.token_info_keys])
 
     def _edit_token(self, token_info: dict):
         row = self.tableView.currentIndex().row()
-        self.token_model.insertRow(row + 1, [
-            QStandardItem(token_info[k])
-            for k in self.token_info_keys
-        ])
+        self.token_model.insertRow(
+            row + 1, [QStandardItem(token_info[k]) for k in self.token_info_keys]
+        )
         it = self.token_model.takeRow(row)
         self.modify_token_idx(row)
 

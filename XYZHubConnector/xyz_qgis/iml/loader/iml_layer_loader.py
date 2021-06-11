@@ -10,8 +10,15 @@
 
 from .iml_auth_loader import IMLProjectScopedAuthLoader
 from ...layer import queue
-from ...loader.layer_loader import TileLayerLoader, parse_exception_obj, \
-    ChainInterrupt, InitUploadLayerController, UploadLayerController, LiveTileLayerLoader, LoadLayerController
+from ...loader.layer_loader import (
+    TileLayerLoader,
+    parse_exception_obj,
+    ChainInterrupt,
+    InitUploadLayerController,
+    UploadLayerController,
+    LiveTileLayerLoader,
+    LoadLayerController,
+)
 from ...network.net_handler import NetworkResponse, NetworkError
 
 
@@ -52,7 +59,6 @@ class IMLAuthExtension:
 
 
 class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
-
     def __init__(self, network, *a, **kw):
         TileLayerLoader.__init__(self, network, *a, **kw)
         IMLAuthExtension.__init__(self, network, *a, **kw)
@@ -60,14 +66,12 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
 
 
 class IMLLiveTileLayerLoader(IMLTileLayerLoader, LiveTileLayerLoader):
-
     def __init__(self, network, *a, **kw):
         LiveTileLayerLoader.__init__(self, network, *a, **kw)
         IMLTileLayerLoader.__init__(self, network, *a, **kw)
 
 
 class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
-
     def __init__(self, network, *a, **kw):
         LoadLayerController.__init__(self, network, *a, **kw)
         IMLAuthExtension.__init__(self, network, *a, **kw)
@@ -75,10 +79,7 @@ class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
     def _retry_with_auth(self, reply):
         # retried params
         keys = ["limit", "handle"]
-        params = dict(zip(
-            keys,
-            NetworkResponse(reply).get_qt_property(keys)
-        ))
+        params = dict(zip(keys, NetworkResponse(reply).get_qt_property(keys)))
         self.params_queue.gen_retry_params(**params)
         # try to reauth, then continue run loop
         self.con_auth.start(self.get_conn_info())

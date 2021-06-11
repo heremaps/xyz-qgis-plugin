@@ -15,16 +15,39 @@ from qgis.PyQt.QtWidgets import QDialog, QInputDialog
 from . import get_ui_class
 
 SUPPORTED_SPACE_LICENSES = [
-    "afl-3.0", "apache-2.0", "artistic-2.0",
-    "bs1-1.0", "bsd-2-clause", "bsd-3-clause",
-    "bsd-3-clause-clear", "cc", "cc0-1.0",
-    "cc-by-4.0", "cc-by-sa-4.0", "wtfpl",
-    "ecl-2.0", "epl-1.0", "eupl-1.1",
-    "agpl-3.0", "gpl", "gpl-2.0", "gpl-3.0",
-    "lgpl", "lgpl-2.1", "lgpl-3.0", "isc",
-    "lppl-1.3c", "ms-pl", "mit", "mpl-2.0",
-    "osl-3.0", "postgresql", "ofl-1.1",
-    "ncsa", "unlicense", "zlib"
+    "afl-3.0",
+    "apache-2.0",
+    "artistic-2.0",
+    "bs1-1.0",
+    "bsd-2-clause",
+    "bsd-3-clause",
+    "bsd-3-clause-clear",
+    "cc",
+    "cc0-1.0",
+    "cc-by-4.0",
+    "cc-by-sa-4.0",
+    "wtfpl",
+    "ecl-2.0",
+    "epl-1.0",
+    "eupl-1.1",
+    "agpl-3.0",
+    "gpl",
+    "gpl-2.0",
+    "gpl-3.0",
+    "lgpl",
+    "lgpl-2.1",
+    "lgpl-3.0",
+    "isc",
+    "lppl-1.3c",
+    "ms-pl",
+    "mit",
+    "mpl-2.0",
+    "osl-3.0",
+    "postgresql",
+    "ofl-1.1",
+    "ncsa",
+    "unlicense",
+    "zlib",
 ]
 
 EditSpaceDialogUI = get_ui_class("edit_space_dialog.ui")
@@ -64,15 +87,13 @@ class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
         self._space_info = dict(space_info)
         fn_mapping = self._get_space_info_fn_mapping()
         for k, fn in fn_mapping.items():
-            fn(space_info.get(k,""))
+            fn(space_info.get(k, ""))
 
     def update_space_info_json(self):
         space_info = self.get_space_info()
         txt = json.dumps(space_info, indent=4)
         txt, ok = QInputDialog.getMultiLineText(
-            None, "Edit Space JSON",
-            "Only change this if you know what you're doing",
-            txt
+            None, "Edit Space JSON", "Only change this if you know what you're doing", txt
         )
         if ok:
             space_info = json.loads(txt)
@@ -84,10 +105,9 @@ class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
     def _is_valid_input(self):
-        return all([
-            self.lineEdit_title.text().strip(),
-            self.plainTextEdit_description.toPlainText()
-        ])
+        return all(
+            [self.lineEdit_title.text().strip(), self.plainTextEdit_description.toPlainText()]
+        )
 
     def _get_space_info(self):
         return {

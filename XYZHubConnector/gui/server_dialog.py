@@ -19,7 +19,7 @@ class ServerDialog(BaseTokenDialog):
     token_info_keys = ["name", "server"]
     NewInfoDialog = NewIMLServerInfoDialog
     EditInfoDialog = EditIMLServerInfoDialog
-    
+
     def _make_delete_message(self, token_info):
-        token_msg = ", ".join("%s: %s"%it for it in token_info.items())
-        return "Do you want to Delete server (%s)?"%token_msg
+        token_msg = ", ".join("%s: %s" % it for it in token_info.items())
+        return "Do you want to Delete server (%s)?" % token_msg

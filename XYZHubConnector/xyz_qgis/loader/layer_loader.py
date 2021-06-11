@@ -16,10 +16,18 @@ from qgis.core import QgsProject, QgsVectorLayer, QgsRectangle
 from qgis.PyQt.QtCore import QThreadPool
 from qgis.PyQt.QtNetwork import QNetworkReply
 
-from ..controller import (AsyncFun, BasicSignal, ChainController,
-                          ChainInterrupt, LoopController, NetworkFun,
-                          WorkerFun, make_qt_args, parse_exception_obj,
-                          parse_qt_args)
+from ..controller import (
+    AsyncFun,
+    BasicSignal,
+    ChainController,
+    ChainInterrupt,
+    LoopController,
+    NetworkFun,
+    WorkerFun,
+    make_qt_args,
+    parse_exception_obj,
+    parse_qt_args,
+)
 from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render, tile_utils
 from ..layer.edit_buffer import LayeredEditBuffer
 from ..network import NetManager, net_handler
@@ -28,34 +36,43 @@ from ..models import SpaceConnectionInfo
 from ..models.connection import mask_token
 
 from ..common.signal import make_print_qgis
+
 print_qgis = make_print_qgis("layer_loader")
 
-Meta = Dict[str,str]
+Meta = Dict[str, str]
 Geojson = Dict
 
 ########################
 # Load
 ########################
 
+
 class EmptyXYZSpaceError(Exception):
     pass
+
+
 class InvalidQgsLayerError(Exception):
     pass
+
+
 class InvalidXYZLayerError(Exception):
     pass
+
+
 class ManualInterrupt(Exception):
     pass
 
 
 class LoadLayerController(BaseLoader):
-    """ Load XYZ space into several qgis layer separated by Geometry type.
+    """Load XYZ space into several qgis layer separated by Geometry type.
     If space is empty, no layer shall be created.
     Stateful controller
     """
-    def __init__(self, network: NetManager, layer: XYZLayer=None, n_parallel=1):
+
+    def __init__(self, network: NetManager, layer: XYZLayer = None, n_parallel=1):
         BaseLoader.__init__(self)
 
-        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self.pool = QThreadPool()  # .globalInstance() will crash afterward
         self.n_parallel = 1
         self.status = self.LOADING
 
@@ -71,38 +88,36 @@ class LoadLayerController(BaseLoader):
         if layer:
             self._config_layer_callback(layer)
 
-    def post_render(self,*a,**kw):
+    def post_render(self, *a, **kw):
         for v in self.layer.iter_layer():
             v.triggerRepaint()
-            
+
     def _config_layer_callback(self, layer):
-        layer.config_callback(
-            stop_loading=self.stop_loading
-            )
+        layer.config_callback(stop_loading=self.stop_loading)
 
     def start(self, conn_info: SpaceConnectionInfo, meta: Meta, **kw):
-        tags = kw.get("tags","")
+        tags = kw.get("tags", "")
         self.layer = XYZLayer(conn_info, meta, tags=tags, loader_params=kw)
         self.layer.add_empty_group()
         self._config_layer_callback(self.layer)
         return self._start(**kw)
 
     def _start(self, **kw):
-        # # super(BaseLoader,self): super of BaseLoader 
+        # # super(BaseLoader,self): super of BaseLoader
         # # includes check status and reset
         BaseLoader.start(self, **kw)
         return self.layer
+
     def restart(self, *a, **kw):
         # if self.status != self.FINISHED: return
         # self.reset(**kw)
         # includes reset
-        if self.layer is None: 
+        if self.layer is None:
             raise InvalidXYZLayerError()
         self.stop_loading()
         params = self.layer.get_loader_params()
         params.update(kw)
         return self._start(**params)
-        
 
     def reset(self, **kw):
         """
@@ -112,8 +127,7 @@ class LoadLayerController(BaseLoader):
 
         self.kw = kw
         self.max_feat = kw.get("max_feat", None)
-        self.fixed_params.update( 
-            (k,kw[k]) for k in self.fixed_keys if k in kw)
+        self.fixed_params.update((k, kw[k]) for k in self.fixed_keys if k in kw)
 
         params = dict(
             limit=kw.get("limit") or 1,
@@ -122,14 +136,16 @@ class LoadLayerController(BaseLoader):
         self.params_queue = queue.ParamsQueue_deque_smart(params, buffer_size=1)
 
     def _config(self, network: NetManager):
-        self.config_fun([
-            NetworkFun( network.load_features_iterate),
-            WorkerFun( network.on_received, self.pool),
-            AsyncFun( self._process_render),
-            WorkerFun( render.parse_feature, self.pool),
-            AsyncFun( self._dispatch_render),
-            ParallelFun( self._render_single),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.load_features_iterate),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._process_render),
+                WorkerFun(render.parse_feature, self.pool),
+                AsyncFun(self._dispatch_render),
+                ParallelFun(self._render_single),
+            ]
+        )
         self.signal.finished.connect(self.post_render)
 
     def _check_status(self):
@@ -152,6 +168,7 @@ class LoadLayerController(BaseLoader):
             self._try_finish()
             return False
         return True
+
     def _run(self):
         conn_info = self.get_conn_info()
 
@@ -166,18 +183,20 @@ class LoadLayerController(BaseLoader):
 
     def get_conn_info(self):
         return self.layer.get_conn_info()
+
     def _emit_finish(self):
         BaseLoop._emit_finish(self)
         token, space_id = self.get_conn_info().get_xyz_space()
         name = self.layer.get_name()
-        msg = (
-            "%s features loaded. "%(self.get_feat_cnt()) +
-            "Layer: %s. Token: %s"%(name, mask_token(token))
-            )
-        self.signal.results.emit( make_qt_args(msg))
-    ##### custom fun
+        msg = "%s features loaded. " % (self.get_feat_cnt()) + "Layer: %s. Token: %s" % (
+            name,
+            mask_token(token),
+        )
+        self.signal.results.emit(make_qt_args(msg))
 
-    def _process_render(self,obj: Geojson,*a,**kw):
+    # custom fun
+
+    def _process_render(self, obj: Geojson, *a, **kw):
         # check if all feat fetched
         # feat_cnt = len(obj["features"])
         # total_cnt = self.get_feat_cnt()
@@ -196,25 +215,22 @@ class LoadLayerController(BaseLoader):
     def _render(self, *parsed_feat):
         map_feat, map_fields = parsed_feat
         for geom in map_feat.keys():
-            for idx, (feat, fields) in enumerate(
-            zip(map_feat[geom], map_fields[geom])):
-                if not feat: continue
+            for idx, (feat, fields) in enumerate(zip(map_feat[geom], map_fields[geom])):
+                if not feat:
+                    continue
                 if not self.layer.has_layer(geom, idx):
-                    vlayer=self.layer.add_ext_layer(geom, idx)
+                    vlayer = self.layer.add_ext_layer(geom, idx)
                 else:
-                    vlayer=self.layer.get_layer(geom, idx)
+                    vlayer = self.layer.get_layer(geom, idx)
                 render.add_feature_render(vlayer, feat, fields)
 
     def get_feat_cnt(self):
         return self.layer.get_feat_cnt()
 
-    ############ handle_error
+    # handle_error
     def _retry(self, reply: QNetworkReply):
         keys = ["limit", "handle"]
-        params = dict(zip(
-            keys,
-            net_handler.get_qt_property(reply, keys)
-        ))
+        params = dict(zip(keys, net_handler.get_qt_property(reply, keys)))
 
         self.params_queue.gen_retry_params(**params)
         # retry from beginning
@@ -226,35 +242,36 @@ class LoadLayerController(BaseLoader):
             e, idx = chain_err.args[0:2]
         else:
             e = chain_err
-        if isinstance(e, net_handler.NetworkError): # retry only when network error, not timeout
+        if isinstance(e, net_handler.NetworkError):  # retry only when network error, not timeout
             reply = e.get_response().get_reply()
             self._retry(reply)
             return
         # otherwise emit error
-        self._release() # hot fix, no finish signal
+        self._release()  # hot fix, no finish signal
         self.signal.error.emit(err)
 
-    #threaded (parallel)
+    # threaded (parallel)
     def _dispatch_render(self, *parsed_feat):
         map_feat, map_fields, kw_params = parsed_feat
-        lst_args = [(geom, idx, feat, fields, kw_params)
+        lst_args = [
+            (geom, idx, feat, fields, kw_params)
             for geom in map_feat.keys()
-            for idx, (feat, fields) in enumerate(zip(
-                map_feat[geom], map_fields[geom]))
+            for idx, (feat, fields) in enumerate(zip(map_feat[geom], map_fields[geom]))
         ]
 
         return lst_args
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
-        if not feat: return
+        if not feat:
+            return
         vlayer = self._create_or_get_vlayer(geom, idx)
         render.add_feature_render(vlayer, feat, fields)
 
     def _create_or_get_vlayer(self, geom, idx):
         if not self.layer.has_layer(geom, idx):
-            vlayer=self.layer.add_ext_layer(geom, idx)
+            vlayer = self.layer.add_ext_layer(geom, idx)
         else:
-            vlayer=self.layer.get_layer(geom, idx)
+            vlayer = self.layer.get_layer(geom, idx)
         return vlayer
 
     def destroy(self):
@@ -262,8 +279,7 @@ class LoadLayerController(BaseLoader):
         self.layer.destroy()
 
     def stop_loading(self):
-        """ Stop loading immediately
-        """
+        """Stop loading immediately"""
         if self.status in [self.FINISHED, self.STOPPED]:
             return
         try:
@@ -279,17 +295,15 @@ class LoadLayerController(BaseLoader):
         self._handle_error(ManualInterrupt(msg))
         # do not try_finish as it fail in case of vlayer deleted
 
-
     def show_info_msg(self, msg, dt=1):
-        self.signal.info.emit(make_qt_args(
-            msg, dt=dt
-        ))
+        self.signal.info.emit(make_qt_args(msg, dt=dt))
+
 
 class TileLayerLoader(LoadLayerController):
-    def __init__(self, network: NetManager, *a, layer: XYZLayer=None, **kw):
+    def __init__(self, network: NetManager, *a, layer: XYZLayer = None, **kw):
         super().__init__(network, *a, **kw)
         self.fixed_keys = ["tags", "limit", "tile_schema", "filters", "selection"]
-        self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
+        self.params_queue = queue.SimpleQueue(key="tile_id")  # dont have retry logic
         self.layer = layer
         self.total_params = 0
         self.cnt_params = 0
@@ -300,15 +314,17 @@ class TileLayerLoader(LoadLayerController):
             self._config_layer_callback(layer)
 
     def _config(self, network: NetManager):
-        self.config_fun([
-            NetworkFun( network.load_features_tile),
-            WorkerFun( network.on_received, self.pool),
-            AsyncFun( self._process_render),
-            WorkerFun( render.parse_feature, self.pool),
-            AsyncFun( self._dispatch_render),
-            ParallelFun( self._render_single),
-            AsyncFun( self.post_render),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.load_features_tile),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._process_render),
+                WorkerFun(render.parse_feature, self.pool),
+                AsyncFun(self._dispatch_render),
+                ParallelFun(self._render_single),
+                AsyncFun(self.post_render),
+            ]
+        )
 
     def _check_status(self):
         if not self.params_queue.has_next():
@@ -320,7 +336,7 @@ class TileLayerLoader(LoadLayerController):
         print_qgis("check", self.status, self.count_active())
         return ok
 
-    def _process_render(self, obj: Geojson,*a,**kw):
+    def _process_render(self, obj: Geojson, *a, **kw):
         # check if all feat fetched (optional)
         if not self.params_queue.has_next():
             if self.status == self.LOADING:
@@ -342,13 +358,12 @@ class TileLayerLoader(LoadLayerController):
         BaseLoader.reset(self, **kw)
 
         self.kw = kw
-        self.fixed_params.update(
-            (k, kw[k]) for k in self.fixed_keys if k in kw)
+        self.fixed_params.update((k, kw[k]) for k in self.fixed_keys if k in kw)
 
         lst: list = kw.pop("tile_ids")
         params = [dict(tile_id=i) for i in lst]
 
-        self.params_queue.set_params(params) # dont have retry logic
+        self.params_queue.set_params(params)  # dont have retry logic
         self.total_params = len(params)
         self.cnt_params = 0
         self.feat_cnt = 0
@@ -369,60 +384,70 @@ class TileLayerLoader(LoadLayerController):
         cnt = min(self.cnt_params, self.total_params)
         total = self.total_params
         msg = (
-            "%s/%s tiles loaded. "%(cnt, total) +
-            "%s features loaded. "%(self.feat_cnt) +
-            "Layer: %s. Token: %s"%(name, mask_token(token))
-            )
-        self.signal.results.emit( make_qt_args(msg))
+            "%s/%s tiles loaded. " % (cnt, total)
+            + "%s features loaded. " % (self.feat_cnt)
+            + "Layer: %s. Token: %s" % (name, mask_token(token))
+        )
+        self.signal.results.emit(make_qt_args(msg))
 
     def _config_layer_callback(self, layer):
         layer.config_callback(
             start_editing=self._start_editing,
             end_editing=self._continue_parallel_loop,
             stop_loading=self.stop_loading,
-            )
+        )
 
     def _start_editing(self):
         self.stop_loading()
-        self.show_info_msg(" ".join([
-            "Enter editing mode will disable interactive loading.",
-            "To re-enable loading, please exit editing mode and push changes to XYZ Hub.",
-            "Layer: %s" % self.layer.get_name()
-        ]))
+        self.show_info_msg(
+            " ".join(
+                [
+                    "Enter editing mode will disable interactive loading.",
+                    "To re-enable loading, please exit editing mode and push changes to XYZ Hub.",
+                    "Layer: %s" % self.layer.get_name(),
+                ]
+            )
+        )
 
     def _continue_parallel_loop(self):
         if self.count_active() == 0:
             BaseLoader.reset(self)
             self.dispatch_parallel(n_parallel=self.n_parallel)
 
+
 class LiveTileLayerLoader(TileLayerLoader):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.params_queue = queue.SimpleQueue(key="tile_id") # dont have retry logic
+        self.params_queue = queue.SimpleQueue(key="tile_id")  # dont have retry logic
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
         vlayer = self._create_or_get_vlayer(geom, idx)
         tile_id = kw_params.get("tile_id")
         tile_schema = kw_params.get("tile_schema")
         lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
-        rcl = [lrc[k] for k in ["row","col","level"]]
+        rcl = [lrc[k] for k in ["row", "col", "level"]]
         extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
         render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
-        if not feat: return
+        if not feat:
+            return
         render.add_feature_render(vlayer, feat, fields)
+
 
 ########################
 # Upload
 ########################
 
+
 class InitUploadLayerController(ChainController):
-    """ Prepare list of features of the input layer to be upload (added and removed)
+    """Prepare list of features of the input layer to be upload (added and removed)
     Stateful controller
     """
+
     CLS_PARAMS_QUEUE = queue.SimpleQueue
+
     def __init__(self, *a):
         ChainController.__init__(self)
-        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self.pool = QThreadPool()  # .globalInstance() will crash afterward
 
         self.lst_added_feat: queue.ParamsQueue = None
         self.kw: dict = None
@@ -432,46 +457,59 @@ class InitUploadLayerController(ChainController):
         # assumed start() is called once # TODO: check if it is running
         if vlayer is None:
             raise InvalidQgsLayerError()
-        self.conn_info = copy.deepcopy(conn_info) # upload
+        self.conn_info = copy.deepcopy(conn_info)  # upload
         self.kw = kw
         ChainController.start(self, vlayer)
+
     def _config(self):
-        self.config_fun([
-            AsyncFun( layer_utils.get_feat_iter),
-            WorkerFun( layer_utils.get_feat_upload_from_iter_args, self.pool),
-            AsyncFun( self._setup_queue),
-        ])
+        self.config_fun(
+            [
+                AsyncFun(layer_utils.get_feat_iter),
+                WorkerFun(layer_utils.get_feat_upload_from_iter_args, self.pool),
+                AsyncFun(self._setup_queue),
+            ]
+        )
+
     def _setup_queue(self, lst_added_feat: list, *a):
         if len(lst_added_feat) == 0:
             self.signal.finished.emit()
         self.lst_added_feat = self.CLS_PARAMS_QUEUE(lst_added_feat)
         return make_qt_args(self.get_conn_info(), self.lst_added_feat, **self.kw)
+
     def get_conn_info(self):
         return self.conn_info
 
+
 class UploadLayerController(BaseLoop):
-    """ Upload the list of features of the input layer (added and removed) to the destination space (conn_info)
-    Stateful controller
+    """Upload the list of features of the input layer (added and removed) to the destination
+    space (conn_info) Stateful controller
     """
+
     def __init__(self, network: NetManager, n_parallel=1):
         BaseLoop.__init__(self)
         self.n_parallel = n_parallel
-        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self.pool = QThreadPool()  # .globalInstance() will crash afterward
         self.feat_cnt = 0
 
         self.fixed_params: dict = None
         self.lst_added_feat: queue.ParamsQueue = None
         self._config(network)
+
     def _config(self, network: NetManager):
-        self.config_fun([
-            NetworkFun( network.add_features),
-            WorkerFun( network.on_received, self.pool),
-            AsyncFun( self._process),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.add_features),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._process),
+            ]
+        )
+
     def _process(self, obj: Geojson, *a):
         self.feat_cnt += len(obj["features"])
+
     def get_feat_cnt(self):
         return self.feat_cnt
+
     def start(self, conn_info: SpaceConnectionInfo, lst_added_feat: queue.ParamsQueue, **kw):
         self.conn_info = conn_info
         self.lst_added_feat = lst_added_feat
@@ -481,6 +519,7 @@ class UploadLayerController(BaseLoop):
         if self.count_active() == 0:
             BaseLoop.reset(self)
         self.dispatch_parallel(n_parallel=self.n_parallel)
+
     def _run_loop(self):
         if self.status == self.STOPPED:
             self._handle_error(ManualInterrupt())
@@ -492,22 +531,32 @@ class UploadLayerController(BaseLoop):
         conn_info: dict = self.get_conn_info()
         feat: list = self.lst_added_feat.get_params()
         LoopController.start(self, conn_info, feat, **self.fixed_params)
+
     def get_conn_info(self):
         return self.conn_info
+
     def _emit_finish(self):
         BaseLoop._emit_finish(self)
 
         token, space_id = self.conn_info.get_xyz_space()
         title = self.conn_info.get_("title")
-        tags = self.fixed_params.get("addTags","")
-        msg = "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, mask_token(token))
-        self.signal.results.emit( make_qt_args(msg))
+        tags = self.fixed_params.get("addTags", "")
+        msg = "Space: %s - %s. Tags: %s. Token: %s" % (title, space_id, tags, mask_token(token))
+        self.signal.results.emit(make_qt_args(msg))
 
     def _handle_error(self, err):
         self.signal.error.emit(err)
 
+
 class EditSyncController(UploadLayerController):
-    def start(self, conn_info: SpaceConnectionInfo, layer_cache: LayeredEditBuffer, lst_added_feat: list, removed_feat: list, **kw):
+    def start(
+        self,
+        conn_info: SpaceConnectionInfo,
+        layer_cache: LayeredEditBuffer,
+        lst_added_feat: list,
+        removed_feat: list,
+        **kw
+    ):
         self.conn_info = conn_info
         self.layer_cache = layer_cache
         self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
@@ -517,6 +566,7 @@ class EditSyncController(UploadLayerController):
         if self.count_active() == 0:
             BaseLoop.reset(self)
         self.dispatch_parallel(n_parallel=self.n_parallel)
+
     def fn_sync_feature(self, network: NetManager) -> Callable:
         def sync_feature(conn_info: SpaceConnectionInfo, **kw):
             if "add" in kw:
@@ -525,7 +575,9 @@ class EditSyncController(UploadLayerController):
             elif "remove" in kw:
                 feat = kw["remove"]
                 return network.del_features(conn_info, feat)
+
         return sync_feature
+
     def _run_loop(self):
         if self.status == self.STOPPED:
             self._handle_error(ManualInterrupt())
@@ -544,28 +596,35 @@ class EditSyncController(UploadLayerController):
         conn_info = self.get_conn_info()
         feat: list = self.lst_added_feat.get_params()
         LoopController.start(self, conn_info, add=(feat, self.fixed_params))
+
     def _config(self, network: NetManager):
-        self.config_fun([
-            NetworkFun( self.fn_sync_feature(network)),
-            WorkerFun( network.on_received, self.pool),
-            AsyncFun( self._process),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(self.fn_sync_feature(network)),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._process),
+            ]
+        )
+
     def _process(self, obj: Geojson, *a):
         self.layer_cache.update_progress(obj)
-        if not "features" in obj: return
+        if "features" not in obj:
+            return
         features = obj["features"]
         self.feat_cnt += len(features)
+
     def _emit_finish(self):
         BaseLoop._emit_finish(self)
         token, space_id = self.conn_info.get_xyz_space()
         title = self.conn_info.get_("title")
-        tags = self.fixed_params.get("addTags","")
-        msg = "added/modified: %s. removed: %s. "%(self.feat_cnt, self.feat_cnt_del)
-        msg += "Space: %s - %s. Tags: %s. Token: %s"%(title, space_id, tags, mask_token(token))
-        self.signal.results.emit( make_qt_args(msg))
+        tags = self.fixed_params.get("addTags", "")
+        msg = "added/modified: %s. removed: %s. " % (self.feat_cnt, self.feat_cnt_del)
+        msg += "Space: %s - %s. Tags: %s. Token: %s" % (title, space_id, tags, mask_token(token))
+        self.signal.results.emit(make_qt_args(msg))
 
 
-##### unused
+# unused
+
 
 class EditAddController(UploadLayerController):
     def start(self, conn_info, lst_added_feat, removed_feat, **kw):
@@ -577,16 +636,19 @@ class EditAddController(UploadLayerController):
         if self.count_active() == 0:
             BaseLoop.reset(self)
         self.dispatch_parallel(n_parallel=self.n_parallel)
+
     def _emit_finish(self):
         BaseLoop._emit_finish(self)
 
-        self.signal.results.emit( make_qt_args(self.conn_info, self.removed_feat))
+        self.signal.results.emit(make_qt_args(self.conn_info, self.removed_feat))
+
 
 class EditRemoveController(ChainController):
     def __init__(self, network):
         super().__init__()
-        self.pool = QThreadPool() # .globalInstance() will crash afterward
+        self.pool = QThreadPool()  # .globalInstance() will crash afterward
         self._config(network)
+
     def start(self, conn_info, removed_feat, **kw):
         if len(removed_feat) == 0:
             self.signal.finished.emit()
@@ -595,9 +657,12 @@ class EditRemoveController(ChainController):
         super().start(conn_info, removed_feat)
         # fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
         # super().start(conn_info, removed_feat, **fixed_params)
+
     def _config(self, network):
-        self.config_fun([
-            NetworkFun( network.del_features),
-            WorkerFun( network.on_received, self.pool),
-            # AsyncFun( self._process),
-        ])
+        self.config_fun(
+            [
+                NetworkFun(network.del_features),
+                WorkerFun(network.on_received, self.pool),
+                # AsyncFun( self._process),
+            ]
+        )

@@ -14,7 +14,8 @@ from .utils import read_properties_file
 
 from ..models.connection import SpaceConnectionInfo
 
-class HereCredentials():
+
+class HereCredentials:
     def __init__(
         self,
         user: str,
@@ -64,7 +65,7 @@ class HereCredentials():
         credentials_properties = read_properties_file(credentials_path)
 
         try:
-            user = credentials_properties.get("here.user.id","")
+            user = credentials_properties.get("here.user.id", "")
             client = credentials_properties["here.client.id"]
             key = credentials_properties["here.access.key.id"]
             secret = credentials_properties["here.access.key.secret"]
@@ -74,15 +75,19 @@ class HereCredentials():
 
         return cls(user, client, key, secret, endpoint)
 
+
 class HereCredentialsException(Exception):
     """
     This ``HereCredentialsException`` is raised when the HERE platform credentials are
     not accepted.
     """
 
-def update_conn_info_from_here_credentials(conn_info: SpaceConnectionInfo, here_credentials: HereCredentials):
+
+def update_conn_info_from_here_credentials(
+    conn_info: SpaceConnectionInfo, here_credentials: HereCredentials
+):
     conn_info.set_(
-        here_client_key = here_credentials.key,
-        here_client_secret = here_credentials.secret,
-        here_endpoint = here_credentials.endpoint,
-        )
+        here_client_key=here_credentials.key,
+        here_client_secret=here_credentials.secret,
+        here_endpoint=here_credentials.endpoint,
+    )

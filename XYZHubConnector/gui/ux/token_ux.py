@@ -13,8 +13,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 
 from ...xyz_qgis.controller import make_qt_args
 from ...xyz_qgis.models import SpaceConnectionInfo
-from ...xyz_qgis.models.token_model import (
-    ComboBoxProxyModel, TokenModel)
+from ...xyz_qgis.models.token_model import ComboBoxProxyModel, TokenModel
 from ..token_dialog import TokenDialog
 
 from ..iml.iml_token_dialog import IMLTokenDialog
@@ -50,8 +49,8 @@ class SecretServerUX(UXDecorator):
 
 
 class TokenUX(UXDecorator):
-    """ UX for Token comboBox with token button, use token button and connection info
-    """
+    """UX for Token comboBox with token button, use token button and connection info"""
+
     signal_use_token = pyqtSignal(object)
 
     def __init__(self):
@@ -130,11 +129,10 @@ class TokenUX(UXDecorator):
         # emit
         self.conn_info.set_(token=token, server=server, here_credentials=here_credentials)
         conn_info = SpaceConnectionInfo(self.conn_info)
-        self.signal_use_token.emit( make_qt_args(conn_info) )
+        self.signal_use_token.emit(make_qt_args(conn_info))
 
     def ui_valid_token(self, *a):
-        """ Return true when token is used and shows Ok!
-        """
+        """Return true when token is used and shows Ok!"""
         flag_token = len(self.get_input_token()) > 0 or len(self.get_input_here_credentials()) > 0
         self.btn_use.setEnabled(flag_token)
         # self.btn_clear_token.setEnabled(flag_token)

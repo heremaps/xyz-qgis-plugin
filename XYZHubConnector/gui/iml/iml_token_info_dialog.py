@@ -15,31 +15,33 @@ from ...xyz_qgis.models import API_TYPES
 from ...xyz_qgis.iml.models.iml_token_model import get_api_type
 
 
-IMLTokenEditUI = get_ui_class('edit_iml_token_dialog.ui')
+IMLTokenEditUI = get_ui_class("edit_iml_token_dialog.ui")
 
 
 class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
-    ui_class=IMLTokenEditUI
-    txt_value="Credentials"
-    file_filter="*.properties"
-    
+    ui_class = IMLTokenEditUI
+    txt_value = "Credentials"
+    file_filter = "*.properties"
+
     def __init__(self, parent=None):
         """init window"""
         QDialog.__init__(self, parent)
-        IMLTokenEditUI.setupUi(self,self)
+        IMLTokenEditUI.setupUi(self, self)
         self.setWindowTitle(self.title)
         self.label_value.setText(self.txt_value)
         self.mQgsFileWidget.setFilter(self.file_filter)
-        
+
         self.lineEdit_name.textChanged.connect(self.ui_enable_btn)
         self.mQgsFileWidget.fileChanged.connect(self.ui_enable_btn)
         self.ui_enable_btn()
 
     def ui_enable_btn(self):
-        flag = all([
-            self.lineEdit_name.text().strip(),
-            self.mQgsFileWidget.filePath().strip(),
-            ])
+        flag = all(
+            [
+                self.lineEdit_name.text().strip(),
+                self.mQgsFileWidget.filePath().strip(),
+            ]
+        )
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
@@ -51,13 +53,19 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         return d
 
     def set_info(self, token_info):
-        self.lineEdit_name.setText(token_info.get("name",""))
-        self.mQgsFileWidget.setFilePath(token_info.get("token","")) # TODO: rename token_model output to here_credentials
+        self.lineEdit_name.setText(token_info.get("name", ""))
+        self.mQgsFileWidget.setFilePath(
+            token_info.get("token", "")
+        )  # TODO: rename token_model output to here_credentials
+
 
 class NewIMLTokenInfoDialog(IMLTokenInfoDialog):
     title = "Add New Platform Credentials"
+
+
 class EditIMLTokenInfoDialog(IMLTokenInfoDialog):
     title = "Edit Platform Credentials"
+
 
 class IMLServerInfoDialog(ServerInfoDialog):
     PLATFORM_SERVERS = ["PLATFORM_PRD", "PLATFORM_SIT"]
@@ -94,16 +102,16 @@ class IMLServerInfoDialog(ServerInfoDialog):
         return API_TYPES[idx]
 
     def set_info(self, token_info):
-        server = token_info.get("server","")
+        server = token_info.get("server", "")
         api_type = get_api_type(server)
-        self.lineEdit_name.setText(token_info.get("name",""))
+        self.lineEdit_name.setText(token_info.get("name", ""))
         if api_type == API_TYPES.PLATFORM:
             idx = API_TYPES.index(api_type) if api_type in API_TYPES else 0
             self.comboBox_api_type.setCurrentIndex(idx)
             idx = self.PLATFORM_SERVERS.index(server) if server in self.PLATFORM_SERVERS else 0
             self.comboBox_token.setCurrentIndex(idx)
         else:
-            self.lineEdit_token.setText(token_info.get("server",""))
+            self.lineEdit_token.setText(token_info.get("server", ""))
 
     def get_value(self):
         api_type = self.get_api_type()
@@ -112,8 +120,10 @@ class IMLServerInfoDialog(ServerInfoDialog):
         else:
             return self.get_server()
 
+
 class NewIMLServerInfoDialog(IMLServerInfoDialog):
     title = "Add New HERE Server"
+
 
 class EditIMLServerInfoDialog(IMLServerInfoDialog):
     title = "Edit HERE Server"

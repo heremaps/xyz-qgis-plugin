@@ -12,7 +12,8 @@ import os
 
 from ... import __version__ as version
 
-class Config():
+
+class Config:
     TAG_PLUGIN = __package__
     PLUGIN_NAME = __package__.split(".")[-1]
     PLUGIN_FULL_NAME = PLUGIN_NAME
@@ -22,7 +23,7 @@ class Config():
     USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
     TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
     LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
-    
+
     def set_config(self, config):
         for k, v in config.items():
             setattr(self, k, v)

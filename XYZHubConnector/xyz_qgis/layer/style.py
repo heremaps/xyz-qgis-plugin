@@ -9,7 +9,7 @@
 ###############################################################################
 from .parser import QGS_XYZ_ID
 
-template_layer_qml="""
+template_layer_qml = """
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
 <qgis version="3.4.4-Madeira" styleCategories="AllStyleCategories">
   <editable>
@@ -20,5 +20,5 @@ template_layer_qml="""
     <constraint constraints="3" field="{xyz_id}" notnull_strength="2" unique_strength="1" exp_strength="0"/>
   </constraints>
 </qgis>
-"""
+"""  # noqa E501
 LAYER_QML = template_layer_qml.format(xyz_id=QGS_XYZ_ID)

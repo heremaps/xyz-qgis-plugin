@@ -18,7 +18,9 @@ from ...network.network import NetManager, make_conn_request, make_payload
 from .net_handler import IMLNetworkHandler
 
 from ...common.signal import make_print_qgis
+
 print_qgis = make_print_qgis("iml.network", debug=True)
+
 
 class IMLNetworkManager(NetManager):
     API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
@@ -68,7 +70,8 @@ class IMLNetworkManager(NetManager):
         "load_features_bbox": "/catalogs/{catalog_hrn}/layers/{layer_id}/bbox",
         "load_features_iterate": "/catalogs/{catalog_hrn}/layers/{layer_id}/iterate",
         "load_features_search": "/catalogs/{catalog_hrn}/layers/{layer_id}/search",
-        "load_features_tile": "/catalogs/{catalog_hrn}/layers/{layer_id}/tile/{tile_schema}/{tile_id}",
+        "load_features_tile": "/catalogs/{catalog_hrn}/layers/{layer_id}/tile/{tile_schema}/{"
+        "tile_id}",
         "add_features": "/catalogs/{catalog_hrn}/layers/{layer_id}/features",
         "del_features": "/catalogs/{catalog_hrn}/layers/{layer_id}/features",
         "get_project": "/resources/{catalog_hrn}/projects",
@@ -98,7 +101,10 @@ class IMLNetworkManager(NetManager):
         if server.startswith("PLATFORM_"):
             api_env = self.API_PRD if server == "PLATFORM_PRD" else self.API_SIT
         else:
-            raise Exception("Unrecognized Platform Server: {}. Expecting place holder prefix 'PLATFORM_' ".format(server))
+            raise Exception(
+                "Unrecognized Platform Server: {}. "
+                "Expecting place holder prefix 'PLATFORM_' ".format(server)
+            )
         return api_env
 
     def _pre_send_request(self, conn_info, endpoint_key: str, kw_path=dict(), kw_request=dict()):
@@ -110,7 +116,7 @@ class IMLNetworkManager(NetManager):
         api_group = self.API_GROUP.get(endpoint_key, self.API_GROUP_INTERACTIVE)
         api_url = self.API_URL[api_group][api_env]
         # api_url = conn_info.get_("server", api_url).rstrip("/")
-        
+
         endpoint = self.ENDPOINTS[endpoint_key]
         url = api_url + endpoint.format(catalog_hrn=catalog_hrn, layer_id=layer_id, **kw_path)
         request = make_conn_request(url, token, **kw_request)
@@ -174,35 +180,46 @@ class IMLNetworkManager(NetManager):
     def on_received(self, reply):
         return IMLNetworkHandler.on_received(reply)
 
+
 def generate_oauth_header_2(url, conn_info):
     from oauthlib import oauth1
+
     client = oauth1.Client(
-        conn_info.get_("here_client_key",""),
-        client_secret=conn_info.get_("here_client_secret",""),
+        conn_info.get_("here_client_key", ""),
+        client_secret=conn_info.get_("here_client_secret", ""),
     )
     uri, headers, body = client.sign(url, "POST")
-    return headers.get("Authorization","").encode("utf-8")
+    return headers.get("Authorization", "").encode("utf-8")
+
 
 def generate_oauth_header(url, conn_info):
     from PyQt5.QtNetworkAuth import QOAuth1, QOAuth1Signature
+
     auth_headers = dict(
-        oauth_consumer_key=conn_info.get_("here_client_key",""),
+        oauth_consumer_key=conn_info.get_("here_client_key", ""),
         oauth_nonce=bytes(QOAuth1.nonce()).decode("utf-8"),
         oauth_signature_method="HMAC-SHA1",
         oauth_timestamp=int(time.time()),
         oauth_version="1.0",
     )
-    signature = QOAuth1Signature(QUrl(url), conn_info.get_("here_client_secret"), "", QOAuth1Signature.HttpRequestMethod.Post, auth_headers)
-    auth_headers["oauth_signature"] = bytes(QUrl.toPercentEncoding(
-        bytes(signature.hmacSha1().toBase64()).decode("utf-8")
-        )).decode("utf-8")
-    auth_header = "OAuth {}".format(",".join("{}=\"{}\"".format(k, v)
-        for k,v in auth_headers.items())
-        ).encode("utf-8")
+    signature = QOAuth1Signature(
+        QUrl(url),
+        conn_info.get_("here_client_secret"),
+        "",
+        QOAuth1Signature.HttpRequestMethod.Post,
+        auth_headers,
+    )
+    auth_headers["oauth_signature"] = bytes(
+        QUrl.toPercentEncoding(bytes(signature.hmacSha1().toBase64()).decode("utf-8"))
+    ).decode("utf-8")
+    auth_header = "OAuth {}".format(
+        ",".join('{}="{}"'.format(k, v) for k, v in auth_headers.items())
+    ).encode("utf-8")
     return auth_header
 
+
 def check_oauth2_token(token):
-    parts = token.split(".") # header, payload, signature
+    parts = token.split(".")  # header, payload, signature
     header = parts[0]
     # b64 decode header
     header_str = base64.b64decode(header)
