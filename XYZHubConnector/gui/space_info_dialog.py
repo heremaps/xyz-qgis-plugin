@@ -87,7 +87,10 @@ class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
         self._space_info = dict(space_info)
         fn_mapping = self._get_space_info_fn_mapping()
         for k, fn in fn_mapping.items():
-            fn(space_info.get(k, ""))
+            v = space_info.get(k)
+            if v is None:
+                continue
+            fn(v)
 
     def update_space_info_json(self):
         space_info = self.get_space_info()
