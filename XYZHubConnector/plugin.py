@@ -68,6 +68,7 @@ from .xyz_qgis.iml.loader import (
     IMLUploadLayerController,
     IMLInitUploadLayerController,
     IMLLayerLoader,
+    IMLEditSyncController,
 )
 from .xyz_qgis.iml.network import IMLNetworkManager
 from .xyz_qgis.iml.models import IMLServerTokenConfig
@@ -784,7 +785,7 @@ class XYZHubConnector(object):
                 "tile": TileLayerLoader,  # unused
             },
             API_TYPES.PLATFORM: {
-                "edit": EditSyncController,
+                "edit": IMLEditSyncController,
                 "upload": IMLUploadLayerController,
                 "init_upload": IMLInitUploadLayerController,
             },
@@ -955,6 +956,7 @@ class XYZHubConnector(object):
 
         lst_added_feat, removed_ids = layer_buffer.get_sync_feat()
         conn_info = layer_buffer.get_conn_info()
+        self.load_here_credentials(conn_info)
         api_type = self.get_api_type_from_conn_info(conn_info)
         # print_qgis("lst_added_feat: ",lst_added_feat)
         # print_qgis("removed_feat: ", removed_ids)
