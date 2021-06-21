@@ -19,7 +19,7 @@ from .net_handler import IMLNetworkHandler
 
 from ...common.signal import make_print_qgis
 
-print_qgis = make_print_qgis("iml.network", debug=True)
+print_qgis = make_print_qgis("iml.network")
 
 
 class IMLNetworkManager(NetManager):
@@ -136,11 +136,11 @@ class IMLNetworkManager(NetManager):
         kw_prop = dict(reply_tag=endpoint_key)
         return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
 
-    def auth_project(self, conn_info, expires_in=86400):
+    def auth_project(self, conn_info, expires_in=7200):
         project_hrn = conn_info.get_("project_hrn")
         return self.auth(conn_info, expires_in=expires_in, project_hrn=project_hrn)
 
-    def auth(self, conn_info, expires_in=300, project_hrn: str = None):
+    def auth(self, conn_info, expires_in=7200, project_hrn: str = None):
         reply_tag = "oauth"
 
         api_env = self._get_api_env(conn_info)
@@ -164,11 +164,9 @@ class IMLNetworkManager(NetManager):
         auth_header = generate_oauth_header_2(url, conn_info)
         # print("oauthlib", auth_header)
         request.setRawHeader(b"Authorization", auth_header)
-        print_qgis({str(h): request.rawHeader(h) for h in request.rawHeaderList()})
         reply = self.network.post(request, make_payload(payload))
 
         # reply = auth.post(request.url(), payload)
-        print_qgis({str(h): reply.request().rawHeader(h) for h in reply.request().rawHeaderList()})
 
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
         return reply

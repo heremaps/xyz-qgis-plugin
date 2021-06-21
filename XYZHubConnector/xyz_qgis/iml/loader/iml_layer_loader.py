@@ -18,6 +18,7 @@ from ...loader.layer_loader import (
     UploadLayerController,
     LiveTileLayerLoader,
     LoadLayerController,
+    EditSyncController,
 )
 from ...network.net_handler import NetworkResponse, NetworkError
 
@@ -94,6 +95,23 @@ class IMLUploadLayerController(IMLAuthExtension, UploadLayerController):
         UploadLayerController.__init__(self, network, *a, **kw)
         IMLAuthExtension.__init__(self, network, *a, **kw)
 
-    @property
-    def params_queue(self):
-        return self.lst_added_feat
+    def _retry_with_auth(self, reply):
+        # retried params
+        self.lst_added_feat.retry_params()
+        # try to reauth, then continue run loop
+        self.con_auth.start(self.get_conn_info())
+
+
+class IMLEditSyncController(IMLAuthExtension, EditSyncController):
+    CLS_PARAMS_QUEUE = queue.SimpleRetryQueue
+
+    def __init__(self, network, *a, **kw):
+        EditSyncController.__init__(self, network, *a, **kw)
+        IMLAuthExtension.__init__(self, network, *a, **kw)
+
+    def _retry_with_auth(self, reply):
+        # retried params
+        self.lst_added_feat.retry_params()
+        self.removed_feat.retry_params()
+        # try to reauth, then continue run loop
+        self.con_auth.start(self.get_conn_info())

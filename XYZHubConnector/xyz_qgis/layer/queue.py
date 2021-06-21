@@ -66,7 +66,7 @@ class SimpleQueue(ParamsQueue):
 
 class SimpleRetryQueue(SimpleQueue):
     def retry_params(self):
-        self.idx -= 1
+        self.idx = max(self.idx - 1, 0)
 
 
 class CachedQueue(ParamsQueue):

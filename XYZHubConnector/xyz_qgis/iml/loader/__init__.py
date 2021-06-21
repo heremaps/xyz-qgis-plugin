@@ -14,6 +14,7 @@ from .iml_layer_loader import (
     IMLLayerLoader,
     IMLUploadLayerController,
     IMLInitUploadLayerController,
+    IMLEditSyncController,
 )
 from .iml_space_loader import (
     IMLSpaceController,

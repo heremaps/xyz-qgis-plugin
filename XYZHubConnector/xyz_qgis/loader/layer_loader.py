@@ -549,6 +549,8 @@ class UploadLayerController(BaseLoop):
 
 
 class EditSyncController(UploadLayerController):
+    CLS_PARAMS_QUEUE = queue.SimpleQueue
+
     def start(
         self,
         conn_info: SpaceConnectionInfo,
@@ -559,8 +561,8 @@ class EditSyncController(UploadLayerController):
     ):
         self.conn_info = conn_info
         self.layer_cache = layer_cache
-        self.lst_added_feat = queue.SimpleQueue(lst_added_feat)
-        self.removed_feat = queue.SimpleQueue(removed_feat)
+        self.lst_added_feat = self.CLS_PARAMS_QUEUE(lst_added_feat)
+        self.removed_feat = self.CLS_PARAMS_QUEUE(removed_feat)
         self.fixed_params = dict(addTags=kw["tags"]) if "tags" in kw else dict()
         self.feat_cnt_del = 0
         if self.count_active() == 0:
