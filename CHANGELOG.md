@@ -1,5 +1,12 @@
 # Changelog 
 
+## Version 1.8.5 (2021-06-21)
+
+#### Bug Fixes
+
+* Enable re-auth logic when uploading edited features to IML
+* Minor bug fixes
+
 ## Version 1.8.4 (2021-06-08)
 
 #### New Features
