@@ -19,7 +19,7 @@ from .net_handler import IMLNetworkHandler
 
 from ...common.signal import make_print_qgis
 
-print_qgis = make_print_qgis("iml.network", debug=True)
+print_qgis = make_print_qgis("iml.network")
 
 
 class IMLNetworkManager(NetManager):
