@@ -9,7 +9,6 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
-from qgis.core import Qgis
 from typing import Tuple, Callable
 
 QtArgs = Tuple[tuple, dict]
@@ -54,8 +53,9 @@ from qgis.PyQt.QtCore import Qt
 from . import config
 import time
 
-level = ["Info", "Warning", "Critical", "Success", "None"]
-qgis_level = dict(zip(map(lambda k: getattr(Qgis, k), level), level))
+qgis_level = {
+    k: getattr(Qgis, k) for k in ["Info", "Warning", "Critical", "Success"] if hasattr(Qgis, k)
+}
 time_fmt = "%Y-%m-%dT%H:%M:%S%z"
 
 
