@@ -144,19 +144,22 @@ def make_valid_xyz_json_geom(geom: dict):
 
 
 def feature_to_xyz_json(features, is_new=False, ignore_null=True):
-    def _xyz_props(props):
+    def _xyz_props(props, ignore_keys=tuple()):
         # for all key start with @ (internal): str to dict (disabled)
         # k = "@ns:com:here:xyz"
         new_props = dict()
         for t in props.keys():
-            # drop @ fields for upload
-            if t.startswith("@ns:com:here:xyz"):
-                continue
-            if t.startswith("@"):
-                continue
             if ignore_null and props[t] is None:
                 continue
             k = normal_field_name(t)
+
+            if k in ignore_keys:
+                continue
+            # drop @ fields for upload
+            if k.startswith("@ns:com:here:xyz"):
+                continue
+            if k.startswith("@") and k != "@ns:com:here:mom:delta":
+                continue
             new_props[k] = props[t]
 
             # always handle json string in props
@@ -167,7 +170,10 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
                     new_props[k] = json.loads(v)
                 except json.JSONDecodeError:
                     pass
-
+            # handle editing of delta layer
+            if k == "@ns:com:here:mom:delta":
+                if "reviewState" in new_props[k]:
+                    new_props[k]["reviewState"] = ""  # UNPUBLISHED
         return new_props
 
     def _single_feature(feat):
@@ -185,8 +191,15 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
             exist_feat_id.add(v)
             if not is_new:
                 obj[XYZ_ID] = v
+        fields = feat.fields()
+        expression_field_names = [
+            k
+            for k in fields.names()
+            if fields.fieldOrigin(fields.indexFromName(k)) == fields.OriginExpression
+        ]
+        # print({k.name(): fields.fieldOrigin(i) for i, k in enumerate(fields)})
+        props = _xyz_props(props, ignore_keys=expression_field_names)
 
-        props = _xyz_props(props)
         obj["properties"] = props
 
         geom = feat.geometry()
