@@ -1,3 +1,11 @@
+# Release Notes
+
+## Version 1.8.6 (2021-07-14)
+
+🐛 FIXES 🐛
+* Fixes compatibility with QGIS 3.20
+* Stability improvements
+
 ## Version 1.8.5 (2021-06-21)
 
 🐛 FIXES 🐛

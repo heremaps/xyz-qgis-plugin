@@ -1,5 +1,14 @@
 # Changelog 
 
+## Version 1.8.6 (2021-07-14)
+
+#### Bug Fixes
+
+* Fixes compatibility with QGIS 3.20
+* Fixes overwritten layer properties when loading style
+* Fixes dangling QgsFields of deleted layer
+* Improves editing of delta layer
+
 ## Version 1.8.5 (2021-06-21)
 
 #### Bug Fixes
