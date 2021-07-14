@@ -80,6 +80,9 @@ class XYZLayer(object):
         self.qgroups = dict()
         self.callbacks = dict()
 
+    ##############
+    # qgis custom property
+
     @classmethod
     def load_from_qnode(cls, qnode):
         meta = get_customProperty_str(qnode, QProps.LAYER_META)
@@ -137,6 +140,24 @@ class XYZLayer(object):
             meta.setRights(lst_txt)
         vlayer.setMetadata(meta)
 
+    def _refresh_meta_vlayer(self, vlayer: QgsVectorLayer, style_category=None):
+        if style_category not in (vlayer.CustomProperties, vlayer.AllStyleCategories, None):
+            return
+        self._save_meta_vlayer(vlayer)
+
+    # unused
+    def _propagate_meta_vlayer(self, vlayer: QgsVectorLayer, style_category=None):
+        if style_category not in (vlayer.CustomProperties, vlayer.AllStyleCategories, None):
+            return
+        qnode = self.qgroups.get("main")
+        if not qnode:
+            return
+        for k in qnode.customProperties():
+            v = get_customProperty_str(qnode, k)
+            vlayer.setCustomProperty(k, v)
+
+    ##############
+
     def config_callback(self, **callbacks):
         self.callbacks = callbacks
 
@@ -167,8 +188,8 @@ class XYZLayer(object):
                 self._cb_delete_vlayer(vlayer, geom_str, idx)
 
     def _make_cb_args(self, fn, *args):
-        def cb():
-            fn(*args)
+        def cb(*a):
+            fn(*(args + a))
 
         return cb
 
@@ -186,6 +207,11 @@ class XYZLayer(object):
             signal.connect(self.callbacks[name])
         # vlayer.editingStopped.connect(self.callbacks["end_editing"])
 
+        cb_style_loaded = self.callbacks.setdefault("style_loaded", dict()).setdefault(
+            vlayer.id(), self._make_cb_args(self._refresh_meta_vlayer, vlayer)
+        )
+        vlayer.styleLoaded.connect(cb_style_loaded)
+
     def _disconnect_cb_vlayer(self, vlayer):
         cb_delete_vlayer = self.callbacks.pop(vlayer.id(), None)
         if cb_delete_vlayer:
@@ -197,8 +223,11 @@ class XYZLayer(object):
             if name not in self.callbacks:
                 continue
             signal.disconnect(self.callbacks[name])
-
         # vlayer.editingStopped.disconnect(self.callbacks["end_editing"])
+
+        cb_style_loaded = self.callbacks.get("style_loaded", dict()).pop(vlayer.id(), None)
+        if cb_style_loaded:
+            vlayer.styleLoaded.disconnect(cb_style_loaded)
 
     def iter_layer(self):
         for lst in self.map_vlayer.values():
@@ -406,7 +435,8 @@ class XYZLayer(object):
 
     def _remove_layer(self, geom_str, idx):
         """Remove vlayer from the internal map without messing the index"""
-        self.map_vlayer[geom_str][idx] = None
+        self.map_vlayer[geom_str].pop(idx)
+        self.map_fields[geom_str].pop(idx)
 
     def _init_ext_layer(self, geom_str, idx, crs):
         """given non map of feat, init a qgis layer
