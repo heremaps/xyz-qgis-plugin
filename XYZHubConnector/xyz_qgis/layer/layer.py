@@ -435,8 +435,7 @@ class XYZLayer(object):
 
     def _remove_layer(self, geom_str, idx):
         """Remove vlayer from the internal map without messing the index"""
-        self.map_vlayer[geom_str].pop(idx)
-        self.map_fields[geom_str].pop(idx)
+        self.map_vlayer[geom_str][idx] = None
 
     def _init_ext_layer(self, geom_str, idx, crs):
         """given non map of feat, init a qgis layer
