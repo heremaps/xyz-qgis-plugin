@@ -22,6 +22,7 @@ from .layer_utils import (
     get_conn_info_from_layer,
     get_layer,
 )
+from ..common.utils import disconnect_silent
 
 from ..common.signal import make_print_qgis
 
@@ -426,7 +427,7 @@ class LayeredEditBuffer(object):
 
     def unload_connection(self):
         for signal, callback in self.callback_pairs:
-            signal.disconnect(callback)
+            disconnect_silent(signal, callback)
 
 
 class EditBuffer(object):

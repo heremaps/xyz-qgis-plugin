@@ -20,6 +20,7 @@ from . import config
 
 from .gui.space_dialog import MainDialog
 from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
+from .xyz_qgis.common.utils import disconnect_silent
 
 from .xyz_qgis.models import (
     LOADING_MODES,
@@ -275,9 +276,10 @@ class XYZHubConnector(object):
 
     def unload_modules(self):
         # self.con_man.disconnect_ux( self.iface)
-        QgsProject.instance().cleared.disconnect(self.new_session)
-        QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect(
-            self.edit_buffer.remove_layers
+        disconnect_silent(QgsProject.instance().cleared, self.new_session)
+        disconnect_silent(
+            QgsProject.instance().layersWillBeRemoved["QStringList"],
+            self.edit_buffer.remove_layers,
         )
         # QgsProject.instance().layersWillBeRemoved["QStringList"].disconnect(
         # self.layer_man.remove_layers)
@@ -291,15 +293,17 @@ class XYZHubConnector(object):
 
         self.iface.mapCanvas().extentsChanged.disconnect(self.reload_tile)
 
-        QgsProject.instance().layerTreeRoot().willRemoveChildren.disconnect(
-            self.cb_qnodes_deleting
+        disconnect_silent(
+            QgsProject.instance().layerTreeRoot().willRemoveChildren, self.cb_qnodes_deleting
         )
-        QgsProject.instance().layerTreeRoot().removedChildren.disconnect(self.cb_qnodes_deleted)
-        QgsProject.instance().layerTreeRoot().visibilityChanged.disconnect(
-            self.cb_qnode_visibility_changed
+        disconnect_silent(
+            QgsProject.instance().layerTreeRoot().removedChildren, self.cb_qnodes_deleted
         )
-
-        QgsProject.instance().readProject.disconnect(self.import_project)
+        disconnect_silent(
+            QgsProject.instance().layerTreeRoot().visibilityChanged,
+            self.cb_qnode_visibility_changed,
+        )
+        disconnect_silent(QgsProject.instance().readProject, self.import_project)
 
         # utils.disconnect_silent(self.iface.currentLayerChanged)
 
