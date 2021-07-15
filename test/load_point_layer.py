@@ -23,7 +23,7 @@ from XYZHubConnector.xyz_qgis.models.connection import SpaceConnectionInfo
 app = start_app()
 
 
-class Counter():
+class Counter:
     def __init__(self, total, callback):
         self.cnt = 0
         self.total = total
@@ -38,7 +38,7 @@ class Counter():
 
 
 def get_row_col_bounds_here(level):
-    """ 
+    """
     [x,y] or [col, row], start from bottom left, go anti-clockwise
     level 0: 0,0
     level 1: 0,0; 1,0
@@ -50,7 +50,7 @@ def get_row_col_bounds_here(level):
 
 
 def get_row_col_bounds_web(level):
-    """ 
+    """
     coord [x,y]
     """
     nrow = 2 ** (level) if level else 1
@@ -59,7 +59,7 @@ def get_row_col_bounds_web(level):
 
 
 def get_row_col_bounds_tms(level):
-    """ 
+    """
     coord [x,y]
     """
     nrow = 2 ** (level) if level else 1
@@ -77,10 +77,7 @@ def generate_tile(level, schema="web"):
         nrow, ncol = get_row_col_bounds_tms(level)  # missing coord y=-90
     else:
         nrow, ncol = get_row_col_bounds_here(level)
-    lst = [
-        "%s_%s_%s" % (level, c, r)
-        for r in range(nrow) for c in range(ncol)
-    ]
+    lst = ["%s_%s_%s" % (level, c, r) for r in range(nrow) for c in range(ncol)]
     # lst = ["0_0_0","0_0_1","0_0_2","0_0_3","0_0_4","0_0_5","0_0_6","0_0_100"] # tms
     # lst = ["1_1_1","1_0_1","1_1_0","1_0_0"] # + lst
     # lst += ["2_1_2"]
@@ -96,30 +93,24 @@ def make_tuple_coord(level):
     return set(tuple(coord) for coord in make_coord(level))
 
 
-class Validator():
+class Validator:
     def __init__(self, level):
         self.level = level
         self.cnt_x = (180 * 2) // step_from_level(level) + 1
         lst_coord = make_tuple_coord(level)
-        self.expected = dict(
-            cnt=len(lst_coord),
-            lst_coord=set(lst_coord)
-        )
+        self.expected = dict(cnt=len(lst_coord), lst_coord=set(lst_coord))
         self.actual = dict(cnt=0, lst_coord=list())
 
     def check_cnt(self, cnt):
         print("feat per tile", cnt)
         actual, expected = self._get_case("cnt", cnt)
-        print(actual, expected, actual == expected,
-              "cnt")
+        print(actual, expected, actual == expected, "cnt")
 
     def check_coord(self, lst_coord):
         actual_, expected = self._get_case("lst_coord", lst_coord)
         actual = set(actual_)
-        print(len(actual_), len(actual), len(actual_) - len(actual),
-              "overlap")
-        print(len(actual), len(expected), len(actual) == len(expected),
-              "unique")
+        print(len(actual_), len(actual), len(actual_) - len(actual), "overlap")
+        print(len(actual), len(expected), len(actual) == len(expected), "unique")
         print("len y=-90", self.cnt_x)
         actual_ = sorted(actual_)
         print("actual", actual_[:1], actual_[-1:])
@@ -149,16 +140,12 @@ class BoundedValidator(Validator):
         step = step_from_level(level)
         step = 1
         x_min, y_min, x_max, y_max = map(
-            lambda x: int(x) + (0 if int(x) > x else 1),
-            [x_min, y_min, x_max, y_max])
-        lst_coord = [(lon, lat)
-                     for lon in range(x_min, x_max, step)
-                     for lat in range(y_min, y_max, step)
-                     ]
-        self.expected = dict(
-            cnt=len(lst_coord),
-            lst_coord=set(lst_coord)
+            lambda x: int(x) + (0 if int(x) > x else 1), [x_min, y_min, x_max, y_max]
         )
+        lst_coord = [
+            (lon, lat) for lon in range(x_min, x_max, step) for lat in range(y_min, y_max, step)
+        ]
+        self.expected = dict(cnt=len(lst_coord), lst_coord=set(lst_coord))
 
 
 if __name__ == "__main__":
@@ -172,14 +159,14 @@ if __name__ == "__main__":
 
     # # all
     # tags = "%s-%s"%("point",level)
-    # rect = [-180, -90, 180, 90] 
+    # rect = [-180, -90, 180, 90]
     # lst_tiles = generate_tile(level, tile_schema)
     # print(lst_tiles)
     # validator = Validator(level)
 
     # bounded
     tags = "point"
-    # rect = [-180, -90, -165, -65] 
+    # rect = [-180, -90, -165, -65]
     # rect = [-136.7, -61.5, -92.9, -34.0]  # level 5
     rect = [-136.9, -61.5, -130.9, -55.5]  # level 9
     # higher level require moore precise coord
@@ -189,8 +176,7 @@ if __name__ == "__main__":
     validator = BoundedValidator(level, *rect)
 
     lst_params = [
-        dict(tile_schema=tile_schema, tile_id=t, limit=100000, tags=tags)
-        for t in lst_tiles
+        dict(tile_schema=tile_schema, tile_id=t, limit=100000, tags=tags) for t in lst_tiles
     ]
     total = len(lst_tiles)
 

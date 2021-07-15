@@ -14,12 +14,16 @@ from qgis.core import QgsCoordinateReferenceSystem
 from qgis.PyQt.QtWidgets import QMainWindow
 from qgis.PyQt.QtCore import pyqtSignal
 
+
 class MyCanvas(QgsMapCanvas):
     closed = pyqtSignal()
-    def closeEvent(self,event):
+
+    def closeEvent(self, event):
         super().closeEvent(event)
         print("closing")
         self.closed.emit()
+
+
 # /python/testing/mocked.py
 def make_iface_canvas(test_async):
     my_iface = mock.Mock(spec=QgisInterface)
@@ -31,9 +35,10 @@ def make_iface_canvas(test_async):
     canvas.setFrameStyle(0)
     canvas.resize(400, 400)
     canvas.closed.connect(test_async._stop_async)
-    
+
     my_iface.mapCanvas.return_value = canvas
     return my_iface
+
 
 def canvas_zoom_to_layer(canvas, layer):
     layer.setCrs(canvas.mapSettings().destinationCrs())
@@ -45,6 +50,8 @@ def canvas_zoom_to_layer(canvas, layer):
     else:
         canvas.refresh()
     # canvas.waitWhileRendering()
+
+
 def show_canvas(iface):
     canvas = iface.mapCanvas()
     canvas.show()

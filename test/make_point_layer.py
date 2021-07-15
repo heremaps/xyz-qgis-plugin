@@ -25,10 +25,7 @@ app = start_app()
 
 
 def make_point_feat(coord):
-    return {
-        "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": list(coord)}
-    }
+    return {"type": "Feature", "geometry": {"type": "Point", "coordinates": list(coord)}}
 
 
 def get_idx(lon, lat):
@@ -37,9 +34,11 @@ def get_idx(lon, lat):
 
 
 def iter_lon_lat(range_lon=(-180, 180), range_lat=(-90, 90), step=1):
-    return [(lon, lat)
-            for lon in range(range_lon[0], range_lon[1] + 1, step)
-            for lat in range(range_lat[0], range_lat[1] + 1, step)]
+    return [
+        (lon, lat)
+        for lon in range(range_lon[0], range_lon[1] + 1, step)
+        for lat in range(range_lat[0], range_lat[1] + 1, step)
+    ]
 
 
 def step_from_level(level):
@@ -61,17 +60,12 @@ def precompute_tags():
 def format_tags(tags, prefix=None):
     s = ",".join(str(t) for t in tags)
     if prefix:
-        s = ",".join([s,
-                      prefix,
-                      ",".join("%s-%s" % (prefix, t) for t in tags)
-                      ])
+        s = ",".join([s, prefix, ",".join("%s-%s" % (prefix, t) for t in tags)])
     return s
 
 
 def make_point_json(lst_tags):
-    obj = {
-        "type": "FeatureCollection"
-    }
+    obj = {"type": "FeatureCollection"}
     d = dict()
     lst_coord = list(iter_lon_lat())
     print("len coord/feat", len(lst_coord))
@@ -79,11 +73,11 @@ def make_point_json(lst_tags):
         d.setdefault(tags, list()).append(feat)
 
     return dict(
-        (tags, parser.make_lst_feature_collection(features))
-        for tags, features in d.items())
+        (tags, parser.make_lst_feature_collection(features)) for tags, features in d.items()
+    )
 
 
-class Counter():
+class Counter:
     cnt = 0
 
 
@@ -105,10 +99,7 @@ def make_point_features():
     # by generate tags for all levels
     # smallest step for coord currently is 1 (can be smaller)
 
-    lst_tags = [
-        format_tags(t, prefix="point")
-        for t in precompute_tags()
-    ]
+    lst_tags = [format_tags(t, prefix="point") for t in precompute_tags()]
     # print(lst_tags)
     print("len tags", len(lst_tags))
     tags_lst_obj = make_point_json(lst_tags)
