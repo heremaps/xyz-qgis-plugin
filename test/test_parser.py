@@ -99,7 +99,7 @@ class TestParser(BaseTestAsync):
             geom = json.loads(
                 ft.geometry().asJson()
             )  # limited to 13 or 14 precison (ogr.CreateGeometryFromJson)
-            self.assertEqual(geom["type"], geom_str)
+            self.assertEqual(geom and geom["type"], geom_str)
 
     def _assert_parsed_geom(self, obj_feat, feat, fields):
 
@@ -246,6 +246,11 @@ class TestParser(BaseTestAsync):
                 lst_fields = list(map_fields.values())[0]
                 for k in lst_k:
                     self.assertIn(k, lst_fields[0].names())
+
+                for k in lst_new_k:
+                    self.assertIn(k, [parser.normal_field_name(n) for n in lst_fields[0].names()])
+
+                return
 
                 # debug
                 debug_msg += format_long_args("\n", lst_fields[0].names())
