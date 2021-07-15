@@ -382,7 +382,7 @@ def xyz_json_to_feat(feat_json, fields):
                         val.convert(cast)
                         break
             if not val.type() in valid_qvariant:
-                print_qgis("Invalid type", k, val.typeName())
+                print_qgis("Field '%s': Invalid type: %s. Value: %s" % (k, val.typeName(), val))
                 continue
             if k not in names:
                 fields.append(make_field(k, val))
@@ -417,7 +417,16 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
         rename_special_props(props)  # rename fid in props
         props_names = [k for k, v in props.items() if v is not None]
     lst_score = [
-        fields_similarity((fields.names()), orig_props_names, props_names) for fields in lst_fields
+        fields_similarity(
+            [
+                f.name()
+                for i, f in enumerate(fields)
+                if fields.fieldOrigin(i) != fields.OriginExpression
+            ],
+            orig_props_names,
+            props_names,
+        )
+        for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
 
