@@ -26,10 +26,9 @@ from qgis.core import (
 )
 
 from qgis.utils import iface
-from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtXml import QDomDocument
 
-from . import parser, render
+from . import parser
 from .layer_props import QProps
 from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_json_default
 from ..models import SpaceConnectionInfo, parse_copyright
@@ -395,7 +394,9 @@ class XYZLayer(object):
         qgroups: dict["main"] = group
             dict[geom] = list([vlayer1, vlayer2,...])
         map_vlayer: dict[geom_str] = list([vlayer1, vlayer2,...])
+            vlayer order in list shall always be fixed, deleted vlayer hall be set to None
         map_fields: dict[geom_str] = list([fields1, fields2,...])
+            fields order in list shall always be fixed and not be deleted
         geom_str: QgsWkbTypes.displayString (detailed geometry, e.g. Multi-)
         geom: QgsWkbTypes.geometryDisplayString (generic geometry,)
         """
