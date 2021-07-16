@@ -143,6 +143,10 @@ def make_valid_xyz_json_geom(geom: dict):
     return geom
 
 
+def non_expression_fields(fields):
+    return [f for i, f in enumerate(fields) if fields.fieldOrigin(i) != fields.OriginExpression]
+
+
 def feature_to_xyz_json(features, is_new=False, ignore_null=True):
     def _xyz_props(props, ignore_keys=tuple()):
         # for all key start with @ (internal): str to dict (disabled)
@@ -193,9 +197,9 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
                 obj[XYZ_ID] = v
         fields = feat.fields()
         expression_field_names = [
-            k
-            for k in fields.names()
-            if fields.fieldOrigin(fields.indexFromName(k)) == fields.OriginExpression
+            f.name()
+            for i, f in enumerate(fields)
+            if fields.fieldOrigin(i) == fields.OriginExpression
         ]
         # print({k.name(): fields.fieldOrigin(i) for i, k in enumerate(fields)})
         props = _xyz_props(props, ignore_keys=expression_field_names)
@@ -418,14 +422,12 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
         props_names = [k for k, v in props.items() if v is not None]
     lst_score = [
         fields_similarity(
-            [
-                f.name()
-                for i, f in enumerate(fields)
-                if fields.fieldOrigin(i) != fields.OriginExpression
-            ],
+            [f.name() for f in non_expression_fields(fields)],
             orig_props_names,
             props_names,
         )
+        if fields.size()
+        else threshold
         for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
@@ -434,7 +436,8 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
         idx = len(lst_fields)
         fields = new_fields_gpkg()
         lst_fields.append(fields)
-        print_qgis("len prop", len(props_names), "score", lst_score, "lst_fields", len(lst_fields))
+        # print("len prop", len(props_names), "score", lst_score, "lst_fields", len(lst_fields))
+        # print("len fields", [f.size() for f in lst_fields])
     else:
         fields = lst_fields[idx]
 
