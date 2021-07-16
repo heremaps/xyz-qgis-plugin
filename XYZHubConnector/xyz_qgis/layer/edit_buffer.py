@@ -276,7 +276,7 @@ class LayeredEditBuffer(object):
 
     def update_synced_feat(self, fid, feat):
         vlayer = get_layer(self.layer_id)
-        fields = vlayer.fields()
+        fields = vlayer.dataProvider().fields()
         ft = parser.xyz_json_to_feat(feat, fields)
         ft.setId(fid)
         update_feat_non_null(vlayer, ft)

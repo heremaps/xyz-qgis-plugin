@@ -107,7 +107,7 @@ class XYZLayer(object):
             vlayer = i.layer()
             geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
             obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
-            obj.map_fields.setdefault(geom_str, list()).append(vlayer.fields())
+            obj.map_fields.setdefault(geom_str, list()).append(vlayer.dataProvider().fields())
             # obj._save_meta_vlayer(vlayer)
         return obj
 
@@ -438,7 +438,7 @@ class XYZLayer(object):
     def _remove_layer(self, geom_str, idx):
         """Remove vlayer from the internal map without messing the index"""
         self.map_vlayer[geom_str][idx] = None
-        self.map_fields[geom_str][idx] = QgsFields()
+        self.map_fields[geom_str][idx] = parser.new_fields_gpkg()
 
     def _init_ext_layer(self, geom_str, idx, crs):
         """given non map of feat, init a qgis layer

@@ -426,7 +426,7 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
             orig_props_names,
             props_names,
         )
-        if fields.size()
+        if fields.size() > 1
         else threshold
         for fields in lst_fields
     ]
