@@ -26,6 +26,7 @@ from qgis.testing import unittest
 from qgis.core import QgsWkbTypes, QgsProject
 
 from XYZHubConnector.xyz_qgis.layer import XYZLayer, parser, render
+from XYZHubConnector.xyz_qgis.models import SpaceConnectionInfo
 
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
@@ -52,7 +53,7 @@ class TestRenderLayer(BaseTestAsync):
             ref_map_feat, ref_map_fields = self._test_render_mixed_json_to_layer(obj)
 
             ref = dict()
-            ref_len_fields = {"MultiPoint": [6, 18], "MultiPolygon": [27]}
+            ref_len_fields = {"MultiPoint": [3, 6, 18], "MultiPolygon": [27], None: [4]}
             ref["len_fields"] = ref_len_fields
             with self.subTest():
                 self._assert_len_fields(ref_map_fields, ref_len_fields)
@@ -136,7 +137,7 @@ class TestRenderLayer(BaseTestAsync):
 
             self.assert_layer(layer, obj, map_fields)
 
-            self.remove_layer(layer)
+            # self.remove_layer(layer) # skip if deleted layer clear map_fields
             return map_fields
 
     def _assert_rendered_fields(self, vlayer, fields):
@@ -240,7 +241,7 @@ class TestRenderLayer(BaseTestAsync):
             QgsProject.instance().removeMapLayer(vlayer)
 
     def new_layer(self):
-        conn_info = dict(tags=["tags"])
+        conn_info = SpaceConnectionInfo.from_dict(dict(tags=["tags"]))
         meta = dict(title="title", id="id")
         layer = XYZLayer(conn_info, meta)
         return layer
