@@ -103,8 +103,9 @@ def add_feature_render(vlayer, feat, new_fields):
     if transformer.isValid() and not transformer.isShortCircuited():
         feat = filter(None, (parser.transform_geom(ft, transformer) for ft in feat if ft))
 
-    names = set(vlayer.fields().names())
-    diff_fields = [f for f in parser.non_expression_fields(new_fields) if f.name() not in names]
+    names = set(pr.fields().names())
+    assert parser.check_non_expression_fields(new_fields)
+    diff_fields = [f for f in new_fields if not f.name() in names]
 
     # print_qgis(len(names), names)
     # print_qgis(len(new_fields), new_fields.names())

@@ -147,6 +147,10 @@ def non_expression_fields(fields):
     return [f for i, f in enumerate(fields) if fields.fieldOrigin(i) != fields.OriginExpression]
 
 
+def check_non_expression_fields(fields):
+    return all(fields.fieldOrigin(i) != fields.OriginExpression for i, f in enumerate(fields))
+
+
 def feature_to_xyz_json(features, is_new=False, ignore_null=True):
     def _xyz_props(props, ignore_keys=tuple()):
         # for all key start with @ (internal): str to dict (disabled)
