@@ -105,6 +105,8 @@ class XYZLayer(object):
         # obj._save_meta_node(qnode)
         for i in qnode.findLayers():
             vlayer = i.layer()
+            if not vlayer.isValid():
+                continue
             geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
             obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
             obj.map_fields.setdefault(geom_str, list()).append(vlayer.dataProvider().fields())
