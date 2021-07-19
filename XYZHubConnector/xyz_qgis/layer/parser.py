@@ -360,7 +360,7 @@ def xyz_json_to_feat(feat_json, fields):
     Convert xyz geojson to feature, given fields
     """
 
-    names = fields.names()
+    names = set(fields.names())
 
     qattrs = list()
 
@@ -427,19 +427,24 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
             props_names,
         )
         if fields.size() > 1
-        else threshold
+        else -1
         for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
+    idx_min, score_min = min(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
 
     if score < threshold or not idx < len(lst_fields):  # new fields
-        idx = len(lst_fields)
-        fields = new_fields_gpkg()
-        lst_fields.append(fields)
-        # print("len prop", len(props_names), "score", lst_score, "lst_fields", len(lst_fields))
-        # print("len fields", [f.size() for f in lst_fields])
+        if score_min >= 0:  # new fields
+            idx = len(lst_fields)
+            fields = new_fields_gpkg()
+            lst_fields.append(fields)
+        else:  # select empty fields
+            idx = idx_min
+            fields = lst_fields[idx]
     else:
         fields = lst_fields[idx]
+    # print("len prop", len(props_names), idx, "score", lst_score, "lst_fields", len(lst_fields))
+    # print("len fields", [f.size() for f in lst_fields])
 
     return fields, idx
 
