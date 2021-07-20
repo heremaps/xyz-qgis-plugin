@@ -410,6 +410,47 @@ def xyz_json_to_feat(feat_json, fields):
     return feat
 
 
+def check_same_fields(fields1: QgsFields, fields2: QgsFields):
+    """
+    Check if fields order, name and origin are equal
+
+    :param fields1: QgsFields
+    :param fields2: other QgsFields
+    :return: True if 2 fields are equal (same order, name, origin)
+    """
+    len_ok = len(fields1) == len(fields2)
+    name_ok = fields1.names() == fields2.names()
+    field_origin_ok = all(
+        fields1.fieldOrigin(i) == fields2.fieldOrigin(i)
+        for i, (f1, f2) in enumerate(zip(fields1, fields2))
+    )
+    return len_ok and name_ok and field_origin_ok
+
+
+def update_feature_fields(feat: QgsFeature, fields: QgsFields):
+    """
+    Update fields of feature and its data (QgsAttributes)
+
+    :param feat: QgsFeature
+    :param fields: new QgsFields
+    :return: new QgsFeature with updated fields
+    """
+    old_fields = feat.fields()
+    try:
+        assert set(fields.names()).issuperset(
+            set(old_fields.names())
+        ), "new fields must be a super set of existing fields of feature"
+    except AssertionError as e:
+        print_error(e)
+        return
+
+    ft = QgsFeature(fields)
+    for k in old_fields.names():
+        ft.setAttribute(k, feat.attribute(k))
+    ft.setGeometry(feat.geometry())
+    return ft
+
+
 def prepare_fields(feat_json, lst_fields, threshold=0.8):
     """
     Decide to merge fields or create new fields based on fields similarity score [0..1].

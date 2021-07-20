@@ -120,6 +120,10 @@ def add_feature_render(vlayer, feat, new_fields):
     pr.addAttributes(diff_fields)
     vlayer.updateFields()
 
+    # update feature fields according to provider fields
+    if not parser.check_same_fields(new_fields, pr.fields()):
+        feat = filter(None, (parser.update_feature_fields(ft, pr.fields()) for ft in feat if ft))
+
     ok, out_feat = pr.addFeatures(feat)
     vlayer.updateExtents()  # will hide default progress bar
     # post_render(vlayer) # disable in order to keep default progress bar running
