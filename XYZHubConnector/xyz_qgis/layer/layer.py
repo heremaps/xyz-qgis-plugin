@@ -442,6 +442,13 @@ class XYZLayer(object):
         self.map_vlayer[geom_str][idx] = None
         self.map_fields[geom_str][idx] = parser.new_fields_gpkg()
 
+    def refresh_map_fields(self):
+        for geom_str in self.map_vlayer:
+            for idx, vlayer in enumerate(self.map_vlayer.get(geom_str, list())):
+                if vlayer is None:
+                    continue
+                self.map_fields[geom_str][idx] = vlayer.dataProvider().fields()
+
     def _init_ext_layer(self, geom_str, idx, crs):
         """given non map of feat, init a qgis layer
         :map_feat: {geom_string: list_of_feat}
