@@ -514,14 +514,20 @@ class XYZLayer(object):
         self._update_constraint_trigger(fname, db_layer_name)
 
     def _update_constraint_trigger(self, fname, layer_name):
-        sql_trigger = """CREATE TRIGGER IF NOT EXISTS "trigger_{layer_name}_{id_column}_insert"
+        sql_trigger = """
+        CREATE TRIGGER IF NOT EXISTS "trigger_{layer_name}_{id_column}_insert"
         BEFORE INSERT ON "{layer_name}" BEGIN DELETE FROM "{layer_name}"
-        WHERE "{id_column}" = NEW."{id_column}"; END""".format(
+        WHERE "{id_column}" = NEW."{id_column}"; END;
+
+        CREATE UNIQUE INDEX IF NOT EXISTS "idx_{layer_name}_{id_column}"
+        ON "{layer_name}" ("{id_column}");
+        VACUUM;
+        """.format(
             layer_name=layer_name, id_column=parser.QGS_XYZ_ID
         )
         conn = sqlite3.connect(fname)
         cur = conn.cursor()
-        cur.execute(sql_trigger)
+        cur.executescript(sql_trigger)
         conn.commit()
         conn.close()
 
