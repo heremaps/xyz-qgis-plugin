@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 1.8.7 (2021-07-22)
+
+🐛 FIXES 🐛
+* Ensure fields to be consistent to prevent data corruption
+* Handle virtual fields (expression fields) in data loading
+
 ## Version 1.8.6 (2021-07-14)
 
 🐛 FIXES 🐛

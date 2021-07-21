@@ -1,5 +1,16 @@
 # Changelog 
 
+## Version 1.8.7 (2021-07-22)
+
+#### Bug Fixes
+
+* Ensure xyz_id uniqueness via sqlite trigger instead of 'on replace conflict' constraint
+* Ensure fields to be consistent with provider fields to prevent data corruption, especially after editing
+* Ensure the paired order of fields-vector layer after a layer is removed (set fields to empty for deleted layer)
+* Handle virtual fields (expression fields) in data loading
+* Update test for parser and render
+* Disconnect signal silently to avoid exception
+
 ## Version 1.8.6 (2021-07-14)
 
 #### Bug Fixes
