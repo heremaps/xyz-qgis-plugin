@@ -110,6 +110,7 @@ class XYZLayer(object):
             geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
             obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
             obj.map_fields.setdefault(geom_str, list()).append(vlayer.dataProvider().fields())
+            obj.update_constraint_trigger(geom_str, len(obj.map_vlayer[geom_str]) - 1)
             # obj._save_meta_vlayer(vlayer)
         return obj
 
@@ -499,12 +500,7 @@ class XYZLayer(object):
         if err[0] != QgsVectorFileWriter.NoError:
             raise Exception("%s: %s" % err)
 
-        sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT REPLACE' % (
-            parser.QGS_XYZ_ID
-        )  # replace older duplicate
-        # sql_constraint = '"%s" TEXT UNIQUE ON CONFLICT IGNORE'%(parser.QGS_XYZ_ID) # discard
-        # newer duplicate
-        self._init_constraint(fname, sql_constraint, db_layer_name)
+        self._update_constraint_trigger(fname, db_layer_name)
 
         uri = "%s|layername=%s" % (fname, db_layer_name)
         vlayer = QgsVectorLayer(uri, layer_name, "ogr")
@@ -512,51 +508,20 @@ class XYZLayer(object):
 
         return vlayer
 
-    def _init_constraint(self, fname, sql_constraint, layer_name):
-        # https://sqlite.org/lang_altertable.html
+    def update_constraint_trigger(self, geom_str, idx):
+        fname = make_fixed_full_path(self._layer_fname(), ext=self.ext)
+        db_layer_name = self._db_layer_name(geom_str, idx)
+        self._update_constraint_trigger(fname, db_layer_name)
 
-        tmp_name = "tmp_" + layer_name
-
+    def _update_constraint_trigger(self, fname, layer_name):
+        sql_trigger = """CREATE TRIGGER IF NOT EXISTS "trigger_{layer_name}_{id_column}_insert"
+        BEFORE INSERT ON "{layer_name}" BEGIN DELETE FROM "{layer_name}"
+        WHERE "{id_column}" = NEW."{id_column}"; END""".format(
+            layer_name=layer_name, id_column=parser.QGS_XYZ_ID
+        )
         conn = sqlite3.connect(fname)
         cur = conn.cursor()
-
-        sql = 'SELECT type, sql FROM sqlite_master WHERE tbl_name="%s"' % (layer_name)
-        cur.execute(sql)
-        lst = cur.fetchall()
-        if len(lst) == 0:
-            raise Exception("No layer found in GPKG")
-        lst_old_sql = [p[1] for p in lst]
-        sql_create = lst_old_sql.pop(0)
-
-        sql_create = sql_create.replace(layer_name, tmp_name)
-        parts = sql_create.partition(")")
-        sql_create = "".join([parts[0], ", %s" % (sql_constraint), parts[1], parts[2]])
-        # empty table, so insert is skipped
-        lst_sql = (
-            [
-                "PRAGMA foreign_keys = '0'",
-                "BEGIN TRANSACTION",
-                sql_create,
-                "PRAGMA defer_foreign_keys = '1'",
-                'DROP TABLE "%s"' % (layer_name),
-                'ALTER TABLE "%s" RENAME TO "%s"' % (tmp_name, layer_name),
-                "PRAGMA defer_foreign_keys = '0'",
-            ]
-            + lst_old_sql
-            + [
-                # 'PRAGMA "main".foreign_key_check', # does not return anything -> unused
-                "COMMIT",
-                "PRAGMA foreign_keys = '1'",
-            ]
-        )
-        for s in lst_sql:
-            if "COMMIT" in s:
-                conn.commit()
-                continue
-            # if "COMMIT" in s and not conn.in_transaction: continue
-
-            cur.execute(s)
-
+        cur.execute(sql_trigger)
         conn.commit()
         conn.close()
 
