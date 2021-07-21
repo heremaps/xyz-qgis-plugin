@@ -21,10 +21,13 @@ def get_current_millis_time():
     return int(round(time.time() * 1000))
 
 
-def disconnect_silent(signal):
+def disconnect_silent(signal, fn=None):
     ok = True
     try:
-        signal.disconnect()
+        if fn is None:
+            signal.disconnect()
+        else:
+            signal.disconnect(fn)
     except TypeError:
         ok = False
     return ok

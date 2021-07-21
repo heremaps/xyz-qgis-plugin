@@ -22,6 +22,7 @@ from .layer_utils import (
     get_conn_info_from_layer,
     get_layer,
 )
+from ..common.utils import disconnect_silent
 
 from ..common.signal import make_print_qgis
 
@@ -275,7 +276,7 @@ class LayeredEditBuffer(object):
 
     def update_synced_feat(self, fid, feat):
         vlayer = get_layer(self.layer_id)
-        fields = vlayer.fields()
+        fields = vlayer.dataProvider().fields()
         ft = parser.xyz_json_to_feat(feat, fields)
         ft.setId(fid)
         update_feat_non_null(vlayer, ft)
@@ -426,7 +427,7 @@ class LayeredEditBuffer(object):
 
     def unload_connection(self):
         for signal, callback in self.callback_pairs:
-            signal.disconnect(callback)
+            disconnect_silent(signal, callback)
 
 
 class EditBuffer(object):

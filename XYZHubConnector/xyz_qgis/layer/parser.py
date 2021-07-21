@@ -143,6 +143,14 @@ def make_valid_xyz_json_geom(geom: dict):
     return geom
 
 
+def non_expression_fields(fields):
+    return [f for i, f in enumerate(fields) if fields.fieldOrigin(i) != fields.OriginExpression]
+
+
+def check_non_expression_fields(fields):
+    return all(fields.fieldOrigin(i) != fields.OriginExpression for i, f in enumerate(fields))
+
+
 def feature_to_xyz_json(features, is_new=False, ignore_null=True):
     def _xyz_props(props, ignore_keys=tuple()):
         # for all key start with @ (internal): str to dict (disabled)
@@ -193,9 +201,9 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
                 obj[XYZ_ID] = v
         fields = feat.fields()
         expression_field_names = [
-            k
-            for k in fields.names()
-            if fields.fieldOrigin(fields.indexFromName(k)) == fields.OriginExpression
+            f.name()
+            for i, f in enumerate(fields)
+            if fields.fieldOrigin(i) == fields.OriginExpression
         ]
         # print({k.name(): fields.fieldOrigin(i) for i, k in enumerate(fields)})
         props = _xyz_props(props, ignore_keys=expression_field_names)
@@ -356,7 +364,7 @@ def xyz_json_to_feat(feat_json, fields):
     Convert xyz geojson to feature, given fields
     """
 
-    names = fields.names()
+    names = set(fields.names())
 
     qattrs = list()
 
@@ -382,7 +390,7 @@ def xyz_json_to_feat(feat_json, fields):
                         val.convert(cast)
                         break
             if not val.type() in valid_qvariant:
-                print_qgis("Invalid type", k, val.typeName())
+                print_qgis("Field '%s': Invalid type: %s. Value: %s" % (k, val.typeName(), val))
                 continue
             if k not in names:
                 fields.append(make_field(k, val))
@@ -402,6 +410,47 @@ def xyz_json_to_feat(feat_json, fields):
     return feat
 
 
+def check_same_fields(fields1: QgsFields, fields2: QgsFields):
+    """
+    Check if fields order, name and origin are equal
+
+    :param fields1: QgsFields
+    :param fields2: other QgsFields
+    :return: True if 2 fields are equal (same order, name, origin)
+    """
+    len_ok = len(fields1) == len(fields2)
+    name_ok = fields1.names() == fields2.names()
+    field_origin_ok = all(
+        fields1.fieldOrigin(i) == fields2.fieldOrigin(i)
+        for i, (f1, f2) in enumerate(zip(fields1, fields2))
+    )
+    return len_ok and name_ok and field_origin_ok
+
+
+def update_feature_fields(feat: QgsFeature, fields: QgsFields):
+    """
+    Update fields of feature and its data (QgsAttributes)
+
+    :param feat: QgsFeature
+    :param fields: new QgsFields
+    :return: new QgsFeature with updated fields
+    """
+    old_fields = feat.fields()
+    try:
+        assert set(fields.names()).issuperset(
+            set(old_fields.names())
+        ), "new fields must be a super set of existing fields of feature"
+    except AssertionError as e:
+        print_error(e)
+        return
+
+    ft = QgsFeature(fields)
+    for k in old_fields.names():
+        ft.setAttribute(k, feat.attribute(k))
+    ft.setGeometry(feat.geometry())
+    return ft
+
+
 def prepare_fields(feat_json, lst_fields, threshold=0.8):
     """
     Decide to merge fields or create new fields based on fields similarity score [0..1].
@@ -417,17 +466,30 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
         rename_special_props(props)  # rename fid in props
         props_names = [k for k, v in props.items() if v is not None]
     lst_score = [
-        fields_similarity((fields.names()), orig_props_names, props_names) for fields in lst_fields
+        fields_similarity(
+            [f.name() for f in non_expression_fields(fields)],
+            orig_props_names,
+            props_names,
+        )
+        if fields.size() > 1
+        else -1
+        for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
+    idx_min, score_min = min(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
 
     if score < threshold or not idx < len(lst_fields):  # new fields
-        idx = len(lst_fields)
-        fields = new_fields_gpkg()
-        lst_fields.append(fields)
-        print_qgis("len prop", len(props_names), "score", lst_score, "lst_fields", len(lst_fields))
+        if score_min >= 0:  # new fields
+            idx = len(lst_fields)
+            fields = new_fields_gpkg()
+            lst_fields.append(fields)
+        else:  # select empty fields
+            idx = idx_min
+            fields = lst_fields[idx]
     else:
         fields = lst_fields[idx]
+    # print("len prop", len(props_names), idx, "score", lst_score, "lst_fields", len(lst_fields))
+    # print("len fields", [f.size() for f in lst_fields])
 
     return fields, idx
 

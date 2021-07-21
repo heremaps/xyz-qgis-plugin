@@ -11,7 +11,7 @@ import json
 import random
 import numpy as np
 
-from test.utils import (BaseTestAsync, format_long_args)
+from test.utils import BaseTestAsync, format_long_args
 
 from qgis.core import QgsFields
 from qgis.testing import unittest
@@ -25,29 +25,30 @@ class TestFieldsSimilarity(BaseTestAsync):
         props = dict((v, k) for k, v in enumerate(props_keys))
 
         # from parser.prepare_fields
-        orig_props_names = [k for k, v in props.items() 
-            if v is not None] 
-        parser.rename_special_props(props) # rename fid in props
-        props_names = [k for k, v in props.items() 
-            if v is not None] 
+        orig_props_names = [k for k, v in props.items() if v is not None]
+        parser.rename_special_props(props)  # rename fid in props
+        props_names = [k for k, v in props.items() if v is not None]
 
         return parser.fields_similarity(fields_names, orig_props_names, props_names)
+
     def subtest_similarity_score(self, fields_names, props_keys, expected):
-        with self.subTest(fields_names=fields_names,props_keys=props_keys):
+        with self.subTest(fields_names=fields_names, props_keys=props_keys):
             score = self._similarity_of_fields_names_and_props_keys(fields_names, props_keys)
             self._log_debug("score", score)
             self.assertEqual(score, expected)
             return score
+
     def test_simple(self):
         fid = parser.QGS_ID
         xid = parser.QGS_XYZ_ID
         xyz_special_key = "@ns:com:here:xyz"
         score = self.subtest_similarity_score([fid, "a", "b"], ["a", "b"], 1)
-        score = self.subtest_similarity_score([fid,"a"], ["a","b"], 1)
-        score = self.subtest_similarity_score([fid,"a"], ["b"], 0)
-        score = self.subtest_similarity_score([fid,"a","c"], ["a","b"], 0.5)
-        score = self.subtest_similarity_score([fid, xyz_special_key,"a","b","c"], 
-            [xyz_special_key,"a"], 1)
+        score = self.subtest_similarity_score([fid, "a"], ["a", "b"], 1)
+        score = self.subtest_similarity_score([fid, "a"], ["b"], 0)
+        score = self.subtest_similarity_score([fid, "a", "c"], ["a", "b"], 0.5)
+        score = self.subtest_similarity_score(
+            [fid, xyz_special_key, "a", "b", "c"], [xyz_special_key, "a"], 1
+        )
 
     def test_empty(self):
         fid = parser.QGS_ID
@@ -55,11 +56,11 @@ class TestFieldsSimilarity(BaseTestAsync):
         xyz_special_key = "@ns:com:here:xyz"
         # empty fields, shall returns merge fields (score 1)
         score = self.subtest_similarity_score([fid], [], 1)
-        score = self.subtest_similarity_score([], [], 1) 
-        score = self.subtest_similarity_score([xyz_special_key], [], 1) 
-        score = self.subtest_similarity_score([xyz_special_key], [xyz_special_key], 1) 
-        score = self.subtest_similarity_score([fid, xyz_special_key], [], 1) 
-        score = self.subtest_similarity_score([fid, xyz_special_key], [xyz_special_key], 1) 
+        score = self.subtest_similarity_score([], [], 1)
+        score = self.subtest_similarity_score([xyz_special_key], [], 1)
+        score = self.subtest_similarity_score([xyz_special_key], [xyz_special_key], 1)
+        score = self.subtest_similarity_score([fid, xyz_special_key], [], 1)
+        score = self.subtest_similarity_score([fid, xyz_special_key], [xyz_special_key], 1)
         score = self.subtest_similarity_score([fid], [], 1)
         score = self.subtest_similarity_score([fid], [xyz_special_key], 1)
 
@@ -72,9 +73,9 @@ class TestFieldsSimilarity(BaseTestAsync):
         # empty fields will be merged with any props
         # merge if empty fields OR empty props
 
-        score = self.subtest_similarity_score([fid], ["a"], 1) 
-        score = self.subtest_similarity_score([fid,"a"], [], 1) 
-        score = self.subtest_similarity_score([fid,xyz_special_key], ["a",xyz_special_key], 1) 
+        score = self.subtest_similarity_score([fid], ["a"], 1)
+        score = self.subtest_similarity_score([fid, "a"], [], 1)
+        score = self.subtest_similarity_score([fid, xyz_special_key], ["a", xyz_special_key], 1)
         score = self.subtest_similarity_score([fid], [fid], 1)
         score = self.subtest_similarity_score([fid, xyz_special_key], [fid], 1)
 
@@ -86,11 +87,11 @@ class TestFieldsSimilarity(BaseTestAsync):
         # special keys are excluded when calculating similarity score
         # create new fields if either fields or props is not empty (score 0)
         # merge if empty fields AND empty props (score 1)
-        
+
         # fields or props not empty
         score = self.subtest_similarity_score([fid], ["a"], 0)
         score = self.subtest_similarity_score([fid, "a"], [], 0)
-        score = self.subtest_similarity_score([fid, xyz_special_key], ["a",xyz_special_key], 0)
+        score = self.subtest_similarity_score([fid, xyz_special_key], ["a", xyz_special_key], 0)
 
         # fields and props empty
         score = self.subtest_similarity_score([fid], [], 1)
@@ -99,10 +100,14 @@ class TestFieldsSimilarity(BaseTestAsync):
         score = self.subtest_similarity_score([fid, xid], [xyz_special_key], 1)
         score = self.subtest_similarity_score([fid, xyz_special_key], [xyz_special_key], 1)
         score = self.subtest_similarity_score([fid, xid, xyz_special_key], [xyz_special_key], 1)
-        
+
         # fields and props share common prop
-        score = self.subtest_similarity_score([fid, xyz_special_key, "a"], [xyz_special_key, "a"], 1)
-        score = self.subtest_similarity_score([fid, xid, xyz_special_key, "a"], [xyz_special_key, "a"], 1)
+        score = self.subtest_similarity_score(
+            [fid, xyz_special_key, "a"], [xyz_special_key, "a"], 1
+        )
+        score = self.subtest_similarity_score(
+            [fid, xid, xyz_special_key, "a"], [xyz_special_key, "a"], 1
+        )
 
         # special key in props will be renamed, thus not excluded
         score = self.subtest_similarity_score([fid], [fid], 0)
@@ -121,18 +126,39 @@ class TestFieldsSimilarity(BaseTestAsync):
         xyz_special_key = "@ns:com:here:xyz"
 
         score = self.subtest_similarity_score([fid, xid, parser.unique_field_name(fid)], [fid], 1)
-        score = self.subtest_similarity_score([fid, xid, parser.unique_field_name(fid.upper())], [fid.upper()], 1)
-        score = self.subtest_similarity_score([parser.unique_field_name(fid.upper())], [fid.upper()], 1)
-        score = self.subtest_similarity_score([fid, xid, xyz_special_key, parser.unique_field_name(fid.upper())], [xyz_special_key, fid.upper()], 1)
-        score = self.subtest_similarity_score([fid, xid, xyz_special_key, parser.unique_field_name(xid.upper())], [xyz_special_key, xid.upper()], 1)
-        score = self.subtest_similarity_score([fid, xid, xyz_special_key, parser.unique_field_name(fid), "a"], [xyz_special_key, fid, "a"], 1)
-        score = self.subtest_similarity_score([fid, xid, xyz_special_key, parser.unique_field_name(fid), "a"], [xyz_special_key, fid.upper(), "a"], 1/2)
+        score = self.subtest_similarity_score(
+            [fid, xid, parser.unique_field_name(fid.upper())], [fid.upper()], 1
+        )
+        score = self.subtest_similarity_score(
+            [parser.unique_field_name(fid.upper())], [fid.upper()], 1
+        )
+        score = self.subtest_similarity_score(
+            [fid, xid, xyz_special_key, parser.unique_field_name(fid.upper())],
+            [xyz_special_key, fid.upper()],
+            1,
+        )
+        score = self.subtest_similarity_score(
+            [fid, xid, xyz_special_key, parser.unique_field_name(xid.upper())],
+            [xyz_special_key, xid.upper()],
+            1,
+        )
+        score = self.subtest_similarity_score(
+            [fid, xid, xyz_special_key, parser.unique_field_name(fid), "a"],
+            [xyz_special_key, fid, "a"],
+            1,
+        )
+        score = self.subtest_similarity_score(
+            [fid, xid, xyz_special_key, parser.unique_field_name(fid), "a"],
+            [xyz_special_key, fid.upper(), "a"],
+            1 / 2,
+        )
 
     def test_complex(self):
-        feat_json = dict(properties=dict(a=1,b=2))
+        feat_json = dict(properties=dict(a=1, b=2))
         lst_fields = list()
         # prepare_fields
-        
+
+
 class TestUniqueFieldName(BaseTestAsync):
     def test_transform_unique_field_names(self):
         fid = parser.QGS_ID
@@ -145,19 +171,22 @@ class TestUniqueFieldName(BaseTestAsync):
         self.subtest_transform_unique_field_names("foobar")
         self.subtest_transform_unique_field_names("@ns:com:here:hello")
         self.subtest_transform_unique_field_names("foo.bar")
-        
+
     def subtest_transform_unique_field_names(self, orig_name):
         names = [orig_name]
-        names.extend([
-            "".join(s.upper() if i%k else s for i, s in enumerate(orig_name))
-            for k in [2,3,5]
-        ])
+        names.extend(
+            [
+                "".join(s.upper() if i % k else s for i, s in enumerate(orig_name))
+                for k in [2, 3, 5]
+            ]
+        )
         for name in names:
             with self.subTest(name=name):
                 field_name = parser.unique_field_name(name)
                 actual = parser.normal_field_name(field_name)
                 self._log_debug("{} -> {} -> {}".format(name, field_name, actual))
                 self.assertEqual(actual, name)
+
 
 if __name__ == "__main__":
     unittest.main()

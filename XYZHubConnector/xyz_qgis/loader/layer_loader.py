@@ -171,6 +171,7 @@ class LoadLayerController(BaseLoader):
 
     def _run(self):
         conn_info = self.get_conn_info()
+        self.layer.refresh_map_fields()  # ensure map fields is updated from provider
 
         # TODO refactor methods
         if not self.params_queue.has_next():
