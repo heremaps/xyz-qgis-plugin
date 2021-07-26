@@ -151,7 +151,7 @@ def check_non_expression_fields(fields):
     return all(fields.fieldOrigin(i) != fields.OriginExpression for i, f in enumerate(fields))
 
 
-def feature_to_xyz_json(features, is_new=False, ignore_null=True):
+def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=False):
     def _xyz_props(props, ignore_keys=tuple()):
         # for all key start with @ (internal): str to dict (disabled)
         # k = "@ns:com:here:xyz"
@@ -163,11 +163,6 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
 
             if k in ignore_keys:
                 continue
-            # drop @ fields for upload
-            if k.startswith("@ns:com:here:xyz"):
-                continue
-            if k.startswith("@") and k != "@ns:com:here:mom:delta":
-                continue
             new_props[k] = props[t]
 
             # always handle json string in props
@@ -178,11 +173,27 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
                     new_props[k] = json.loads(v)
                 except json.JSONDecodeError:
                     pass
-            # handle editing of delta layer
-            if k == "@ns:com:here:mom:delta":
-                if "reviewState" in new_props[k]:
-                    new_props[k]["reviewState"] = ""  # UNPUBLISHED
         return new_props
+
+    def _livemap_props(props):
+        # handle editing of delta layer
+        if "@ns:com:here:mom:meta" in props:
+            props.setdefault("@ns:com:here:mom:delta", dict()).update(
+                {"reviewState": "UNPUBLISHED"}
+            )
+        return props
+
+    def _clean_props(props):
+        # drop @ fields for upload
+        ignored_special_keys = [
+            k
+            for k in props.keys()
+            if k.startswith("@ns:com:here:xyz")
+            or (k.startswith("@") and k != "@ns:com:here:mom:delta")
+        ]
+        for k in ignored_special_keys:
+            props.pop(k, None)
+        return props
 
     def _single_feature(feat):
         # existing feature json
@@ -207,7 +218,9 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
         ]
         # print({k.name(): fields.fieldOrigin(i) for i, k in enumerate(fields)})
         props = _xyz_props(props, ignore_keys=expression_field_names)
-
+        if is_livemap:
+            props = _livemap_props(props)
+        props = _clean_props(props)
         obj["properties"] = props
 
         geom = feat.geometry()
