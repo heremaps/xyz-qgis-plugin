@@ -172,7 +172,7 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True):
 
             # always handle json string in props
             v = new_props[k]
-            if isinstance(v, str):
+            if isinstance(v, str) and ("{" in v or "[" in v):
                 # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
                 try:
                     new_props[k] = json.loads(v)
