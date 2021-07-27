@@ -46,7 +46,9 @@ def get_feat_upload_from_iter_args(feat_iter, vlayer):
     return make_qt_args(*a)
 
 
-def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid: list = None, lst_xyz_id: list = None):
+def get_feat_upload_from_iter(
+    feat_iter, vlayer, lst_fid: list = None, lst_xyz_id: list = None, is_livemap=False
+):
     """get feature as geojson from iter. Also return lst_fid ordering
     optinal input: lst_fid order and lst_xyz_id mapping
     ensure same order as lst_fid
@@ -70,7 +72,7 @@ def get_feat_upload_from_iter(feat_iter, vlayer, lst_fid: list = None, lst_xyz_i
     if transformer.isValid() and not transformer.isShortCircuited():
         lst_feat = filter(None, (parser.transform_geom(ft, transformer) for ft in lst_feat))
 
-    added_feat = parser.feature_to_xyz_json(lst_feat, is_new=False)
+    added_feat = parser.feature_to_xyz_json(lst_feat, is_new=False, is_livemap=is_livemap)
     for ft, xyz_id in zip(added_feat, lst_xyz_id):
         if ft is None or xyz_id is None:
             continue

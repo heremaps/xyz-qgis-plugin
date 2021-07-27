@@ -22,6 +22,8 @@ def parse_copyright(v):
 
 class SpaceConnectionInfo(object):
     EXCLUDE_PROJECT_KEYS = ["here_client_secret"]
+    LIVEMAP = "LIVEMAP"
+    LIVEMAP_CID = "3fN7oveDupmTGsr5mUM5"
 
     def __init__(self, conn_info=None):
         if conn_info is None:
@@ -74,3 +76,9 @@ class SpaceConnectionInfo(object):
         for ex in self.EXCLUDE_PROJECT_KEYS:
             d.pop(ex, "")
         return d
+
+    def is_livemap(self):
+        packages = self.get_("packages", list())
+        check_pkg = any(p for p in packages if self.LIVEMAP in p)
+        check_cid = self.get_("cid") == self.LIVEMAP_CID
+        return check_pkg or check_cid
