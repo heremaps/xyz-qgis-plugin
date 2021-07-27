@@ -153,8 +153,8 @@ def check_non_expression_fields(fields):
 
 def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=False):
     def _xyz_props(props, ignore_keys=tuple()):
-        # for all key start with @ (internal): str to dict (disabled)
-        # k = "@ns:com:here:xyz"
+        # convert from qgs case insensitive fields back to json properties
+        # convert from json string to json object
         new_props = dict()
         for t in props.keys():
             if ignore_null and props[t] is None:
@@ -175,22 +175,17 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=Fal
                     pass
         return new_props
 
-    def _livemap_props(props):
+    def _livemap_props(props, xyz_id=None):
         # handle editing of delta layer
-        if "@ns:com:here:mom:meta" in props:
-            props.setdefault("@ns:com:here:mom:delta", dict()).update(
-                {"reviewState": "UNPUBLISHED"}
-            )
-        return props
+        changeState = "UPDATED" if "@ns:com:here:mom:delta" in props else "CREATED"
+        delta = {"reviewState": "UNPUBLISHED", "changeState": changeState, "taskGridId": ""}
+        if xyz_id:
+            delta.update({"originId": xyz_id})
+        return {"@ns:com:here:mom:delta": delta}
 
     def _clean_props(props):
         # drop @ fields for upload
-        ignored_special_keys = [
-            k
-            for k in props.keys()
-            if k.startswith("@ns:com:here:xyz")
-            or (k.startswith("@") and k != "@ns:com:here:mom:delta")
-        ]
+        ignored_special_keys = [k for k in props.keys() if k.startswith("@")]
         for k in ignored_special_keys:
             props.pop(k, None)
         return props
@@ -218,10 +213,9 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=Fal
         ]
         # print({k.name(): fields.fieldOrigin(i) for i, k in enumerate(fields)})
         props = _xyz_props(props, ignore_keys=expression_field_names)
-        if is_livemap:
-            props = _livemap_props(props)
+        livemap_props = _livemap_props(props, xyz_id=obj.get(XYZ_ID)) if is_livemap else dict()
         props = _clean_props(props)
-        obj["properties"] = props
+        obj["properties"] = dict(props, **livemap_props)
 
         geom = feat.geometry()
         geom_ = json.loads(geom.asJson())

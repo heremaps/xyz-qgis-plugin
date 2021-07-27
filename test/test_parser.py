@@ -517,19 +517,22 @@ class TestParser(BaseTestAsync):
             for ft in expected["features"]:
                 ft.pop("momType", None)
                 props = ft["properties"]
-                props.setdefault("@ns:com:here:mom:delta", dict()).update(
-                    {"reviewState": "UNPUBLISHED"}
-                )
 
-                ignored_sepcial_keys = [
-                    k
-                    for k in props.keys()
-                    if k.startswith("@ns:com:here:xyz")
-                    or (k.startswith("@") and k != "@ns:com:here:mom:delta")
-                ]
+                changeState = "UPDATED" if "@ns:com:here:mom:delta" in props else "CREATED"
+                delta = {
+                    "reviewState": "UNPUBLISHED",
+                    "changeState": changeState,
+                    "taskGridId": "",
+                }
+                if ft.get("id"):
+                    delta.update({"originId": ft.get("id")})
+
+                ignored_sepcial_keys = [k for k in props.keys() if k.startswith("@")]
                 ignored_keys = [k for k, v in props.items() if v is None]
                 for k in ignored_sepcial_keys + ignored_keys:
                     props.pop(k, None)
+
+                props.update({"@ns:com:here:mom:delta": delta})
 
             lst_coords_ref = [
                 ft.pop("geometry", dict()).get("coordinates", list())
