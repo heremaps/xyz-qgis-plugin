@@ -127,6 +127,7 @@ def add_feature_render(vlayer, feat, new_fields):
     ok, out_feat = pr.addFeatures(feat)
     vlayer.updateExtents()  # will hide default progress bar
     # post_render(vlayer) # disable in order to keep default progress bar running
+    vlayer.reload()
     return ok, out_feat
 
 
