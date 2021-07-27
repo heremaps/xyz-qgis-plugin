@@ -43,9 +43,13 @@ class TestRenderLayer(BaseTestAsync):
             "mixed-xyz.geojson",
         ]
         for fname in fnames:
-            self.subtest_render_mixed_json_to_layer(folder, fname)
+            self.subtest_render_mixed_json_to_layer(
+                folder,
+                fname,
+                ref_len_fields={"MultiPoint": [3, 6, 18], "MultiPolygon": [27], None: [4]},
+            )
 
-    def subtest_render_mixed_json_to_layer(self, folder, fname):
+    def subtest_render_mixed_json_to_layer(self, folder, fname, ref_len_fields=None):
         with self.subTest(folder=folder, fname=fname):
             resource = TestFolder(folder)
             txt = resource.load(fname)
@@ -53,7 +57,7 @@ class TestRenderLayer(BaseTestAsync):
             ref_map_feat, ref_map_fields = self._test_render_mixed_json_to_layer(obj)
 
             ref = dict()
-            ref_len_fields = {"MultiPoint": [3, 6, 18], "MultiPolygon": [27], None: [4]}
+            ref_len_fields = ref_len_fields or dict()
             ref["len_fields"] = ref_len_fields
             with self.subTest():
                 self._assert_len_fields(ref_map_fields, ref_len_fields)
