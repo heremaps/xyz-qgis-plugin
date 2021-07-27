@@ -103,15 +103,26 @@ class XYZLayer(object):
         obj._update_group_name(qnode)
 
         # obj._save_meta_node(qnode)
-        for i in qnode.findLayers():
-            vlayer = i.layer()
+
+        for q in qnode.findLayers():
+            vlayer = q.layer()
             if not vlayer.isValid():
                 continue
-            geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
-            obj.map_vlayer.setdefault(geom_str, list()).append(vlayer)
-            obj.map_fields.setdefault(geom_str, list()).append(vlayer.dataProvider().fields())
-            obj.update_constraint_trigger(geom_str, len(obj.map_vlayer[geom_str]) - 1)
-            # obj._save_meta_vlayer(vlayer)
+            geom_str, idx = obj.geom_str_idx_from_vlayer(vlayer)
+
+            lst_vlayer = obj.map_vlayer.setdefault(geom_str, list())
+            lst_fields = obj.map_fields.setdefault(geom_str, list())
+            while len(lst_vlayer) < idx + 1:
+                lst_vlayer.append(None)
+                lst_fields.append(parser.new_fields_gpkg())
+            lst_vlayer[idx] = vlayer
+            lst_fields[idx] = vlayer.dataProvider().fields()
+
+            obj.update_constraint_trigger(geom_str, idx)
+            vlayer_geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
+            if vlayer_geom_str and not vlayer_geom_str.endswith("Z"):
+                obj.update_z_geom(geom_str, idx, vlayer)
+            vlayer.reload()
         return obj
 
     def _save_params_to_node(self, qnode):
@@ -197,6 +208,8 @@ class XYZLayer(object):
         return cb
 
     def _connect_cb_vlayer(self, vlayer, geom_str, idx):
+        if vlayer is None:
+            return
         cb_delete_vlayer = self.callbacks.setdefault(
             vlayer.id(), self._make_cb_args(self._cb_delete_vlayer, vlayer, geom_str, idx)
         )
@@ -295,9 +308,25 @@ class XYZLayer(object):
 
     def _db_layer_name(self, geom_str, idx):
         """
-        returns name of the table corresponds to vlayer in sqlite db
+        returns name of the table corresponds to vlayer in gpkg/sqlite db
         """
         return "{geom}_{idx}".format(geom=geom_str, idx=idx)
+
+    def _parse_db_layer_name(self, db_layer_name):
+        """
+        returns geom_str, idx from table name in gpkg/sqlite db
+        """
+        geom_str, idx = db_layer_name.split("_", 1)
+        return geom_str, int(idx)
+
+    def geom_str_idx_from_vlayer(self, vlayer):
+        """
+        returns geom_str, idx from vlayer
+        """
+        uri = vlayer.source()
+        key = "|layername="
+        db_layer_name = uri[uri.find(key) + len(key) :]
+        return self._parse_db_layer_name(db_layer_name)
 
     def _layer_fname(self):
         """
@@ -465,9 +494,12 @@ class XYZLayer(object):
 
         # fname = make_unique_full_path(ext=ext)
         fname = make_fixed_full_path(self._layer_fname(), ext=ext)
-
+        if geom_str:
+            geomz = geom_str if geom_str.endswith("Z") else "{}Z".format(geom_str)
+        else:
+            geomz = "NoGeometry"
         vlayer = QgsVectorLayer(
-            "{geom}?crs={crs}&index=yes".format(geom=geom_str, crs=crs), layer_name, "memory"
+            "{geom}?crs={crs}&index=yes".format(geom=geomz, crs=crs), layer_name, "memory"
         )  # this should be done in main thread
 
         # QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, "UTF-8", vlayer.sourceCrs(),
@@ -530,6 +562,22 @@ class XYZLayer(object):
         cur.executescript(sql_trigger)
         conn.commit()
         conn.close()
+
+    def update_z_geom(self, geom_str, idx, vlayer):
+        db_layer_name = self._db_layer_name(geom_str, idx)
+        fname = make_fixed_full_path(self._layer_fname(), ext=self.ext)
+        sql = """
+        UPDATE "gpkg_geometry_columns" SET "z"=1 WHERE "table_name" = "{layer_name}";
+        """.format(
+            layer_name=db_layer_name
+        )
+        conn = sqlite3.connect(fname)
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        # set to the same data source to apply changes
+        vlayer.setDataSource(vlayer.source(), vlayer.sourceName(), "ogr")
 
 
 """ Available vector format for QgsVectorFileWriter
