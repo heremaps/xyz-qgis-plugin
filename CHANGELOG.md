@@ -1,5 +1,18 @@
 # Changelog 
 
+## Version 1.8.8 (2021-07-28)
+
+#### Improvements
+
+* Improves editing delta layers
+* Supports Z coordinates
+
+#### Bug Fixes
+
+* Do not convert string to integer when parsing feature
+* Fixes vertex editor not working properly after loading
+* Fixes ordering of vector layer when opening saved project
+
 ## Version 1.8.7 (2021-07-22)
 
 #### Bug Fixes
