@@ -41,6 +41,7 @@ class TestParser(BaseTestAsync):
             self.subtest_parse_xyzjson(folder, fname)
 
     def subtest_parse_xyzjson(self, folder, fname):
+        feat = list()
         with self.subTest(folder=folder, fname=fname):
             resource = TestFolder(folder)
 
@@ -52,6 +53,7 @@ class TestParser(BaseTestAsync):
 
             self._assert_parsed_fields(obj_feat, feat, fields)
             self._assert_parsed_geom(obj_feat, feat, fields)
+        return feat
 
     def _assert_parsed_fields_unorder(self, obj_feat, feat, fields):
         # self._log_debug(fields.names())
@@ -433,12 +435,15 @@ class TestParser(BaseTestAsync):
 
     ######## Parse QgsFeature -> json
     def test_parse_qgsfeature(self):
-        self.subtest_parse_qgsfeature("geojson-small", "airport-qgis.geojson")  # no xyz_id
+        # self.subtest_parse_qgsfeature("geojson-small", "airport-qgis.geojson")  # no xyz_id
+        self.subtest_parse_qgsfeature("xyzjson-small", "airport-xyz.geojson")
+        self.subtest_parse_qgsfeature_2way("xyzjson-small", "airport-xyz.geojson")
+        self.subtest_parse_qgsfeature_livemap("xyzjson-small", "livemap-xyz.geojson")
 
     def subtest_parse_qgsfeature(self, folder, fname):
         # qgs layer load geojson -> qgs feature
-        # parse feature to xyz geojson
-        # compare geojson and xyzgeojson
+        # parse feature to geojson
+        # compare geojson and geojson
         with self.subTest(folder=folder, fname=fname):
 
             resource = TestFolder(folder)
@@ -452,8 +457,99 @@ class TestParser(BaseTestAsync):
             )  # remove QGS_XYZ_ID if exist
             self._log_debug(feat)
 
-            self.assertListEqual(obj["features"], feat)
-            self.assertEqual(len(obj["features"]), len(feat))
+            self.maxDiff = None
+            # no need to convert 0.0 to 0
+            expected = obj
+            for ft in expected["features"]:
+                ft.pop("id", None)
+                ft["properties"].pop("@ns:com:here:xyz", None)
+            for ft in feat:
+                ft["properties"].pop("id", None)  # cleanup unexpected "id" field in input data
+            self.assertListEqual(expected["features"], feat)
+            self.assertEqual(len(expected["features"]), len(feat))
+
+    def subtest_parse_qgsfeature_2way(self, folder, fname):
+        # parse xyz geojson to qgs feature
+        # parse feature to xyz geojson
+        # compare geojson and xyz geojson
+        with self.subTest(folder=folder, fname=fname, mode="2way", target="QgsFeature"):
+            qgs_feat = self.subtest_parse_xyzjson(folder, fname)
+
+        with self.subTest(folder=folder, fname=fname, mode="2way", target="XYZ Geojson"):
+
+            resource = TestFolder(folder)
+            txt = resource.load(fname)
+            obj = json.loads(txt)
+            expected = obj
+
+            feat = parser.feature_to_xyz_json(qgs_feat)
+            self._log_debug(feat)
+
+            self.maxDiff = None
+            # no need to convert 0.0 to 0
+            for ft in expected["features"]:
+                ft["properties"].pop("@ns:com:here:xyz", None)
+            self.assertListEqual(expected["features"], feat)
+            self.assertEqual(len(expected["features"]), len(feat))
+
+            feat = parser.feature_to_xyz_json(qgs_feat, is_new=True)
+            self._log_debug(feat)
+
+            for ft in expected["features"]:
+                ft.pop("id", None)
+            self.assertListEqual(expected["features"], feat)
+            self.assertEqual(len(expected["features"]), len(feat))
+
+    def subtest_parse_qgsfeature_livemap(self, folder, fname):
+        # test parse livemap qgsfeature
+        with self.subTest(folder=folder, fname=fname, mode="livemap", target="QgsFeature"):
+            qgs_feat = self.subtest_parse_xyzjson(folder, fname)
+
+        with self.subTest(folder=folder, fname=fname, mode="livemap", target="XYZ Geojson"):
+            resource = TestFolder(folder)
+            txt = resource.load(fname)
+            obj = json.loads(txt)
+
+            feat = parser.feature_to_xyz_json(qgs_feat, is_livemap=True)
+
+            self.maxDiff = None
+            expected = obj
+            for ft in expected["features"]:
+                ft.pop("momType", None)
+                props = ft["properties"]
+
+                changeState = "UPDATED" if "@ns:com:here:mom:delta" in props else "CREATED"
+                delta = {
+                    "reviewState": "UNPUBLISHED",
+                    "changeState": changeState,
+                    "taskGridId": "",
+                }
+                if ft.get("id"):
+                    delta.update({"originId": ft.get("id")})
+
+                ignored_sepcial_keys = [k for k in props.keys() if k.startswith("@")]
+                ignored_keys = [k for k, v in props.items() if v is None]
+                for k in ignored_sepcial_keys + ignored_keys:
+                    props.pop(k, None)
+
+                props.update({"@ns:com:here:mom:delta": delta})
+
+            lst_coords_ref = [
+                ft.pop("geometry", dict()).get("coordinates", list())
+                for ft in expected["features"]
+            ]
+            lst_coords = [ft.pop("geometry", dict()).get("coordinates", list()) for ft in feat]
+
+            self.assertListEqual(expected["features"], feat)
+            self.assertEqual(len(expected["features"]), len(feat))
+
+            # self.assertEqual(flatten(lst_coords_ref), flatten(lst_coords))
+            for coords_ref, coords in zip(lst_coords_ref, lst_coords):
+                self.assertLess(
+                    np.max(np.abs(np.array(coords_ref) - np.array(coords))),
+                    1e-13,
+                    "parsed geometry error > 1e-13",
+                )
 
     def test_parse_qgsfeature_large(self):
         pass

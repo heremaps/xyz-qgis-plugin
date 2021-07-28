@@ -214,6 +214,7 @@ class LayeredEditBuffer(object):
         return self.layer_id
 
     def get_sync_feat(self):
+        is_livemap = self.get_conn_info().is_livemap()
         added_ids, removed_ids = self.get_ids()
 
         m = self.get_xyz_id_(added_ids)
@@ -228,7 +229,7 @@ class LayeredEditBuffer(object):
         vlayer = get_layer(self.layer_id)
         it = vlayer.getFeatures(added_ids)
         lst_added_feat, added_ids = get_feat_upload_from_iter(
-            it, vlayer, lst_fid=added_ids, lst_xyz_id=added_xyz_ids
+            it, vlayer, lst_fid=added_ids, lst_xyz_id=added_xyz_ids, is_livemap=is_livemap
         )
         lst_removed_ids = parser.make_lst_removed_ids(removed_xyz_ids)
 
