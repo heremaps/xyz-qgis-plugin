@@ -83,8 +83,20 @@ class EditableItemModel(QStandardItemModel):
     def get_submitted_data(self):
         return list(self.cfg)
 
-    def items_from_data(self, data: dict):
-        return [data.get(k, "") for k in self.get_info_keys()]
+    def items_from_data(self, data: dict, info_keys: List[str] = None):
+        info_keys = info_keys or self.get_info_keys()
+        return [data.get(k, "") for k in info_keys]
+
+    def _qitem_from_value(self, value: str):
+        it = QStandardItem(value)
+        # it.setData(QVariant(value), Qt.DisplayRole)
+        return it
+
+    def qitems_from_data(self, data: dict, info_keys: List[str] = None):
+        return [self._qitem_from_value(t) for t in self.items_from_data(data, info_keys)]
+
+    def add_data(self, data: dict, info_keys: List[str] = None):
+        self.appendRow(self.qitems_from_data(data, info_keys))
 
     def refresh_model(self):
         self._refresh_model()
@@ -121,11 +133,10 @@ class EditableItemModel(QStandardItemModel):
         self.clear()
 
         self.setHorizontalHeaderLabels(self.get_info_keys())
-        it = self.invisibleRootItem()
-        # it.appendRow(QStandardItem())
+        # self.appendRow(QStandardItem())
 
         for data in self._iter_data():
-            it.appendRow([QStandardItem(t) for t in self.items_from_data(data)])
+            self.add_data(data)
 
     def _cb_item_removed(self, root, i0, i1):
         if not self._is_valid_single_selection(i0, i1):
@@ -161,7 +172,7 @@ class EditableItemModel(QStandardItemModel):
             yield data
 
     def _validate_data(self, data):
-        return data and data.get(self.TOKEN_KEY)
+        return data and sum(bool(v) for v in data.values()) / len(data) > 0.5
 
 
 class GroupEditableItemModel(EditableItemModel):
@@ -358,8 +369,6 @@ class ServerModel(WritableItemModel, UsedToken):
         for idx, data in enumerate(self._iter_data()):
             existing_server.setdefault(data["server"], list()).append(idx)
 
-        it = self.invisibleRootItem()
-
         # # remove existing default server
         # removed_idx = sorted(sum((
         #     existing_server.get(sv, list())
@@ -375,7 +384,7 @@ class ServerModel(WritableItemModel, UsedToken):
                 continue
             if not self._validate_data(server_info):
                 continue
-            it.insertRow(i, [QStandardItem(t) for t in self.items_from_data(server_info)])
+            self.insertRow(i, self.qitems_from_data(server_info))
         self.submit_cache()
 
 
@@ -421,7 +430,12 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         return self.keys.index(key)
 
     def get_value(self, row, col, role):
-        return self.sourceModel().item(row, col).data(role)
+        it = self.sourceModel().item(row, col)
+        return it.data(role) if it else None
+
+    def get_value_from_key(self, key, row):
+        col = self.get_key_index(key)
+        return self.get_value(row, col, Qt.DisplayRole)
 
     def get_text(self, row, col):
         return self.sourceModel().item(row, col).text().strip()

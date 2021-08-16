@@ -22,6 +22,10 @@ def get_api_type(server):
 class IMLTokenModel(TokenModel):
     """Grouped Token Model, Cached changes and write to file at the end"""
 
+    INFO_KEYS = ["name", "token", "user_login"]
+    SERIALIZE_KEYS = ["token", "name", "user_login"]
+    TOKEN_KEY = "token"
+
     def get_api_type(self):
         server = self.get_server()
         return get_api_type(server)
@@ -52,3 +56,6 @@ class IMLComboBoxProxyModel(ComboBoxProxyModel):
             return it.text().strip() if it else ""
         else:
             return ""
+
+    def get_user_login(self, row):
+        return self.get_value_from_key("user_login", row)
