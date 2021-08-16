@@ -46,6 +46,10 @@ class IMLStatSpaceController(StatSpaceController):
     def start(self, conn_info):
         self.con_auth.start(conn_info)
 
+    def reset_fun(self):
+        self.con_auth.reset_fun()
+        super().reset_fun()
+
 
 class IMLDeleteSpaceController(DeleteSpaceController):
     def _config(self, network):

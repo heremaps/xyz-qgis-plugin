@@ -596,6 +596,10 @@ class XYZHubConnector(object):
             self.show_err_msgbar(e)
             dialog.cb_enable_token_ui()
             return
+        # reset stat loader
+        api_type = self.get_api_type_from_conn_info(dialog.conn_info)
+        con = self.con_man.get_con("stat", api_type)
+        con.reset_fun()
         # common
         api_type = self.get_api_type_from_qt_args(args)
         con = self.con_man.get_con("list", api_type)
@@ -978,6 +982,10 @@ class XYZHubConnector(object):
 
         dialog.exec_()
         self.con_man.finish_fast()
+        # reset stat loader
+        api_type = self.get_api_type_from_conn_info(dialog.conn_info)
+        con = self.con_man.get_con("stat", api_type)
+        con.reset_fun()
         # self.startTime = time.time()
 
     def open_sync_edit_dialog(self):

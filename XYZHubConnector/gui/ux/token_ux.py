@@ -132,11 +132,12 @@ class TokenUX(UXDecorator):
         # gui -> pending token
         self.token_model.set_used_token_idx(self.comboBox_token.currentIndex())
         # emit
-        self.conn_info.set_(
+        conn_info = SpaceConnectionInfo()
+        conn_info.set_(
             token=token, server=server, here_credentials=here_credentials, user_login=user_login
         )
-        conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_use_token.emit(make_qt_args(conn_info))
+        self.conn_info = conn_info
 
     def ui_valid_token(self, *a):
         """Return true when token is used and shows Ok!"""

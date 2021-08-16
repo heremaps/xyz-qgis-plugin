@@ -8,8 +8,7 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtNetwork import QNetworkReply
-from qgis.PyQt.QtCore import Qt, QThreadPool
+from qgis.PyQt.QtCore import QThreadPool
 from qgis.core import QgsProject
 
 from .. import make_exception_obj
@@ -52,6 +51,9 @@ class AsyncFun(object):
             self.signal.finished.emit()
             self.signal.results.emit(output)
 
+    def reset(self):
+        pass
+
 
 class WorkerFun(AsyncFun):
     """wrapper for worker (without cache)"""
@@ -73,22 +75,32 @@ class WorkerFun(AsyncFun):
 class NetworkFun(AsyncFun):
     def __init__(self, fun: Callable):
         super().__init__(fun)
-        self._lst_reply = list()
+        self._replies = dict()
 
     def _emit(self, output: QtArgs):
-        self.signal.finished.emit()
         self.signal.results.emit(output)
+        self.signal.finished.emit()
 
     def _emitter(self, reply_idx: int) -> Callable:
         def _fn():
-            reply = self._lst_reply[reply_idx]
+            if reply_idx not in self._replies:
+                return
+            reply = self._replies.pop(reply_idx)
             self._emit(output_to_qt_args(reply))
 
         return _fn
 
     def _save_reply(self, reply):
-        self._lst_reply.append(reply)
-        return len(self._lst_reply) - 1
+        idx = hash(reply)
+        # assert idx not in self._replies
+        self._replies[idx] = reply
+        return idx
+
+    def reset(self):
+        while len(self._replies):
+            k, reply = self._replies.popitem()
+            reply.abort()
+        self._replies.clear()
 
     def call(self, args: QtArgs) -> None:
         a, kw = parse_qt_args(args)
@@ -98,9 +110,8 @@ class NetworkFun(AsyncFun):
             obj = make_exception_obj(e)
             self.signal.error.emit(obj)
         else:
-            output: QtArgs = output_to_qt_args(reply)
             if hasattr(reply, "isFinished") and not reply.isFinished():
                 idx = self._save_reply(reply)
                 reply.finished.connect(self._emitter(idx))
             else:
-                self._emit(output)
+                self._emit(output_to_qt_args(reply))

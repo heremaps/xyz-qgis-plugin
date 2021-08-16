@@ -98,6 +98,10 @@ class ChainController(Controller):
         self._cnt += 1
         super().start(*a, **kw)
 
+    def reset_fun(self):
+        for fun in self.lst_fun:
+            fun.reset()
+
 
 class LoopController(ChainController):
     """
