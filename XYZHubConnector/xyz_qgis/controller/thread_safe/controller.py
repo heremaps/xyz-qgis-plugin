@@ -52,7 +52,8 @@ class Controller(object):
 
 
 class ChainInterrupt(Exception):
-    pass
+    def __init__(self, error, error_index, error_string, controller):
+        super().__init__(error, error_index, error_string, controller)
 
 
 class ChainController(Controller):
