@@ -8,21 +8,25 @@
 #
 ###############################################################################
 
-import time
 import base64
 import json
-
+import time
 
 from qgis.PyQt.QtCore import QUrl
-from ...network.network import NetManager, make_conn_request, make_payload
-from .net_handler import IMLNetworkHandler
 
+from .login import PlatformUserAuthentication
+from .net_handler import IMLNetworkHandler
+from ...models import SpaceConnectionInfo
+from ...network.network import NetManager, make_conn_request, make_payload
+from ...network.net_utils import CookieUtils
 from ...common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("iml.network")
 
 
 class IMLNetworkManager(NetManager):
+    TIMEOUT_COUNT = 2000
+
     API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
     API_SIT_URL = "https://interactive-dev-eu-west-1.api-gateway.sit.ls.hereapi.com/interactive/v1"
     API_CONFIG_PRD_URL = "https://config.data.api.platform.here.com/config/v1"
@@ -95,17 +99,24 @@ class IMLNetworkManager(NetManager):
     }
 
     #############
-    def _get_api_env(self, conn_info):
-        api_env = self.API_SIT
-        server: str = conn_info.get_("server").strip("")
-        if server.startswith("PLATFORM_"):
-            api_env = self.API_PRD if server == "PLATFORM_PRD" else self.API_SIT
+
+    def print_cookies(self):
+        return CookieUtils.print_cookies(self.network)
+
+    #############
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.user_auth_module = PlatformUserAuthentication(self.network)
+
+    def _get_api_env(self, conn_info: SpaceConnectionInfo):
+        server: str = conn_info.get_("server")
+        if conn_info.is_platform_server():
+            return self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
         else:
             raise Exception(
                 "Unrecognized Platform Server: {}. "
                 "Expecting place holder prefix 'PLATFORM_' ".format(server)
             )
-        return api_env
 
     def _pre_send_request(self, conn_info, endpoint_key: str, kw_path=dict(), kw_request=dict()):
         token = conn_info.get_("token")
@@ -136,11 +147,31 @@ class IMLNetworkManager(NetManager):
         kw_prop = dict(reply_tag=endpoint_key)
         return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
 
+    ####################
+    # Authentication Public
+    ####################
+
     def auth_project(self, conn_info, expires_in=7200):
-        project_hrn = conn_info.get_("project_hrn")
-        return self.auth(conn_info, expires_in=expires_in, project_hrn=project_hrn)
+        if conn_info.is_user_login():
+            return self.user_auth_module.auth_project(conn_info)
+        else:
+            return self.app_auth_project(conn_info, expires_in=expires_in)
 
     def auth(self, conn_info, expires_in=7200, project_hrn: str = None):
+        if conn_info.is_user_login():
+            return self.user_auth_module.auth(conn_info)
+        else:
+            return self.app_auth(conn_info, expires_in=expires_in, project_hrn=project_hrn)
+
+    ####################
+    # App Authentication
+    ####################
+
+    def app_auth_project(self, conn_info, expires_in=7200):
+        project_hrn = conn_info.get_("project_hrn")
+        return self.app_auth(conn_info, expires_in=expires_in, project_hrn=project_hrn)
+
+    def app_auth(self, conn_info, expires_in=7200, project_hrn: str = None):
         reply_tag = "oauth"
 
         api_env = self._get_api_env(conn_info)
