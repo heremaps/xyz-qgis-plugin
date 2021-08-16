@@ -159,6 +159,15 @@ class XYZLayer(object):
             return
         self._save_meta_vlayer(vlayer)
 
+    def update_conn_info(self, conn_info: SpaceConnectionInfo = None):
+        if not conn_info:
+            return
+        self.conn_info = conn_info
+        qnode = self.qgroups["main"]
+        self._save_meta_node(qnode)
+        for vlayer in self.iter_layer():
+            self._save_meta_vlayer(vlayer)
+
     # unused
     def _propagate_meta_vlayer(self, vlayer: QgsVectorLayer, style_category=None):
         if style_category not in (vlayer.CustomProperties, vlayer.AllStyleCategories, None):
