@@ -25,7 +25,7 @@ print_qgis = make_print_qgis("iml.network")
 
 
 class IMLNetworkManager(NetManager):
-    TIMEOUT_COUNT = 2000
+    TIMEOUT_COUNT = 10000
 
     API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
     API_SIT_URL = "https://interactive-dev-eu-west-1.api-gateway.sit.ls.hereapi.com/interactive/v1"
