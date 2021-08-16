@@ -71,28 +71,36 @@ class WorkerFun(AsyncFun):
 
 
 class NetworkFun(AsyncFun):
+    def __init__(self, fun: Callable):
+        super().__init__(fun)
+        self._lst_reply = list()
+
     def _emit(self, output: QtArgs):
         self.signal.finished.emit()
         self.signal.results.emit(output)
 
-    def _emitter(self, output: QtArgs) -> Callable:
+    def _emitter(self, reply_idx: int) -> Callable:
         def _fn():
-            self._emit(output)
+            reply = self._lst_reply[reply_idx]
+            self._emit(output_to_qt_args(reply))
 
         return _fn
+
+    def _save_reply(self, reply):
+        self._lst_reply.append(reply)
+        return len(self._lst_reply) - 1
 
     def call(self, args: QtArgs) -> None:
         a, kw = parse_qt_args(args)
         try:
             reply = self.fun(*a, **kw)
-            self.reply = reply
         except Exception as e:
             obj = make_exception_obj(e)
             self.signal.error.emit(obj)
         else:
             output: QtArgs = output_to_qt_args(reply)
             if hasattr(reply, "isFinished") and not reply.isFinished():
-                # reply.finished.connect(lambda: self._emit(output) )
-                reply.finished.connect(self._emitter(output))
+                idx = self._save_reply(reply)
+                reply.finished.connect(self._emitter(idx))
             else:
                 self._emit(output)
