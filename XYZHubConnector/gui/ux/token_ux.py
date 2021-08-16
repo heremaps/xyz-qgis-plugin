@@ -106,6 +106,10 @@ class TokenUX(UXDecorator):
         proxy_model = self.comboBox_token.model()
         return proxy_model.get_here_credentials(self.comboBox_token.currentIndex())
 
+    def get_input_user_login(self):
+        proxy_model = self.comboBox_token.model()
+        return proxy_model.get_user_login(self.comboBox_token.currentIndex())
+
     def cb_enable_token_ui(self, flag=True):
         txt_clicked = "Checking.."
         txt0 = "Connect"
@@ -120,20 +124,27 @@ class TokenUX(UXDecorator):
         token = self.get_input_token()
         server = self.get_input_server()
         here_credentials = self.get_input_here_credentials()
-        if not server or (not token and not here_credentials):
+        user_login = self.get_input_user_login()
+        if not server or (not token and not here_credentials and not user_login):
             return
         # disable button
         self.cb_enable_token_ui(False)
         # gui -> pending token
         self.token_model.set_used_token_idx(self.comboBox_token.currentIndex())
         # emit
-        self.conn_info.set_(token=token, server=server, here_credentials=here_credentials)
+        self.conn_info.set_(
+            token=token, server=server, here_credentials=here_credentials, user_login=user_login
+        )
         conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_use_token.emit(make_qt_args(conn_info))
 
     def ui_valid_token(self, *a):
         """Return true when token is used and shows Ok!"""
-        flag_token = len(self.get_input_token()) > 0 or len(self.get_input_here_credentials()) > 0
+        flag_token = (
+            len(self.get_input_token()) > 0
+            or len(self.get_input_here_credentials()) > 0
+            or bool(self.get_input_user_login())
+        )
         self.btn_use.setEnabled(flag_token)
         # self.btn_clear_token.setEnabled(flag_token)
         idx = self.comboBox_token.currentIndex()
