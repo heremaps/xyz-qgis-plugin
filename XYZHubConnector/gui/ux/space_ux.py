@@ -103,13 +103,11 @@ class SpaceUX(TokenWithServerUX):
         ):
             return
         if obj["type"] == "StatisticsResponse":
-            cnt = str(obj["count"]["value"])
+            cnt = obj["count"]["value"]
         else:
-            cnt = str(obj["count"])
+            cnt = obj["count"]
         index = self._get_current_index()
-        self._get_space_model().set_feat_count(conn_info.to_dict(), cnt)
-        project_hrn = conn_info.get_("project_hrn")
-        self._get_space_model().set_project_hrn(conn_info.to_dict(), project_hrn)
+        self._get_space_model().save_conn_info(conn_info, feat_cnt=cnt)
         self.tableView_space.setCurrentIndex(index)
 
     def cb_comboBox_server_selected(self, index):

@@ -113,7 +113,9 @@ class XYZSpaceModel(QJsonTableModel):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.space_map = dict()  # space_id <-> index
+        self.row_map = dict()  # space_id <-> row index
+        self.row_reverse_map = dict()  # row index <-> space_id
+        self.conn_info_map = dict()  # space_id <-> conn_info
         self.token = ""
 
     def get_(self, key, index):
@@ -122,24 +124,28 @@ class XYZSpaceModel(QJsonTableModel):
             out.pop(self.HEADER_CNT, None)
         return out
 
-    def set_feat_count(self, obj, cnt):
-        idx = self._space_idx(obj)
-        if idx not in self.space_map:
+    def save_conn_info(self, conn_info, feat_cnt: int = None, project_hrn: str = None):
+        idx = self._space_idx(conn_info.to_dict())
+        if idx not in self.row_map:
             return
-        irow = self.space_map[idx]
+        irow = self.row_map[idx]
+        self.conn_info_map[idx] = conn_info
+        # update qt table
         self.beginResetModel()
-        self.obj[irow][self.HEADER_CNT] = cnt
+        if feat_cnt is not None:
+            self.obj[irow][self.HEADER_CNT] = str(feat_cnt)
+        project_hrn = project_hrn or conn_info.get_("project_hrn")
+        if project_hrn:
+            self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
+            self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
         self.endResetModel()
 
-    def set_project_hrn(self, obj, project_hrn):
-        idx = self._space_idx(obj)
-        if idx not in self.space_map or not project_hrn:
+    def get_conn_info(self, index):
+        irow = index.row()
+        idx = self.row_reverse_map.get(irow)
+        if not idx:
             return
-        irow = self.space_map[idx]
-        self.beginResetModel()
-        self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
-        self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
-        self.endResetModel()
+        return self.conn_info_map.get(idx)
 
     def _space_idx(self, obj):
         space_id = obj.get("id") or obj.get("space_id")
@@ -150,9 +156,13 @@ class XYZSpaceModel(QJsonTableModel):
 
     def set_obj(self, obj):
         super().set_obj(obj)
-        self.space_map = dict()
-        for i, s in enumerate(obj):
-            self.space_map[self._space_idx(s)] = i
+        self.row_map.clear()
+        self.row_reverse_map.clear()
+        self.conn_info_map.clear()
+        for irow, s in enumerate(obj):
+            idx = self._space_idx(s)
+            self.row_map[idx] = irow
+            self.row_reverse_map[irow] = idx
 
     def set_token(self, token):
         self.token = token
