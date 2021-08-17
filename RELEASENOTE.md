@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 1.8.9 (2021-08-18)
+
+✨ NEW FEATURES ✨
+* Platform SSO user login
+
+⚡️ IMPROVEMENTS ⚡️
+* Get feature count for all IML layers
+
 ## Version 1.8.8 (2021-07-28)
 
 ⚡️ IMPROVEMENTS ⚡️
