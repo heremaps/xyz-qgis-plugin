@@ -87,6 +87,8 @@ class QJsonTableModel(QAbstractTableModel):
 class XYZSpaceModel(QJsonTableModel):
     HEADER_CNT = "feat_cnt"
     HEADER_RIGHT = "rights"
+    HEADER_PROJECT = "project"
+    HEADER_PROJECT_HRN = "project_hrn"
     FIXED_HEADER_DATAHUB = [
         "id",
         "title",
@@ -97,7 +99,16 @@ class XYZSpaceModel(QJsonTableModel):
         HEADER_RIGHT,
         "owner",
     ]
-    FIXED_HEADER_PLATFORM = ["catalog", "id", "name", "description", "summary"]
+    FIXED_HEADER_PLATFORM = [
+        "catalog",
+        "id",
+        "name",
+        "description",
+        "summary",
+        HEADER_CNT,
+        HEADER_PROJECT,
+        HEADER_PROJECT_HRN,
+    ]
     _header = FIXED_HEADER_DATAHUB
 
     def __init__(self, parent):
@@ -111,20 +122,37 @@ class XYZSpaceModel(QJsonTableModel):
             out.pop(self.HEADER_CNT, None)
         return out
 
-    def set_feat_count(self, space_id, cnt):
-        key = self.HEADER_CNT
-        if space_id not in self.space_map:
+    def set_feat_count(self, obj, cnt):
+        idx = self._space_idx(obj)
+        if idx not in self.space_map:
             return
-        irow = self.space_map[space_id]
+        irow = self.space_map[idx]
         self.beginResetModel()
-        self.obj[irow][key] = cnt
+        self.obj[irow][self.HEADER_CNT] = cnt
         self.endResetModel()
+
+    def set_project_hrn(self, obj, project_hrn):
+        idx = self._space_idx(obj)
+        if idx not in self.space_map or not project_hrn:
+            return
+        irow = self.space_map[idx]
+        self.beginResetModel()
+        self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
+        self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
+        self.endResetModel()
+
+    def _space_idx(self, obj):
+        space_id = obj.get("id") or obj.get("space_id")
+        return (
+            space_id,
+            obj.get("catalog_hrn"),
+        )
 
     def set_obj(self, obj):
         super().set_obj(obj)
         self.space_map = dict()
         for i, s in enumerate(obj):
-            self.space_map[s["id"]] = i
+            self.space_map[self._space_idx(s)] = i
 
     def set_token(self, token):
         self.token = token
