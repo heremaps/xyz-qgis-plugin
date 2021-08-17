@@ -31,15 +31,27 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         self.label_value.setText(self.txt_value)
         self.mQgsFileWidget.setFilter(self.file_filter)
 
+        self.checkBox_user_login.toggled.connect(self._cb_user_login)
         self.lineEdit_name.textChanged.connect(self.ui_enable_btn)
         self.mQgsFileWidget.fileChanged.connect(self.ui_enable_btn)
+        self.lineEdit_email.textChanged.connect(self.ui_enable_btn)
+        self.checkBox_user_login.toggled.connect(self.ui_enable_btn)
+        self._cb_user_login(False)
         self.ui_enable_btn()
 
-    def ui_enable_btn(self):
+    def _cb_user_login(self, flag):
+        self.label_value.setEnabled(not flag)
+        self.mQgsFileWidget.setEnabled(not flag)
+        self.mQgsFileWidget.setFilePath("")
+        self.label_email.setEnabled(flag)
+        self.lineEdit_email.setEnabled(flag)
+        self.lineEdit_email.setText("")
+
+    def ui_enable_btn(self, *a):
         flag = all(
             [
                 self.lineEdit_name.text().strip(),
-                self.mQgsFileWidget.filePath().strip(),
+                self.mQgsFileWidget.filePath().strip() or self.lineEdit_email.text().strip(),
             ]
         )
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
@@ -49,10 +61,13 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         d = {
             "name": self.lineEdit_name.text().strip(),
             "here_credentials": self.mQgsFileWidget.filePath().strip(),
+            "user_login": self.lineEdit_email.text().strip(),
         }
         return d
 
     def set_info(self, token_info):
+        self.checkBox_user_login.setChecked(bool(token_info.get("user_login")))
+        self.lineEdit_email.setText(token_info.get("user_login"))
         self.lineEdit_name.setText(token_info.get("name", ""))
         self.mQgsFileWidget.setFilePath(
             token_info.get("token", "")

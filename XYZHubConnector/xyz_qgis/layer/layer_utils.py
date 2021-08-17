@@ -7,16 +7,16 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
+
 import json
 
-from qgis.core import QgsFeatureRequest, QgsProject
 from qgis.PyQt.QtCore import QVariant
+from qgis.core import QgsFeatureRequest, QgsProject
 
-
-from ..models import SpaceConnectionInfo
-from ..controller import make_qt_args
 from . import parser
 from .layer_props import QProps
+from ..controller import make_qt_args
+from ..models import SpaceConnectionInfo
 
 
 def is_valid_json(txt):

@@ -90,13 +90,22 @@ class SpaceUX(TokenWithServerUX):
 
     def cb_display_space_count(self, conn_info, obj):
         token, space_id = conn_info.get_xyz_space()
-        if token != self.get_input_token():
+        here_credentials = conn_info.get_("here_credentials")
+        user_login = conn_info.get_("user_login")
+        server = conn_info.get_("server")
+        if not (
+            (server and server == self.get_input_server())
+            and (
+                (token and token == self.get_input_token())
+                or (here_credentials and here_credentials == self.get_input_here_credentials())
+                or (user_login and user_login == self.get_input_user_login())
+            )
+        ):
             return
         if obj["type"] == "StatisticsResponse":
             cnt = str(obj["count"]["value"])
         else:
             cnt = str(obj["count"])
-
         index = self._get_current_index()
         self._get_space_model().set_feat_count(space_id, cnt)
         self.tableView_space.setCurrentIndex(index)

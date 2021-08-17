@@ -21,12 +21,13 @@ from .net_utils import (
 )
 from .net_handler import NetworkHandler
 
-TIMEOUT_COUNT = 1000
 
 ##########
 
 
 class NetManager(QObject):
+    TIMEOUT_COUNT = 1000
+
     API_CIT_URL = "https://xyz.cit.api.here.com/hub"
     API_PRD_URL = "https://xyz.api.here.com/hub"
     API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
@@ -80,9 +81,9 @@ class NetManager(QObject):
 
     #############
     # TODO: remove callback params
-    def get_statistics(self, conn_info):
-        reply = self._get_space_(conn_info, "statistics")
-        timeout = TIMEOUT_COUNT
+    def get_statistics(self, conn_info, kw_request=None):
+        reply = self._get_space_(conn_info, "statistics", kw_request=kw_request)
+        timeout = self.TIMEOUT_COUNT
         QTimer.singleShot(timeout, reply.abort)
         return reply
 
@@ -93,9 +94,9 @@ class NetManager(QObject):
     def get_meta(self, conn_info):
         return self._get_space_(conn_info, "space_meta")
 
-    def _get_space_(self, conn_info, reply_tag):
+    def _get_space_(self, conn_info, reply_tag, kw_request: dict = None):
         endpoint_key = reply_tag
-        kw_request = dict()
+        kw_request = kw_request or dict()
         kw_prop = dict(reply_tag=reply_tag)
         return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
 

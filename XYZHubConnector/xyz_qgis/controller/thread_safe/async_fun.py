@@ -91,8 +91,8 @@ class NetworkFun(AsyncFun):
             self.signal.error.emit(obj)
         else:
             output: QtArgs = output_to_qt_args(reply)
-            if reply.isFinished():
-                self._emit(output)
-            else:
+            if hasattr(reply, "isFinished") and not reply.isFinished():
                 # reply.finished.connect(lambda: self._emit(output) )
                 reply.finished.connect(self._emitter(output))
+            else:
+                self._emit(output)

@@ -9,12 +9,9 @@
 ###############################################################################
 
 from qgis.core import (
-    QgsVectorLayer,
     QgsWkbTypes,
-    QgsProject,
     QgsFeatureRequest,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
 )
 from qgis.utils import iface
 
@@ -22,28 +19,6 @@ from . import parser
 from ..common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("render")
-
-# to Memory Layer
-import json
-
-
-def geojson_to_meta_str(txt):
-    """txt is assumed to be small"""
-    vlayer = QgsVectorLayer(txt, "tmp", "ogr")
-
-    crs_str = vlayer.sourceCrs().toWkt()
-    wkb_type = vlayer.wkbType()
-    geom_str = QgsWkbTypes.displayString(wkb_type)
-    feat_cnt = vlayer.featureCount()
-    return geom_str, crs_str, feat_cnt
-
-
-def get_vlayer(layer_id):
-    vlayer = QgsProject.instance().mapLayer(layer_id)
-    if layer_id is None or vlayer is None:
-        print_qgis("no vlayer found!!")
-        return None
-    return vlayer
 
 
 # mixed-geom
@@ -75,15 +50,6 @@ def clear_features_in_extent(vlayer, extent):
     lst_fid = [ft.id() for ft in it]
     pr.deleteFeatures(lst_fid)
     vlayer.updateExtents()
-
-
-# unused
-def clear_features_in_feat(vlayer, feat: list):
-    lst_bbox = [ft.geometry().boundingBox() for ft in feat]
-    extent = lst_bbox[0]
-    for bbox in lst_bbox[1:]:
-        extent.combineExtentWith(bbox)
-    clear_features_in_extent(vlayer, extent)
 
 
 def add_feature_render(vlayer, feat, new_fields):

@@ -13,10 +13,17 @@
 
 import gzip
 import json
+from typing import List
+
 from qgis.PyQt.QtCore import QUrl
-from qgis.PyQt.QtNetwork import QNetworkRequest
+from qgis.PyQt.QtNetwork import (
+    QNetworkRequest,
+    QNetworkAccessManager,
+    QNetworkCookie,
+    QNetworkCookieJar,
+)
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtCore import QBuffer, QByteArray
+from qgis.PyQt.QtCore import QBuffer, QByteArray, QSettings
 from qgis.PyQt.QtCore import QT_VERSION_STR
 from qgis.PyQt.Qt import PYQT_VERSION_STR
 from qgis.core import Qgis
@@ -57,7 +64,7 @@ def decode_byte(byt):
 
 def _make_headers(token, **params):
     h = {"Accept": "*/*", "Accept-Encoding": "gzip", "User-Agent": USER_AGENT}
-    if token:
+    if isinstance(token, str) and token.strip():
         h.update(
             {
                 "Authorization": "Bearer %s" % token,
@@ -121,7 +128,7 @@ HEADER_EXTRA_MAP = dict(
 )
 
 
-def make_conn_request(url, token, req_type="normal", **kw):
+def make_conn_request(url: str, token: str, req_type="normal", **kw):
     """Make request from conn_info (token,space_id,api_url, auth,etc.)
     :param: req_type: type of request:
         "normal": normal
@@ -166,3 +173,70 @@ def prepare_new_space_info(space_info):
         space_info.pop("insertBBox", 0)
     space_info["description"] += META_SIGNATURE
     return space_info
+
+
+class CookieUtils:
+    @classmethod
+    def get_cookie_jar(cls, network: QNetworkAccessManager):
+        return network.cookieJar()
+
+    @classmethod
+    def print_cookies(cls, network: QNetworkAccessManager):
+        print([bytes(c.toRawForm()).decode("utf-8") for c in network.cookieJar().allCookies()])
+
+    @classmethod
+    def save_to_settings(cls, network: QNetworkAccessManager, api_type: str, api_env: str):
+        return cls.save_cookies_to_settings(network.cookieJar().allCookies(), api_type, api_env)
+
+    @classmethod
+    def load_from_settings(cls, network: QNetworkAccessManager, api_type: str, api_env: str):
+        cookies = cls.load_cookies_from_settings(api_type, api_env)
+        cookie_jar = QNetworkCookieJar()
+        cookie_jar.setAllCookies(cookies)
+        network.setCookieJar(cookie_jar)
+
+    @classmethod
+    def _cookies_key(cls, api_type: str, api_env: str):
+        return "xyz_qgis/cookies/{api_type}/{api_env}".format(
+            api_type=api_type.lower(), api_env=api_env.lower()
+        )
+
+    @classmethod
+    def save_cookies_to_settings(cls, cookies: List[QNetworkCookie], api_type: str, api_env: str):
+        key = cls._cookies_key(api_type, api_env)
+        txt = json.dumps([bytes(c.toRawForm()).decode("utf-8") for c in cookies])
+        QSettings().setValue(key, txt)
+
+    @classmethod
+    def load_cookies_from_settings(cls, api_type: str, api_env: str):
+        key = cls._cookies_key(api_type, api_env)
+        txt = QSettings().value(key)
+        obj = json.loads(txt) if txt else list()
+        return [c for raw in obj for c in QNetworkCookie.parseCookies(raw.encode("utf-8"))]
+
+    @classmethod
+    def remove_cookies_from_settings(cls, api_type: str, api_env: str):
+        s = QSettings()
+        key = cls._cookies_key(api_type, api_env)
+        s.beginGroup(key)
+        s.remove("")
+        s.endGroup()
+
+    @classmethod
+    def get_cookies_from_url(cls, network: QNetworkAccessManager, url: QUrl):
+        return network.cookieJar().cookiesForUrl(url)
+
+    @classmethod
+    def get_cookie_values(cls, network: QNetworkAccessManager, url: QUrl):
+        return "; ".join(
+            bytes(c.toRawForm(c.NameAndValueOnly)).decode("utf-8")
+            for c in network.cookieJar().cookiesForUrl(url)
+        )
+
+    @classmethod
+    def get_cookie(cls, network: QNetworkAccessManager, name: str):
+        cookie = None
+        for c in network.cookieJar().allCookies():
+            if c.name() == name:
+                cookie = c
+        return cookie

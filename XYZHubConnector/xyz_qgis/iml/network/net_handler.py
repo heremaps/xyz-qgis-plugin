@@ -8,6 +8,7 @@
 #
 ###############################################################################
 
+from qgis.PyQt.QtCore import QByteArray
 from ...controller import make_qt_args
 
 from ...network.net_handler import (
@@ -36,27 +37,28 @@ class IMLNetworkHandler(NetworkHandler):
     def handle_error(cls, resp: NetworkResponse):
         resp.log_status()
 
-        (reply_tag,) = resp.get_qt_property(["reply_tag"])
         err = resp.get_error()
-        err_str = resp.get_error_string()
         status = resp.get_status()
-        reason = resp.get_reason()
-        url = resp.get_url()
 
         if err == resp.get_reply().OperationCanceledError:  # operation canceled
             raise NetworkTimeout(resp)
-        elif status == 401:
+        elif status in (401, 403):
             raise IMLNetworkUnauthorized(resp)
-        elif err > 0:
-            body = resp.get_body_txt()
+        elif err > 0 or not status:
             raise NetworkError(resp)
 
     @classmethod
     def on_received_impl(cls, response):
         print_qgis("Receiving")
-        raw = response.get_body_qbytearray()
-        txt = response.get_body_txt()
-        obj = response.get_body_json()
+        if response.is_dummy():
+            raw = QByteArray()
+            txt = ""
+            obj = {}
+        else:
+            raw = response.get_body_qbytearray()
+            txt = response.get_body_txt()
+            obj = response.get_body_json()
+
         conn_info, reply_tag = response.get_qt_property(["conn_info", "reply_tag"])
         token, space_id = conn_info.get_xyz_space() if conn_info is not None else (None, None)
         limit, handle, meta = response.get_qt_property(["limit", "handle", "meta"])

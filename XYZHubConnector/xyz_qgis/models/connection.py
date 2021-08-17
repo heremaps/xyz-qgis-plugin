@@ -10,7 +10,7 @@
 
 
 def mask_token(token):
-    return "{:.7}***".format(token)
+    return "{!s:.7}***".format(token)
 
 
 def parse_copyright(v):
@@ -24,6 +24,9 @@ class SpaceConnectionInfo(object):
     EXCLUDE_PROJECT_KEYS = ["here_client_secret"]
     LIVEMAP = "LIVEMAP"
     LIVEMAP_CID = "3fN7oveDupmTGsr5mUM5"
+    PLATFORM_SIT = "PLATFORM_SIT"
+    PLATFORM_PRD = "PLATFORM_PRD"
+    PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT]
 
     def __init__(self, conn_info=None):
         if conn_info is None:
@@ -82,3 +85,12 @@ class SpaceConnectionInfo(object):
         check_pkg = any(p for p in packages if self.LIVEMAP in p)
         check_cid = self.get_("cid") == self.LIVEMAP_CID
         return check_pkg or check_cid
+
+    def is_platform_server(self):
+        return (self.get_("server") or "").strip().upper() in self.PLATFORM_SERVERS
+
+    def is_platform_sit(self):
+        return (self.get_("server") or "").strip().upper() == self.PLATFORM_SIT
+
+    def is_user_login(self):
+        return bool(self.get_("user_login"))

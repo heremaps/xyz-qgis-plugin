@@ -8,7 +8,6 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtGui import QStandardItem
 from qgis.PyQt.QtWidgets import QDialog
 
 from ..xyz_qgis.models.token_model import TokenModel
@@ -164,12 +163,12 @@ class BaseTokenDialog(QDialog, TokenUI):
         self.modify_token_idx(row)
 
     def _add_token(self, token_info: dict):
-        self.token_model.appendRow([QStandardItem(token_info[k]) for k in self.token_info_keys])
+        self.token_model.add_data(token_info, info_keys=self.token_info_keys)
 
     def _edit_token(self, token_info: dict):
         row = self.tableView.currentIndex().row()
         self.token_model.insertRow(
-            row + 1, [QStandardItem(token_info[k]) for k in self.token_info_keys]
+            row + 1, self.token_model.qitems_from_data(token_info, info_keys=self.token_info_keys)
         )
         it = self.token_model.takeRow(row)
         self.modify_token_idx(row)

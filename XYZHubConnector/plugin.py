@@ -27,7 +27,6 @@ from .xyz_qgis.models import (
     InvalidLoadingMode,
     API_TYPES,
     InvalidApiType,
-    ServerTokenConfig,
 )
 from .xyz_qgis.controller import (
     parse_qt_args,
@@ -36,6 +35,7 @@ from .xyz_qgis.controller import (
     parse_exception_obj,
     ChainInterrupt,
 )
+
 from .xyz_qgis.loader import (
     LoaderManager,
     EmptyXYZSpaceError,
@@ -147,7 +147,6 @@ class XYZHubConnector(object):
         self.cb_layer_selected(self.iface.activeLayer())
 
         # CONNECT action, button
-
         self.action_connect.triggered.connect(self.open_connection_dialog)
         self.action_sync_edit.triggered.connect(self.open_sync_edit_dialog)
         self.action_clear_cache.triggered.connect(self.open_clear_cache_dialog)
@@ -229,6 +228,8 @@ class XYZHubConnector(object):
             API_TYPES.DATAHUB: self.network,
             API_TYPES.PLATFORM: self.network_iml,
         }
+        self.user_auth_iml = self.network_iml.user_auth_module
+        self.user_auth_iml.signal.error.connect(self.cb_handle_error_msg)
         self.con_man = LoaderManager()
         self.con_man.config(self.api_network_mapping)
         self.edit_buffer = EditBuffer()
@@ -398,9 +399,8 @@ class XYZHubConnector(object):
         else:
             e0 = err
         if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
-            ok = self.show_net_err(e0)
-            if ok:
-                return
+            self.handle_net_err(e0)
+            return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub", "Requested query returns no features")
             return
@@ -409,35 +409,61 @@ class XYZHubConnector(object):
             return
         self.show_err_msgbar(err)
 
-    def show_net_err(self, err):
-        # reply_tag, status, reason, body, err_str, url = err.args[:6]
-
-        err_str = err.get_response().get_error_string()
+    def handle_net_err(self, err):
         status = err.get_response().get_status()
-        url = err.get_response().get_url()
-        reason = err.get_reason()
-        body = err.get_response().get_body_txt()
-
-        conn_info, reply_tag = err.get_response().get_qt_property(["conn_info", "reply_tag"])
-        token, space_id = conn_info.get_xyz_space() if conn_info is not None else (None, None)
-
+        conn_info = err.get_response().get_conn_info()
+        reply_tag = err.get_response().get_reply_tag()
         if reply_tag in ["count", "statistics"]:  # too many error
-            # msg = "Network Error: %s: %s. %s"%(status, reason, err_str)
-            return 1
-
-        detail = "\n".join(["Request:", url, "", "Response:", body])
-        msg = "%s: %s\n" % (status, reason) + "There was a problem connecting to the server"
+            return
         if status in [401, 403]:
-            msg += (
-                "\n\n"
-                + "Please input valid token with correct permissions."
-                + "\n"
-                + "Token is generated via "
-                + "<a href='https://xyz.api.here.com/token-ui/'>https://xyz.api.here.com/token"
-                "-ui/</a> "
+            if conn_info.is_platform_server() and conn_info.is_user_login():
+                self.user_auth_iml.reset_auth(conn_info)
+                # return
+        return self.show_net_err(err)
+
+    def show_net_err(self, err):
+        response = err.get_response()
+        conn_info = response.get_conn_info()
+        url = response.get_url()
+        body = response.get_body_txt()
+        status = response.get_status()
+        reason = response.get_reason()
+        err = response.get_error()
+        err_str = response.get_error_string()
+        payload = response.get_payload()
+
+        detail = "\n".join(
+            [
+                "Request:",
+                url,
+                "\nPayload:\n{}\n".format(payload) if payload is not None else "",
+                "Response:",
+                body,
+            ]
+        )
+        pair = (status, reason) if status else (err, err_str)
+        status_msg = "{0!s}: {1!s}\n".format(*pair)
+        msg = status_msg + "There was a problem connecting to the server"
+        if status in [401, 403]:
+            instruction_msg = (
+                (
+                    "Please input valid token with correct permissions."
+                    "\n"
+                    "Token is generated via "
+                    "<a href='https://xyz.api.here.com/token-ui/'>"
+                    "https://xyz.api.here.com/token-ui/"
+                    "</a> "
+                )
+                if not conn_info.is_platform_server()
+                else (
+                    "Please input valid Platform app credentials."
+                    if not conn_info.is_user_login()
+                    else "Please input valid Platform user login."
+                )
             )
+            msg = status_msg + "Authentication failed" "\n\n" + instruction_msg
         ret = exec_warning_dialog("Network Error", msg, detail)
-        return 1
+        return True
 
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(config.TAG_PLUGIN, repr(err), Qgis.Warning, 3)
@@ -989,17 +1015,12 @@ class XYZHubConnector(object):
         return self.get_api_type_from_conn_info(conn_info)
 
     def get_api_type_from_conn_info(self, conn_info):
-        credentials_file = conn_info.get_("here_credentials")
-        if credentials_file:
-            api_type = API_TYPES.PLATFORM
-        else:
-            api_type = API_TYPES.DATAHUB
-        return api_type
+        return API_TYPES.PLATFORM if conn_info.is_platform_server() else API_TYPES.DATAHUB
 
     def load_here_credentials(self, conn_info):
         credentials_file = conn_info.get_("here_credentials")
         credentials = None
-        if credentials_file:
+        if credentials_file and not conn_info.is_user_login():
             credentials = HereCredentials.from_file(credentials_file)
             update_conn_info_from_here_credentials(conn_info, credentials)
         return credentials

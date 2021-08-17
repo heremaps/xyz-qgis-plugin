@@ -37,6 +37,30 @@
       <item row="1" column="1">
        <widget class="QgsFileWidget" name="mQgsFileWidget"/>
       </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>User login</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkBox_user_login">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_email">
+        <property name="text">
+         <string>User email</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lineEdit_email"/>
+      </item>
      </layout>
     </widget>
    </item>
