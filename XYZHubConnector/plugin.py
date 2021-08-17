@@ -71,6 +71,7 @@ from .xyz_qgis.iml.loader import (
     IMLLayerLoader,
     IMLEditSyncController,
 )
+from .xyz_qgis.iml.loader.iml_auth_loader import HomeProjectNotFound
 from .xyz_qgis.iml.network import IMLNetworkManager
 from .xyz_qgis.iml.models import IMLServerTokenConfig
 
@@ -407,6 +408,9 @@ class XYZHubConnector(object):
         elif isinstance(e0, ManualInterrupt):
             self.log_err_traceback(e0)
             return
+        elif isinstance(e0, HomeProjectNotFound):
+            self.log_err(e0)
+            return
         self.show_err_msgbar(err)
 
     def handle_net_err(self, err):
@@ -472,6 +476,9 @@ class XYZHubConnector(object):
     def log_err_traceback(self, err):
         msg = format_traceback(err)
         QgsMessageLog.logMessage(msg, config.TAG_PLUGIN, Qgis.Warning)
+
+    def log_err(self, err):
+        QgsMessageLog.logMessage(repr(err), config.TAG_PLUGIN, Qgis.Warning)
 
     def cb_progress_busy(self, n_active):
         if n_active > 1:

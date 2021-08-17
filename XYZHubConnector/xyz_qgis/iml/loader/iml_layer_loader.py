@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from .iml_auth_loader import IMLProjectScopedAuthLoader
+from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError
 from ...layer import queue
 from ...loader.layer_loader import (
     TileLayerLoader,
@@ -21,10 +21,6 @@ from ...loader.layer_loader import (
     EditSyncController,
 )
 from ...network.net_handler import NetworkResponse, NetworkError
-
-
-class AuthenticationError(Exception):
-    pass
 
 
 class IMLAuthExtension:
@@ -52,7 +48,7 @@ class IMLAuthExtension:
                 if self._retry_cnt < self.MAX_RETRY_COUNT:
                     self._retry_with_auth(reply)
                 else:
-                    self.signal.error.emit(AuthenticationError("Authentication failed"))
+                    self.signal.error.emit(AuthenticationError(response.get_conn_info()))
             else:
                 self._retry(reply)
             return
