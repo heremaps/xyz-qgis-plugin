@@ -110,3 +110,17 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
                 return
         # otherwise emit error
         self.signal.error.emit(err)
+
+
+class IMLProjectScopedSemiAuthLoader(IMLProjectScopedAuthLoader):
+    def _config(self, network: IMLNetworkManager):
+        self.config_fun(
+            [
+                NetworkFun(network.get_project),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_project_hrn),
+                NetworkFun(network.auth_project),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._update_auth),
+            ]
+        )
