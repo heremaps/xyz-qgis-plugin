@@ -9,7 +9,7 @@
 ###############################################################################
 
 
-from .iml_auth_loader import IMLAuthLoader
+from .iml_auth_loader import IMLAuthLoader, IMLProjectScopedSemiAuthLoader
 from ...common.signal import make_fun_args
 
 from ...loader.space_loader import (
@@ -39,12 +39,16 @@ class IMLSpaceController(LoadSpaceController):
 class IMLStatSpaceController(StatSpaceController):
     def _config(self, network):
         super()._config(network)
-        self.con_auth = IMLAuthLoader(network)
+        self.con_auth = IMLProjectScopedSemiAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
 
     def start(self, conn_info):
         self.con_auth.start(conn_info)
+
+    def reset_fun(self):
+        self.con_auth.reset_fun()
+        super().reset_fun()
 
 
 class IMLDeleteSpaceController(DeleteSpaceController):

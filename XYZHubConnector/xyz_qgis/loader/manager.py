@@ -21,7 +21,7 @@ from .space_loader import (
     LoadSpaceController,
     StatSpaceController,
 )
-from ..iml.loader import IMLSpaceController
+from ..iml.loader import IMLSpaceController, IMLStatSpaceController
 from ..models.loading_mode import API_TYPES
 
 from ..common.signal import make_print_qgis
@@ -218,7 +218,7 @@ class LoaderManager(LayerControllerManager):
             },
             API_TYPES.PLATFORM: {
                 "list": IMLSpaceController,
-                "stat": StatSpaceController,
+                "stat": IMLStatSpaceController,
                 "delete": DeleteSpaceController,
                 "edit": EditSpaceController,
                 "create": CreateSpaceController,

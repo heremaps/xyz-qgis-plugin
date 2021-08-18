@@ -181,16 +181,10 @@ class ConnectUX(SpaceUX):
     def start_connect(self):
         index = self._get_current_index()
         meta = self._get_space_model().get_(dict, index)
-        self.conn_info.set_(**meta)
-        conn_info = SpaceConnectionInfo(self.conn_info)
+        conn_info = self._get_space_model().get_conn_info(index) or self.conn_info
+        conn_info.set_(**meta)
+        self.conn_info = SpaceConnectionInfo(conn_info)
         self.signal_space_connect.emit(make_qt_args(conn_info, meta, **self.get_params()))
-
-        # if self.radioButton_loading_live.isChecked():
-        #     self.signal_space_tile.emit( make_qt_args(conn_info, meta, **self.get_params() ))
-        # else:
-        #     self.signal_space_connect.emit( make_qt_args(conn_info, meta, **self.get_params() ))
-
-        # self.close()
 
     def open_filter_dialog(self):
         ret = self.filter_dialog.exec_()
