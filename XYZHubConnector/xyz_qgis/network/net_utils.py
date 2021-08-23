@@ -23,7 +23,7 @@ from qgis.PyQt.QtNetwork import (
     QNetworkCookieJar,
 )
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtCore import QBuffer, QByteArray, QSettings
+from qgis.PyQt.QtCore import QByteArray, QSettings
 from qgis.PyQt.QtCore import QT_VERSION_STR
 from qgis.PyQt.Qt import PYQT_VERSION_STR
 from qgis.core import Qgis
@@ -103,12 +103,8 @@ def make_payload(obj):
     return txt.encode("utf-8")
 
 
-def make_buffer(obj):
-    data = QByteArray(make_payload(obj))
-    buffer = QBuffer()
-    buffer.setData(data)
-    buffer.open(buffer.ReadOnly)
-    return buffer
+def make_bytes_payload(obj):
+    return QByteArray(make_payload(obj))
 
 
 def make_query_url(url, **kw):

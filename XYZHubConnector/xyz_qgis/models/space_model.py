@@ -131,13 +131,15 @@ class XYZSpaceModel(QJsonTableModel):
         irow = self.row_map[idx]
         self.conn_info_map[idx] = conn_info
         # update qt table
-        self.beginResetModel()
         if feat_cnt is not None:
             self.obj[irow][self.HEADER_CNT] = str(feat_cnt)
         project_hrn = project_hrn or conn_info.get_("project_hrn")
         if project_hrn:
             self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
             self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
+
+    def refresh(self):
+        self.beginResetModel()
         self.endResetModel()
 
     def get_conn_info(self, index):

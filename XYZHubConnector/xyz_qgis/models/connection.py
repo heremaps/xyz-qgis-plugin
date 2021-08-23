@@ -69,6 +69,12 @@ class SpaceConnectionInfo(object):
         else:
             return self.obj.get(key, default)
 
+    def get_name(self):
+        return self.get_("title") or self.get_("name")
+
+    def get_id(self):
+        return self.get_("id") or self.get_("space_id")
+
     def set_server(self, server):
         self.set_(server=server)
         # sv = server.strip().upper()

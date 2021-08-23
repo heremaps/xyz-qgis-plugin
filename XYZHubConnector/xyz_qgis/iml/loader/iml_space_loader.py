@@ -8,9 +8,10 @@
 #
 ###############################################################################
 
-
 from .iml_auth_loader import IMLAuthLoader, IMLProjectScopedSemiAuthLoader
-from ...common.signal import make_fun_args
+from ..network import IMLNetworkManager
+from ...common.signal import make_fun_args, make_qt_args
+from ...controller import NetworkFun, WorkerFun, AsyncFun, ChainController, DelayedIdentityFun
 
 from ...loader.space_loader import (
     LoadSpaceController,
@@ -26,8 +27,8 @@ print_qgis = make_print_qgis("iml_space_loader")
 
 
 class IMLSpaceController(LoadSpaceController):
-    def _config(self, network):
-        super()._config(network)
+    def __init__(self, network):
+        super().__init__(network)
         self.con_auth = IMLAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
@@ -37,8 +38,8 @@ class IMLSpaceController(LoadSpaceController):
 
 
 class IMLStatSpaceController(StatSpaceController):
-    def _config(self, network):
-        super()._config(network)
+    def __init__(self, network):
+        super().__init__(network)
         self.con_auth = IMLProjectScopedSemiAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
@@ -52,33 +53,69 @@ class IMLStatSpaceController(StatSpaceController):
 
 
 class IMLDeleteSpaceController(DeleteSpaceController):
-    def _config(self, network):
-        super()._config(network)
-        self.con_auth = IMLAuthLoader(network)
+    def __init__(self, network):
+        super().__init__(network)
+        self.con_auth = IMLProjectScopedSemiAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
 
     def start(self, conn_info):
         self.con_auth.start(conn_info)
+
+    def _config(self, network: IMLNetworkManager):
+        self.config_fun(
+            [
+                NetworkFun(network.del_layer),
+                WorkerFun(network.on_received, self.pool),
+                DelayedIdentityFun(1000),
+            ]
+        )
 
 
 class IMLEditSpaceController(EditSpaceController):
-    def _config(self, network):
-        super()._config(network)
-        self.con_auth = IMLAuthLoader(network)
+    def __init__(self, network):
+        super().__init__(network)
+        self.con_auth = IMLProjectScopedSemiAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
 
-    def start(self, conn_info):
-        self.con_auth.start(conn_info)
+    # def start(self, conn_info, layer_info):
+    #     self.layer_info = layer_info
+    #     self.con_auth.start(conn_info)
+
+    def _config(self, network: IMLNetworkManager):
+        self.config_fun(
+            [
+                NetworkFun(network.edit_layer),
+                WorkerFun(network.on_received, self.pool),
+                DelayedIdentityFun(1000),
+            ]
+        )
 
 
 class IMLCreateSpaceController(CreateSpaceController):
-    def _config(self, network):
-        super()._config(network)
-        self.con_auth = IMLAuthLoader(network)
+    def __init__(self, network):
+        super().__init__(network)
+        self.con_auth = IMLProjectScopedSemiAuthLoader(network)
         self.con_auth.signal.results.connect(make_fun_args(super().start))
         self.con_auth.signal.error.connect(self.signal.error.emit)
+        self.layer_info = dict()
 
-    def start(self, conn_info):
-        self.con_auth.start(conn_info)
+    def start(self, conn_info, layer_info):
+        self.layer_info = layer_info
+        ChainController.start(self, conn_info)
+
+    def _config(self, network: IMLNetworkManager):
+        self.config_fun(
+            [
+                NetworkFun(network.get_catalog),
+                WorkerFun(network.on_received, self.pool),
+                AsyncFun(self._prepare_layer_catalog),
+                NetworkFun(network.add_layer),
+                WorkerFun(network.on_received, self.pool),
+                DelayedIdentityFun(2000),
+            ]
+        )
+
+    def _prepare_layer_catalog(self, conn_info, obj):
+        return make_qt_args(conn_info, self.layer_info, catalog_info=obj)

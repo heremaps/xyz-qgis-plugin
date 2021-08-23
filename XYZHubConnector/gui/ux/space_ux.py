@@ -81,11 +81,14 @@ class SpaceUX(TokenWithServerUX):
         self.ui_display_spaces(obj)
         if obj is None:
             return
+        lst_conn_info = list()
         for meta in obj:
             conn_info = SpaceConnectionInfo(self.conn_info)
-            conn_info.set_(
-                space_id=meta.get("id"), catalog_hrn=meta.get("catalog_hrn")
-            )  # TODO: refactor
+            conn_info.set_(**meta)
+            self._get_space_model().save_conn_info(conn_info)
+            lst_conn_info.append(conn_info)
+        self._get_space_model().refresh()
+        for conn_info in lst_conn_info:
             self.signal_space_count.emit(make_qt_args(conn_info))
 
     def cb_display_space_count(self, conn_info, obj):
@@ -108,6 +111,7 @@ class SpaceUX(TokenWithServerUX):
             cnt = obj["count"]
         index = self._get_current_index()
         self._get_space_model().save_conn_info(conn_info, feat_cnt=cnt)
+        self._get_space_model().refresh()
         self.tableView_space.setCurrentIndex(index)
 
     def cb_comboBox_server_selected(self, index):

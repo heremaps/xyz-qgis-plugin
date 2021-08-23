@@ -19,7 +19,7 @@ from ..common.signal import (
     QtArgs,
 )
 
-from .thread_safe.async_fun import AsyncFun, WorkerFun, NetworkFun
+from .thread_safe.async_fun import AsyncFun, WorkerFun, NetworkFun, DelayedIdentityFun
 from .thread_safe.controller import ChainController, ChainInterrupt, LoopController
 
 from .worker import Worker
