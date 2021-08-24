@@ -56,11 +56,17 @@ class IMLDeleteSpaceController(DeleteSpaceController):
     def __init__(self, network):
         super().__init__(network)
         self.con_auth = IMLProjectScopedSemiAuthLoader(network)
-        self.con_auth.signal.results.connect(make_fun_args(super().start))
+        self.con_auth.signal.results.connect(make_fun_args(self._start_after_auth))
         self.con_auth.signal.error.connect(self.signal.error.emit)
 
     def start(self, conn_info):
-        self.con_auth.start(conn_info)
+        if conn_info.get_("project_hrn") and conn_info.get_("token"):
+            self._start_after_auth(conn_info)
+        else:
+            self.con_auth.start(conn_info)
+
+    def _start_after_auth(self, conn_info):
+        ChainController.start(self, conn_info)
 
     def _config(self, network: IMLNetworkManager):
         self.config_fun(
@@ -76,12 +82,18 @@ class IMLEditSpaceController(EditSpaceController):
     def __init__(self, network):
         super().__init__(network)
         self.con_auth = IMLProjectScopedSemiAuthLoader(network)
-        self.con_auth.signal.results.connect(make_fun_args(super().start))
+        self.con_auth.signal.results.connect(make_fun_args(self._start_after_auth))
         self.con_auth.signal.error.connect(self.signal.error.emit)
 
-    # def start(self, conn_info, layer_info):
-    #     self.layer_info = layer_info
-    #     self.con_auth.start(conn_info)
+    def start(self, conn_info, layer_info):
+        self.layer_info = layer_info
+        if conn_info.get_("project_hrn") and conn_info.get_("token"):
+            self._start_after_auth(conn_info)
+        else:
+            self.con_auth.start(conn_info)
+
+    def _start_after_auth(self, conn_info):
+        ChainController.start(self, conn_info, self.layer_info)
 
     def _config(self, network: IMLNetworkManager):
         self.config_fun(
@@ -97,12 +109,18 @@ class IMLCreateSpaceController(CreateSpaceController):
     def __init__(self, network):
         super().__init__(network)
         self.con_auth = IMLProjectScopedSemiAuthLoader(network)
-        self.con_auth.signal.results.connect(make_fun_args(super().start))
+        self.con_auth.signal.results.connect(make_fun_args(self._start_after_auth))
         self.con_auth.signal.error.connect(self.signal.error.emit)
         self.layer_info = dict()
 
     def start(self, conn_info, layer_info):
         self.layer_info = layer_info
+        if conn_info.get_("project_hrn") and conn_info.get_("token"):
+            self._start_after_auth(conn_info)
+        else:
+            self.con_auth.start(conn_info)
+
+    def _start_after_auth(self, conn_info):
         ChainController.start(self, conn_info)
 
     def _config(self, network: IMLNetworkManager):

@@ -43,27 +43,6 @@ class ManageUX(SpaceUX):
         self.btn_edit.clicked.connect(self.ui_edit_space)
         self.btn_delete.clicked.connect(self.ui_del_space)
 
-    def _get_input_conn_info(self):
-        index = self._get_current_index()
-        conn_info = self._get_space_model().get_conn_info(index)
-        if not conn_info:
-            token = self.get_input_token()
-            server = self.get_input_server()
-            here_credentials = self.get_input_here_credentials()
-            user_login = self.get_input_user_login()
-            space_id = self._get_space_model().get_("id", index)
-            catalog_hrn = self._get_space_model().get_("catalog_hrn", index)
-            conn_info = SpaceConnectionInfo()
-            conn_info.set_(
-                token=token,
-                space_id=space_id,
-                server=server,
-                here_credentials=here_credentials,
-                user_login=user_login,
-                catalog_hrn=catalog_hrn,
-            )
-        return conn_info
-
     def ui_valid_token(self, flag):
         # flag = super().ui_valid_token()
         self.btn_new.setEnabled(flag)
@@ -79,8 +58,7 @@ class ManageUX(SpaceUX):
         self.btn_delete.clearFocus()
 
     def ui_new_space(self):
-        conn_info = self._get_input_conn_info()
-        self.conn_info = SpaceConnectionInfo(conn_info)
+        conn_info = self._get_input_conn_info(use_prior=True)
 
         api_type = self.token_model.get_api_type()
         if api_type == API_TYPES.PLATFORM:
@@ -98,7 +76,7 @@ class ManageUX(SpaceUX):
         dialog.exec_()
 
     def ui_edit_space(self):
-        index = self._get_current_index()
+        index = self._get_source_index()
         space_info = self._get_space_model().get_(dict, index)
 
         conn_info = self._get_input_conn_info()

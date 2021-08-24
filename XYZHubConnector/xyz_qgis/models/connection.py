@@ -100,3 +100,10 @@ class SpaceConnectionInfo(object):
 
     def is_user_login(self):
         return bool(self.get_("user_login"))
+
+    def is_valid(self):
+        server = self.get_("server")
+        token = self.get_("token")
+        here_credentials = self.get_("here_credentials")
+        user_login = self.get_("user_login")
+        return bool(server and (token or here_credentials or user_login))

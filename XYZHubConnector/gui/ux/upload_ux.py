@@ -51,13 +51,11 @@ class UploadUX(SpaceUX):
         lineEdit.setValidator(QRegExpValidator(QRegExp("^\\b.*\\b$")))
 
     def start_upload(self):
-        index = self._get_current_index()
-        meta = self._get_space_model().get_(dict, index)
-        self.conn_info.set_(**meta, token=self.get_input_token(), server=self.get_input_server())
+        conn_info = self._get_input_conn_info(with_meta=True)
 
         tags = strip_list_string(self.lineEdit_tags_upload.text().strip())
         kw = dict(tags=tags) if len(tags) else dict()
-        space_name = meta.get("title") or meta.get("name")
+        space_name = conn_info.get_name()
         dialog = ConfirmDialog(
             "\n".join(
                 [
@@ -74,7 +72,6 @@ class UploadUX(SpaceUX):
         ret = dialog.exec_()
         if ret != dialog.Ok:
             return
-        conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_upload_space.emit(make_qt_args(conn_info, self.vlayer, **kw))
         # self.close()
 

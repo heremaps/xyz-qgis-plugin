@@ -39,7 +39,6 @@ class SpaceUX(TokenWithServerUX):
         # connect gui
         self.tableView_space.selectionModel().currentChanged.connect(self.cb_table_row_selected)
 
-        self.btn_use.clicked.connect(self._get_space_model().reset)
         TokenWithServerUX.config(self, token_model, server_model)
 
     def _get_proxy_model(self):
@@ -48,9 +47,30 @@ class SpaceUX(TokenWithServerUX):
     def _get_space_model(self):
         return self.tableView_space.model().sourceModel()
 
-    def _get_current_index(self):
+    def _get_source_index(self):
         index = self.tableView_space.currentIndex()
         return self._get_proxy_model().mapToSource(index)
+
+    def _get_input_conn_info(self, with_meta=False, use_prior=False):
+        index = self._get_source_index()
+        conn_info = self._get_space_model().get_conn_info(index)
+        if not conn_info:
+            space_id = self._get_space_model().get_("id", index)
+            catalog_hrn = self._get_space_model().get_("catalog_hrn", index)
+            conn_info = (
+                self._get_input_conn_info_without_id()
+                if not use_prior
+                else SpaceConnectionInfo(self.conn_info)
+            )
+            conn_info.set_(
+                space_id=space_id,
+                catalog_hrn=catalog_hrn,
+            )
+        if with_meta:
+            meta = self._get_space_model().get_(dict, index)
+            if meta:
+                conn_info.set_(**meta)
+        return conn_info
 
     def open_token_dialog(self):
         is_used_token_modified = super().open_token_dialog()
@@ -69,6 +89,12 @@ class SpaceUX(TokenWithServerUX):
         self.ui_valid_input()
 
     # CALLBACK
+
+    def cb_token_used(self, *a):
+        self._get_space_model().reset()
+        self.ui_valid_input()
+        super().cb_token_used(*a)
+
     def cb_table_row_selected(self, *a):
         # pending token -> gui
         self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
@@ -109,10 +135,11 @@ class SpaceUX(TokenWithServerUX):
             cnt = obj["count"]["value"]
         else:
             cnt = obj["count"]
-        index = self._get_current_index()
+
+        index = self.tableView_space.currentIndex()
         self._get_space_model().save_conn_info(conn_info, feat_cnt=cnt)
         self._get_space_model().refresh()
-        self.tableView_space.setCurrentIndex(index)
+        self.tableView_space.selectRow(index.row())
 
     def cb_comboBox_server_selected(self, index):
         super().cb_comboBox_server_selected(index)
@@ -133,7 +160,7 @@ class SpaceUX(TokenWithServerUX):
         """Returns true when token is succesfully connected and a space is selected
         also enables button if condition above is met.
         """
-        ok = self.ui_valid_token() and self._get_current_index().isValid()
+        ok = self.ui_valid_token() and self._get_source_index().isValid()
         self.ui_enable_ok_button(ok)
         return ok
 
