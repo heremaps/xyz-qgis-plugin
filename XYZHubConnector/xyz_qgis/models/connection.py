@@ -8,6 +8,8 @@
 #
 ###############################################################################
 
+from ..common.here_credentials import HereCredentials
+
 
 def mask_token(token):
     return "{!s:.7}***".format(token)
@@ -107,3 +109,15 @@ class SpaceConnectionInfo(object):
         here_credentials = self.get_("here_credentials")
         user_login = self.get_("user_login")
         return bool(server and (token or here_credentials or user_login))
+
+    def load_here_credentials(self):
+        credentials_file = self.get_("here_credentials")
+        here_credentials = None
+        if credentials_file and not self.is_user_login():
+            here_credentials = HereCredentials.from_file(credentials_file)
+            self.set_(
+                here_client_key=here_credentials.key,
+                here_client_secret=here_credentials.secret,
+                here_endpoint=here_credentials.endpoint,
+            )
+        return here_credentials

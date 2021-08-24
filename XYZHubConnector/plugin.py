@@ -81,10 +81,6 @@ from .xyz_qgis.basemap.auth_manager import AuthManager
 
 from .xyz_qgis.common.error import format_traceback
 from .xyz_qgis.common import utils
-from .xyz_qgis.common.here_credentials import (
-    HereCredentials,
-    update_conn_info_from_here_credentials,
-)
 
 PLUGIN_NAME = config.PLUGIN_NAME
 
@@ -561,8 +557,7 @@ class XYZHubConnector(object):
         dialog.signal_del_space.connect(self.start_delete_space)
 
         # Use Token btn
-        dialog.signal_use_token.connect(lambda a: self.con_man.finish_fast())
-        dialog.signal_use_token.connect(lambda a: self.start_use_token(a, dialog))
+        dialog.signal_use_token.connect(self.start_use_token)
 
         # get count
         dialog.signal_space_count.connect(
@@ -594,19 +589,13 @@ class XYZHubConnector(object):
         con = self.con_man.get_con("delete", api_type)
         con.start_args(args)
 
-    def start_use_token(self, args, dialog):
-        # iml
+    def start_use_token(self, args):
+        self.con_man.finish_fast()
         conn_info = self.get_conn_info_from_qt_args(args)
-        try:
-            self.load_here_credentials(conn_info)
-        except Exception as e:
-            self.show_err_msgbar(e)
-            dialog.cb_enable_token_ui()
-            return
         # reset stat loader
-        api_type = self.get_api_type_from_conn_info(dialog.conn_info)
-        con = self.con_man.get_con("stat", api_type)
-        con.reset_fun()
+        for api_type in API_TYPES:
+            con = self.con_man.get_con("stat", api_type)
+            con.reset_fun()
         # common
         api_type = self.get_api_type_from_qt_args(args)
         con = self.con_man.get_con("list", api_type)
@@ -923,7 +912,6 @@ class XYZHubConnector(object):
             )
             return
         conn_info = layer.get_conn_info()
-        self.load_here_credentials(conn_info)
         return self.make_loader_from_mode(loading_mode, conn_info, layer=layer)
 
     def init_all_layer_loader(self):
@@ -1001,7 +989,6 @@ class XYZHubConnector(object):
 
         lst_added_feat, removed_ids = layer_buffer.get_sync_feat()
         conn_info = layer_buffer.get_conn_info()
-        self.load_here_credentials(conn_info)
         api_type = self.get_api_type_from_conn_info(conn_info)
         # print_qgis("lst_added_feat: ",lst_added_feat)
         # print_qgis("removed_feat: ", removed_ids)
@@ -1031,22 +1018,3 @@ class XYZHubConnector(object):
 
     def get_api_type_from_conn_info(self, conn_info):
         return API_TYPES.PLATFORM if conn_info.is_platform_server() else API_TYPES.DATAHUB
-
-    def load_here_credentials(self, conn_info):
-        credentials_file = conn_info.get_("here_credentials")
-        credentials = None
-        if credentials_file and not conn_info.is_user_login():
-            credentials = HereCredentials.from_file(credentials_file)
-            update_conn_info_from_here_credentials(conn_info, credentials)
-        return credentials
-
-    def load_here_credentials_args_with_dialog(self, args, dialog):
-        conn_info = self.get_conn_info_from_qt_args(args)
-        api_type = self.get_api_type_from_conn_info(conn_info)
-        credentials = None
-        try:
-            credentials = self.load_here_credentials(conn_info)
-        except Exception as e:
-            self.show_err_msgbar(e)
-            dialog.cb_enable_token_ui()
-        return credentials, api_type

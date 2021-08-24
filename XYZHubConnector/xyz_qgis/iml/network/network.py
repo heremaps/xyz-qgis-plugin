@@ -278,6 +278,7 @@ class IMLNetworkManager(NetManager):
     def app_auth(self, conn_info, expires_in=7200, project_hrn: str = None):
         reply_tag = "oauth"
 
+        conn_info.load_here_credentials()
         api_env = self._get_api_env(conn_info)
         url = self.API_URL[self.API_GROUP_OAUTH][api_env]
 
