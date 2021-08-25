@@ -16,9 +16,6 @@ from .async_fun import AsyncFun, InvalidArgsException
 
 from typing import List, Callable
 
-# __package__ = __package__.rpartition(".")[0]
-# print(__package__)
-
 
 class Controller(object):
     """
@@ -70,12 +67,10 @@ class ChainController(Controller):
         self.lst_fun = list(lst_fun)
         for idx, (fun, fun2) in enumerate(zip(self.lst_fun, self.lst_fun[1:])):
             fun.signal.results.connect(fun2.call, Qt.QueuedConnection)
-            # fun.signal.results.connect(fun2)
-
             fun.signal.error.connect(self._make_error_handler(idx))
         fun = self.lst_fun[-1]
-        fun.signal.results.connect(self.signal.results.emit)
-        fun.signal.finished.connect(self.signal.finished.emit)
+        fun.signal.results.connect(self.signal.results.emit, Qt.QueuedConnection)
+        fun.signal.finished.connect(self.signal.finished.emit, Qt.QueuedConnection)
         fun.signal.error.connect(self._make_error_handler(len(self.lst_fun) - 1))
 
     def _make_error_handler(self, idx) -> Callable:
@@ -119,8 +114,6 @@ class LoopController(ChainController):
         self.lst_fun = list(lst_fun)
         for idx, (fun, fun2) in enumerate(zip(self.lst_fun, self.lst_fun[1:])):
             fun.signal.results.connect(fun2.call, Qt.QueuedConnection)
-            # fun.signal.results.connect(fun2)
-
             fun.signal.error.connect(self._make_error_handler(idx))
         idx = len(self.lst_fun) - 1
         fun = self.lst_fun[idx]
