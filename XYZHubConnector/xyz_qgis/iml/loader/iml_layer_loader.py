@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError
+from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError, HomeProjectNotFound
 from ...layer import queue
 from ...loader.layer_loader import (
     TileLayerLoader,
@@ -31,7 +31,16 @@ class IMLAuthExtension:
         self._reset_retry_cnt()
         self.con_auth = IMLProjectScopedAuthLoader(network)
         self.con_auth.signal.finished.connect(self._retry_with_auth_cb)
-        self.con_auth.signal.error.connect(self._handle_error)
+        self.con_auth.signal.error.connect(self._handle_auth_error)
+
+    def _handle_auth_error(self, err):
+        chain_err = parse_exception_obj(err)
+        if isinstance(chain_err, ChainInterrupt):
+            e, idx = chain_err.args[0:2]
+        else:
+            e = chain_err
+        self._release()  # release active dispatch
+        self.signal.error.emit(AuthenticationError(e))
 
     def _handle_error(self, err):
 
@@ -47,13 +56,11 @@ class IMLAuthExtension:
             if status in (401, 403):
                 if self._retry_cnt < self.MAX_RETRY_COUNT:
                     self._retry_with_auth(reply)
-                else:
-                    self.signal.error.emit(AuthenticationError(response.get_conn_info()))
             else:
                 self._retry(reply)
             return
         # otherwise emit error
-        self._release()  # hot fix, no finish signal
+        self._release()  # release active dispatch
         self.signal.error.emit(err)
 
     def _reset_retry_cnt(self):
