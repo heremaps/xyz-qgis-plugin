@@ -237,6 +237,9 @@ class NetworkError(Exception):
     def get_response(self):
         return self.response
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
         response = self.get_response()
         status = response.get_status()

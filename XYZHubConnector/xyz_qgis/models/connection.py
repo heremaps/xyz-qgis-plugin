@@ -51,6 +51,9 @@ class SpaceConnectionInfo(object):
             kw["space_id"] = kw.pop("id")
         self.obj.update(kw)
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__,
