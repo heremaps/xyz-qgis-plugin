@@ -10,14 +10,20 @@
 
 from qgis.PyQt.QtCore import QThreadPool
 
-from ...common.error import parse_exception_obj
-from ...network import net_handler
+from ...controller import (
+    ChainController,
+    NetworkFun,
+    WorkerFun,
+    ChainInterrupt,
+    AsyncFun,
+    parse_exception_obj,
+    make_qt_args,
+)
+
+from ...network.net_handler import NetworkError
 from ...iml.network import IMLNetworkManager
-from ...loader.layer_loader import AsyncFun
 
-from ...controller import ChainController, NetworkFun, WorkerFun, ChainInterrupt
-
-from ...common.signal import make_print_qgis, make_qt_args
+from ...common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("iml_auth_loader")
 
@@ -25,12 +31,40 @@ print_qgis = make_print_qgis("iml_auth_loader")
 class AuthenticationError(Exception):
     _msg = "Authentication failed"
 
-    def __init__(self, conn_info):
+    def __init__(self, error=None, conn_info=None):
         super().__init__(self._msg)
+        self.error = error
         self.conn_info = conn_info
 
     def get_conn_info(self):
-        return self.conn_info
+        return (
+            self.error.get_response().get_conn_info()
+            if isinstance(self.error, NetworkError)
+            else self.conn_info
+        )
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        if not self.error:
+            return super().__repr__()
+        if isinstance(self.error, NetworkError):
+            response = self.error.get_response()
+            url = response.get_url()
+            status = response.get_status()
+            reason = response.get_reason()
+            err = response.get_error()
+            err_str = response.get_error_string()
+            reply_tag = response.get_reply_tag()
+            pair = (status, reason) if status else (err, err_str)
+            status_msg = "{0!s}: {1!s}".format(*pair)
+            return "{0}({1})".format(
+                self.__class__.__name__,
+                "{}. {}. {}. Request: {}".format(self._msg, reply_tag, status_msg, url),
+            )
+        else:
+            return "{0}({1})".format(self.__class__.__name__, repr(self.error))
 
 
 class HomeProjectNotFound(AuthenticationError):
@@ -85,7 +119,7 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
         if project:
             conn_info.set_(project_hrn=project.get("hrn"))
         else:
-            raise HomeProjectNotFound(conn_info)
+            raise HomeProjectNotFound(conn_info=conn_info)
         return conn_info
 
     def _handle_error(self, err):
@@ -94,10 +128,10 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
             e, idx = chain_err.args[0:2]
         else:
             e = chain_err
-        if isinstance(e, AuthenticationError):
+        if isinstance(e, HomeProjectNotFound):
             self.signal.results.emit(make_qt_args(e.get_conn_info()))
             self.signal.finished.emit()
-        elif isinstance(e, net_handler.NetworkError):
+        elif isinstance(e, NetworkError):
             response = e.get_response()
             status = response.get_status()
             reply_tag = response.get_reply_tag()
