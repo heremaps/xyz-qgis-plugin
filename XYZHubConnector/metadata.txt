@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer on HERE Platform (experimental)
-version=1.8.9
+version=1.8.10
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,12 +42,11 @@ experimental=True
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.8.9 (2021-08-18)
-
-    ✨ NEW FEATURES ✨
-    * Platform SSO user login
+changelog=Version 1.8.10 (2021-08-30)
 
     ⚡️ IMPROVEMENTS ⚡️
-    * Get feature count for all IML layers
+    * Platform Layer Management: add/edit/delete layer
+    * Improves authentication error handling
+    * Minimizes the number of authentication requests
 
     * .. more details on Github repos

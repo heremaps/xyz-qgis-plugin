@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 1.8.10 (2021-08-30)
+
+⚡️ IMPROVEMENTS ⚡️
+* Platform Layer Management: add/edit/delete layer
+* Improves authentication error handling
+* Minimizes the number of authentication requests
+
 ## Version 1.8.9 (2021-08-18)
 
 ✨ NEW FEATURES ✨
