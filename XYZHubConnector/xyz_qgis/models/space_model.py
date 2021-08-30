@@ -66,13 +66,10 @@ class QJsonTableModel(QAbstractTableModel):
         self.selected_index = index
 
     def get_(self, key, index):
-        if index is None:
-            return None
+        if index is None or index.row() < 0:
+            return dict() if key is dict else None
         row = self.obj[index.row()]
-        if key is dict:
-            return dict(row)
-        else:
-            return row.get(key)
+        return dict(row) if key is dict else row.get(key)
 
     def get_selected_space_info(self):
         return self.get_(dict, self.get_selected_index()) or dict()
@@ -131,13 +128,15 @@ class XYZSpaceModel(QJsonTableModel):
         irow = self.row_map[idx]
         self.conn_info_map[idx] = conn_info
         # update qt table
-        self.beginResetModel()
         if feat_cnt is not None:
             self.obj[irow][self.HEADER_CNT] = str(feat_cnt)
         project_hrn = project_hrn or conn_info.get_("project_hrn")
         if project_hrn:
             self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
             self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
+
+    def refresh(self):
+        self.beginResetModel()
         self.endResetModel()
 
     def get_conn_info(self, index):

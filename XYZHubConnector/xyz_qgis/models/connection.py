@@ -8,6 +8,8 @@
 #
 ###############################################################################
 
+from ..common.here_credentials import HereCredentials
+
 
 def mask_token(token):
     return "{!s:.7}***".format(token)
@@ -49,6 +51,9 @@ class SpaceConnectionInfo(object):
             kw["space_id"] = kw.pop("id")
         self.obj.update(kw)
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__,
@@ -68,6 +73,12 @@ class SpaceConnectionInfo(object):
             return dict(self.obj)
         else:
             return self.obj.get(key, default)
+
+    def get_name(self):
+        return self.get_("title") or self.get_("name")
+
+    def get_id(self):
+        return self.get_("id") or self.get_("space_id")
 
     def set_server(self, server):
         self.set_(server=server)
@@ -94,3 +105,22 @@ class SpaceConnectionInfo(object):
 
     def is_user_login(self):
         return bool(self.get_("user_login"))
+
+    def is_valid(self):
+        server = self.get_("server")
+        token = self.get_("token")
+        here_credentials = self.get_("here_credentials")
+        user_login = self.get_("user_login")
+        return bool(server and (token or here_credentials or user_login))
+
+    def load_here_credentials(self):
+        credentials_file = self.get_("here_credentials")
+        here_credentials = None
+        if credentials_file and not self.is_user_login():
+            here_credentials = HereCredentials.from_file(credentials_file)
+            self.set_(
+                here_client_key=here_credentials.key,
+                here_client_secret=here_credentials.secret,
+                here_endpoint=here_credentials.endpoint,
+            )
+        return here_credentials

@@ -17,7 +17,7 @@ from .net_utils import (
     set_qt_property,
     prepare_new_space_info,
     make_payload,
-    make_buffer,
+    make_bytes_payload,
 )
 from .net_handler import NetworkHandler
 
@@ -126,9 +126,7 @@ class NetManager(QObject):
         kw_prop = dict(reply_tag="edit_space")
 
         request = self._pre_send_request(conn_info, endpoint_key, kw_request=kw_request)
-        buffer = make_buffer(space_info)
-        reply = self.network.sendCustomRequest(request, b"PATCH", buffer)
-        buffer.setParent(reply)
+        reply = self.network.sendCustomRequest(request, b"PATCH", make_bytes_payload(space_info))
 
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
         return reply

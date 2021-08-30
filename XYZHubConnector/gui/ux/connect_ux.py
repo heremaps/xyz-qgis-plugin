@@ -179,10 +179,9 @@ class ConnectUX(SpaceUX):
         self.lineEdit_max_feat.setEnabled(flag)
 
     def start_connect(self):
-        index = self._get_current_index()
+        index = self._get_source_index()
         meta = self._get_space_model().get_(dict, index)
-        conn_info = self._get_space_model().get_conn_info(index) or self.conn_info
-        conn_info.set_(**meta)
+        conn_info = self._get_input_conn_info(with_meta=True)
         self.conn_info = SpaceConnectionInfo(conn_info)
         self.signal_space_connect.emit(make_qt_args(conn_info, meta, **self.get_params()))
 

@@ -63,6 +63,7 @@ def txt_from_copyright(obj):
 
 class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
     title = "Dialog"
+    _required_properties = ["title", "description"]
 
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
@@ -108,9 +109,8 @@ class SpaceInfoDialog(QDialog, EditSpaceDialogUI):
         self.buttonBox.button(self.buttonBox.Ok).clearFocus()
 
     def _is_valid_input(self):
-        return all(
-            [self.lineEdit_title.text().strip(), self.plainTextEdit_description.toPlainText()]
-        )
+        d = self._get_space_info()
+        return all(d.get(k) for k in self._required_properties)
 
     def _get_space_info(self):
         return {

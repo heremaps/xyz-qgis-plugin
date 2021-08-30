@@ -91,15 +91,23 @@ class NetworkResponse:
         return req_payload
 
     def log_status(self):
+        conn_info, reply_tag = self.get_qt_property(["conn_info", "reply_tag"])
+        token, space_id = conn_info.get_xyz_space() if conn_info is not None else (None, None)
+
+        if self.is_dummy():
+            msg = "%s: %s - %s" % (
+                reply_tag,
+                mask_token(token),
+                space_id,
+            )
+            QgsMessageLog.logMessage("Network dummy : %s" % msg, config.TAG_PLUGIN, Qgis.Success)
+            return
+
+        url = self.get_url()
         err = self.get_error()
         err_str = self.get_error_string()
         status = self.get_status()
         reason = self.get_reason()
-
-        conn_info, reply_tag = self.get_qt_property(["conn_info", "reply_tag"])
-        token, space_id = conn_info.get_xyz_space() if conn_info is not None else (None, None)
-        url = self.get_url()
-
         if err > 0 or not status:
             msg = "%s: %s: %s. %s. %s - %s. request: %s" % (
                 reply_tag,
@@ -121,7 +129,6 @@ class NetworkResponse:
                 url,
             )
             QgsMessageLog.logMessage("Network Ok! : %s" % msg, config.TAG_PLUGIN, Qgis.Success)
-        return reply_tag, status, reason, err, err_str
 
     def __del__(self):
         self.reply.deleteLater()
@@ -139,21 +146,21 @@ def on_received(reply):
 
 class NetworkHandler:
     @classmethod
-    def handle_error(cls, resp: NetworkResponse):
-        resp.log_status()
+    def handle_error(cls, response: NetworkResponse):
+        err = response.get_error()
+        status = response.get_status()
 
-        err = resp.get_error()
-        status = resp.get_status()
-
-        if err == resp.get_reply().OperationCanceledError:  # operation canceled
-            raise NetworkTimeout(resp)
+        if err == response.get_reply().OperationCanceledError:  # operation canceled
+            raise NetworkTimeout(response)
         elif err > 0 or not status:
-            raise NetworkError(resp)
+            raise NetworkError(response)
 
     @classmethod
     def on_received(cls, reply):
         response = NetworkResponse(reply)
         # print(response.get_reply().request().rawHeader("Cookie".encode("utf-8")))
+
+        response.log_status()
         if not response.is_dummy():
             cls.handle_error(response)
         return cls.on_received_impl(response)
@@ -236,6 +243,9 @@ class NetworkError(Exception):
 
     def get_response(self):
         return self.response
+
+    def __str__(self):
+        return self.__repr__()
 
     def __repr__(self):
         response = self.get_response()

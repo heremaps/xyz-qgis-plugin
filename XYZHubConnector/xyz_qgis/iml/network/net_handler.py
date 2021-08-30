@@ -34,18 +34,16 @@ def on_received(reply):
 
 class IMLNetworkHandler(NetworkHandler):
     @classmethod
-    def handle_error(cls, resp: NetworkResponse):
-        resp.log_status()
+    def handle_error(cls, response: NetworkResponse):
+        err = response.get_error()
+        status = response.get_status()
 
-        err = resp.get_error()
-        status = resp.get_status()
-
-        if err == resp.get_reply().OperationCanceledError:  # operation canceled
-            raise NetworkTimeout(resp)
+        if err == response.get_reply().OperationCanceledError:  # operation canceled
+            raise NetworkTimeout(response)
         elif status in (401, 403):
-            raise IMLNetworkUnauthorized(resp)
+            raise IMLNetworkUnauthorized(response)
         elif err > 0 or not status:
-            raise NetworkError(resp)
+            raise NetworkError(response)
 
     @classmethod
     def on_received_impl(cls, response):
@@ -112,7 +110,10 @@ class IMLNetworkHandler(NetworkHandler):
 
             args = [obj]
         elif reply_tag in ("add_space", "edit_space", "del_space"):
-
+            args = [conn_info, obj]
+        elif reply_tag in ("add_layer", "edit_layer", "del_layer"):
+            args = [conn_info, obj]
+        elif reply_tag in ("get_catalog",):
             args = [conn_info, obj]
         elif reply_tag in ("statistics", "count", "space_meta"):
             print_qgis(txt[:100])

@@ -10,10 +10,13 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ...xyz_qgis.controller import make_qt_args
-from ..space_info_dialog import EditSpaceDialog, NewSpaceDialog
-from ..util_dialog import ConfirmDialog
 from .space_ux import SpaceUX, SpaceConnectionInfo
+from ..space_info_dialog import NewSpaceDialog, EditSpaceDialog
+from ..iml.iml_space_info_dialog import IMLNewSpaceDialog, IMLEditSpaceDialog
+
+from ..util_dialog import ConfirmDialog
+from ...xyz_qgis.models import API_TYPES
+from ...xyz_qgis.controller import make_qt_args
 
 
 class ManageUX(SpaceUX):
@@ -55,28 +58,34 @@ class ManageUX(SpaceUX):
         self.btn_delete.clearFocus()
 
     def ui_new_space(self):
-        token = self.get_input_token()
-        server = self.get_input_server()
-        self.conn_info.set_(token=token, server=server)
-        conn_info = SpaceConnectionInfo(self.conn_info)
+        conn_info = self._get_input_conn_info(use_prior=True)
 
-        dialog = NewSpaceDialog(self)
+        api_type = self.token_model.get_api_type()
+        if api_type == API_TYPES.PLATFORM:
+            dialog = IMLNewSpaceDialog(self)
+            dialog.set_space_info({"catalog_hrn": conn_info.get_("catalog_hrn")})
+
+        else:
+            dialog = NewSpaceDialog(self)
+
         dialog.accepted.connect(
-            lambda: self.signal_new_space.emit(make_qt_args(conn_info, dialog.get_space_info()))
+            lambda: self.signal_new_space.emit(
+                make_qt_args(dialog.get_updated_conn_info(conn_info), dialog.get_space_info())
+            )
         )
         dialog.exec_()
 
     def ui_edit_space(self):
-        token = self.get_input_token()
-        server = self.get_input_server()
-        index = self._get_current_index()
-        space_id = self._get_space_model().get_("id", index)
+        index = self._get_source_index()
         space_info = self._get_space_model().get_(dict, index)
 
-        self.conn_info.set_(token=token, space_id=space_id, server=server)
-        conn_info = SpaceConnectionInfo(self.conn_info)
+        conn_info = self._get_input_conn_info()
 
-        dialog = EditSpaceDialog(self)
+        api_type = self.token_model.get_api_type()
+        if api_type == API_TYPES.PLATFORM:
+            dialog = IMLEditSpaceDialog(self)
+        else:
+            dialog = EditSpaceDialog(self)
         dialog.set_space_info(space_info)
 
         dialog.accepted.connect(
@@ -85,18 +94,11 @@ class ManageUX(SpaceUX):
         dialog.exec_()
 
     def ui_del_space(self):
-        token = self.get_input_token()
-        server = self.get_input_server()
-        index = self._get_current_index()
-        space_id = self._get_space_model().get_("id", index)
-        title = self._get_space_model().get_("title", index)
-
-        self.conn_info.set_(token=token, space_id=space_id, server=server)
-
+        conn_info = self._get_input_conn_info()
+        title = conn_info.get_name()
         dialog = ConfirmDialog("Do you want to Delete space: %s?" % title)
         ret = dialog.exec_()
         if ret != dialog.Ok:
             return
 
-        conn_info = SpaceConnectionInfo(self.conn_info)
         self.signal_del_space.emit(make_qt_args(conn_info))

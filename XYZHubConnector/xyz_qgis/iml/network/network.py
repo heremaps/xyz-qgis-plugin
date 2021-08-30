@@ -8,17 +8,15 @@
 #
 ###############################################################################
 
+import time
 import base64
 import json
-import time
-
-from qgis.PyQt.QtCore import QUrl
 
 from .login import PlatformUserAuthentication
 from .net_handler import IMLNetworkHandler
 from ...models import SpaceConnectionInfo
-from ...network.network import NetManager, make_conn_request, make_payload
-from ...network.net_utils import CookieUtils
+from ...network.network import NetManager
+from ...network.net_utils import CookieUtils, make_conn_request, make_payload, make_bytes_payload
 from ...common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("iml.network")
@@ -70,7 +68,7 @@ class IMLNetworkManager(NetManager):
         "edit_space": "/catalogs/{catalog_hrn}/layers/{layer_id}",
         "del_space": "/catalogs/{catalog_hrn}/layers/{layer_id}",
         "list_spaces": "/catalogs",
-        "add_space": "/catalogs/{catalog_hrn}/layers",
+        "add_space": "/catalogs/{catalog_hrn}",
         "load_features_bbox": "/catalogs/{catalog_hrn}/layers/{layer_id}/bbox",
         "load_features_iterate": "/catalogs/{catalog_hrn}/layers/{layer_id}/iterate",
         "load_features_search": "/catalogs/{catalog_hrn}/layers/{layer_id}/search",
@@ -79,6 +77,13 @@ class IMLNetworkManager(NetManager):
         "add_features": "/catalogs/{catalog_hrn}/layers/{layer_id}/features",
         "del_features": "/catalogs/{catalog_hrn}/layers/{layer_id}/features",
         "get_project": "/resources/{catalog_hrn}/projects",
+        "create_project": "/projects",
+        "create_catalog": "/catalogs",
+        "update_catalog": "/catalogs/{catalog_hrn}",
+        "get_catalog": "/catalogs/{catalog_hrn}",
+        "add_layer": "/catalogs/{catalog_hrn}",
+        "edit_layer": "/catalogs/{catalog_hrn}/layers/{layer_id}",
+        "del_layer": "/catalogs/{catalog_hrn}/layers/{layer_id}",
     }
 
     API_GROUP = {
@@ -96,7 +101,57 @@ class IMLNetworkManager(NetManager):
         "add_features": API_GROUP_INTERACTIVE,
         "del_features": API_GROUP_INTERACTIVE,
         "get_project": API_GROUP_AUTH,
+        "create_project": API_GROUP_AUTH,
+        "create_catalog": API_GROUP_CONFIG,
+        "update_catalog": API_GROUP_CONFIG,
+        "get_catalog": API_GROUP_CONFIG,
+        "add_layer": API_GROUP_CONFIG,
+        "edit_layer": API_GROUP_CONFIG,
+        "del_layer": API_GROUP_CONFIG,
     }
+
+    API_PAYLOAD_ALLOW_KEYS = {
+        "create_catalog": [
+            "id",
+            "name",
+            "summary",
+            "description",
+            "tags",
+            "layers",
+            "version",
+            "notifications",
+            "replication",
+            "automaticVersionDeletion",
+        ],
+        "edit_layer": [
+            "layerType",
+            "id",
+            "name",
+            "summary",
+            "description",
+            "coverage",
+            "schema",
+            "partitioning",
+            "indexProperties",
+            "streamProperties",
+            "interactiveMapsProperties",
+            "interactiveMapProperties",
+            "tags",
+            "billingTags",
+            "crc",
+            "digest",
+            "ttl",
+            "contentType",
+            "contentEncoding",
+        ],
+    }
+
+    API_PAYLOAD_ALLOW_KEYS.update(
+        {
+            "update_catalog": API_PAYLOAD_ALLOW_KEYS["create_catalog"],
+            "add_layer": API_PAYLOAD_ALLOW_KEYS["create_catalog"],
+        }
+    )
 
     #############
 
@@ -121,7 +176,7 @@ class IMLNetworkManager(NetManager):
     def _pre_send_request(self, conn_info, endpoint_key: str, kw_path=dict(), kw_request=dict()):
         token = conn_info.get_("token")
         catalog_hrn = conn_info.get_("catalog_hrn")
-        layer_id = conn_info.get_("space_id")
+        layer_id = conn_info.get_id()
         api_env = self._get_api_env(conn_info)
 
         api_group = self.API_GROUP.get(endpoint_key, self.API_GROUP_INTERACTIVE)
@@ -132,6 +187,11 @@ class IMLNetworkManager(NetManager):
         url = api_url + endpoint.format(catalog_hrn=catalog_hrn, layer_id=layer_id, **kw_path)
         request = make_conn_request(url, token, **kw_request)
         return request
+
+    @classmethod
+    def trim_payload(cls, payload, endpoint_key):
+        keys = cls.API_PAYLOAD_ALLOW_KEYS.get(endpoint_key, [])
+        return {k: payload[k] for k in keys if k in payload}
 
     #############
 
@@ -146,6 +206,50 @@ class IMLNetworkManager(NetManager):
         kw_request = dict(relation="home")
         kw_prop = dict(reply_tag=endpoint_key)
         return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
+
+    def get_catalog(self, conn_info):
+        endpoint_key = "get_catalog"
+        kw_request = dict()
+        kw_prop = dict(reply_tag=endpoint_key)
+        return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
+
+    def add_layer(self, conn_info, space_info: dict, catalog_info: dict = None):
+        endpoint_key = "add_layer"
+
+        catalog_hrn = conn_info.get_("catalog_hrn")
+        payload = self.trim_payload(catalog_info or dict(), endpoint_key)
+        payload.setdefault("layers", list()).append(space_info)
+
+        kw_request = dict(req_type="json", catalog_hrn=catalog_hrn)
+        kw_prop = dict(reply_tag=endpoint_key)
+        request = self._pre_send_request(conn_info, endpoint_key, kw_request=kw_request)
+        reply = self.network.sendCustomRequest(request, b"PUT", make_bytes_payload(payload))
+        self._post_send_request(reply, conn_info, kw_prop=kw_prop)
+        return reply
+
+    def edit_layer(self, conn_info, space_info: dict):
+        endpoint_key = "edit_layer"
+
+        catalog_hrn = conn_info.get_("catalog_hrn")
+        layer_id = conn_info.get_id()
+        payload = self.trim_payload(space_info, endpoint_key)
+
+        kw_request = dict(req_type="json", catalog_hrn=catalog_hrn, layer_id=layer_id)
+        kw_prop = dict(reply_tag=endpoint_key)
+        request = self._pre_send_request(conn_info, endpoint_key, kw_request=kw_request)
+        reply = self.network.sendCustomRequest(request, b"PATCH", make_bytes_payload(payload))
+        self._post_send_request(reply, conn_info, kw_prop=kw_prop)
+        print_qgis(request.url())
+        return reply
+
+    def del_layer(self, conn_info):
+        endpoint_key = "del_layer"
+        kw_request = dict()
+        kw_prop = dict(reply_tag=endpoint_key)
+        request = self._pre_send_request(conn_info, endpoint_key, kw_request=kw_request)
+        reply = self.network.sendCustomRequest(request, b"DELETE")
+        self._post_send_request(reply, conn_info, kw_prop=kw_prop)
+        return reply
 
     ####################
     # Authentication Public
@@ -174,6 +278,7 @@ class IMLNetworkManager(NetManager):
     def app_auth(self, conn_info, expires_in=7200, project_hrn: str = None):
         reply_tag = "oauth"
 
+        conn_info.load_here_credentials()
         api_env = self._get_api_env(conn_info)
         url = self.API_URL[self.API_GROUP_OAUTH][api_env]
 
@@ -188,16 +293,9 @@ class IMLNetworkManager(NetManager):
 
         kw_prop = dict(reply_tag=reply_tag, auth_req_payload=payload)
 
-        # generate_auth_headers
-        # auth_header = auth.generateAuthorizationHeader(auth_headers)
-        # auth_header = generate_oauth_header(url, conn_info)
-        # print(auth_header)
-        auth_header = generate_oauth_header_2(url, conn_info)
-        # print("oauthlib", auth_header)
+        auth_header = generate_oauth_header(url, conn_info)
         request.setRawHeader(b"Authorization", auth_header)
         reply = self.network.post(request, make_payload(payload))
-
-        # reply = auth.post(request.url(), payload)
 
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
         return reply
@@ -210,7 +308,7 @@ class IMLNetworkManager(NetManager):
         return IMLNetworkHandler.on_received(reply)
 
 
-def generate_oauth_header_2(url, conn_info):
+def generate_oauth_header(url, conn_info):
     from oauthlib import oauth1
 
     client = oauth1.Client(
@@ -219,32 +317,6 @@ def generate_oauth_header_2(url, conn_info):
     )
     uri, headers, body = client.sign(url, "POST")
     return headers.get("Authorization", "").encode("utf-8")
-
-
-def generate_oauth_header(url, conn_info):
-    from PyQt5.QtNetworkAuth import QOAuth1, QOAuth1Signature
-
-    auth_headers = dict(
-        oauth_consumer_key=conn_info.get_("here_client_key", ""),
-        oauth_nonce=bytes(QOAuth1.nonce()).decode("utf-8"),
-        oauth_signature_method="HMAC-SHA1",
-        oauth_timestamp=int(time.time()),
-        oauth_version="1.0",
-    )
-    signature = QOAuth1Signature(
-        QUrl(url),
-        conn_info.get_("here_client_secret"),
-        "",
-        QOAuth1Signature.HttpRequestMethod.Post,
-        auth_headers,
-    )
-    auth_headers["oauth_signature"] = bytes(
-        QUrl.toPercentEncoding(bytes(signature.hmacSha1().toBase64()).decode("utf-8"))
-    ).decode("utf-8")
-    auth_header = "OAuth {}".format(
-        ",".join('{}="{}"'.format(k, v) for k, v in auth_headers.items())
-    ).encode("utf-8")
-    return auth_header
 
 
 def check_oauth2_token(token):

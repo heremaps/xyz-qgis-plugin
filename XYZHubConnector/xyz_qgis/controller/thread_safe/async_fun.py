@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import QThreadPool
+from qgis.PyQt.QtCore import QThreadPool, QTimer
 from qgis.core import QgsProject
 
 from .. import make_exception_obj
@@ -115,3 +115,16 @@ class NetworkFun(AsyncFun):
                 reply.finished.connect(self._emitter(idx))
             else:
                 self._emit(output_to_qt_args(reply))
+
+
+class DelayedIdentityFun(AsyncFun):
+    def __init__(self, delay_ms):
+        super().__init__(lambda: None)
+        self._delay_ms = delay_ms
+
+    def _emit(self, args: QtArgs):
+        self.signal.results.emit(args)
+        self.signal.finished.emit()
+
+    def call(self, args: QtArgs) -> None:
+        QTimer.singleShot(self._delay_ms, lambda: self._emit(args))

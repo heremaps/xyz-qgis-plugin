@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError
+from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError, HomeProjectNotFound
 from ...layer import queue
 from ...loader.layer_loader import (
     TileLayerLoader,
@@ -21,6 +21,7 @@ from ...loader.layer_loader import (
     EditSyncController,
 )
 from ...network.net_handler import NetworkResponse, NetworkError
+from ...common.signal import make_fun_args
 
 
 class IMLAuthExtension:
@@ -30,8 +31,17 @@ class IMLAuthExtension:
         # setup retry with reauth
         self._reset_retry_cnt()
         self.con_auth = IMLProjectScopedAuthLoader(network)
-        self.con_auth.signal.finished.connect(self._retry_with_auth_cb)
-        self.con_auth.signal.error.connect(self._handle_error)
+        self.con_auth.signal.results.connect(make_fun_args(self._after_retry_with_auth))
+        self.con_auth.signal.error.connect(self._handle_auth_error)
+
+    def _handle_auth_error(self, err):
+        chain_err = parse_exception_obj(err)
+        if isinstance(chain_err, ChainInterrupt):
+            e, idx = chain_err.args[0:2]
+        else:
+            e = chain_err
+        self._release()  # release active dispatch
+        self.signal.error.emit(AuthenticationError(e))
 
     def _handle_error(self, err):
 
@@ -47,13 +57,11 @@ class IMLAuthExtension:
             if status in (401, 403):
                 if self._retry_cnt < self.MAX_RETRY_COUNT:
                     self._retry_with_auth(reply)
-                else:
-                    self.signal.error.emit(AuthenticationError(response.get_conn_info()))
             else:
                 self._retry(reply)
             return
         # otherwise emit error
-        self._release()  # hot fix, no finish signal
+        self._release()  # release active dispatch
         self.signal.error.emit(err)
 
     def _reset_retry_cnt(self):
@@ -66,14 +74,14 @@ class IMLAuthExtension:
         # try to reauth, then continue run loop
         self.con_auth.start(self.get_conn_info())
 
-    def _retry_with_auth_cb(self):
-        self._save_conn_info_to_layer()
+    def _after_retry_with_auth(self, conn_info=None):
+        self._save_conn_info_to_layer(conn_info)
         self._run_loop()
 
-    def _save_conn_info_to_layer(self):
+    def _save_conn_info_to_layer(self, conn_info):
         layer = self.layer
         if layer:
-            layer.update_conn_info()
+            layer.update_conn_info(conn_info)
 
 
 class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):

@@ -12,8 +12,6 @@ from os.path import exists, expanduser, expandvars
 
 from .utils import read_properties_file
 
-from ..models.connection import SpaceConnectionInfo
-
 
 class HereCredentials:
     def __init__(
@@ -81,13 +79,3 @@ class HereCredentialsException(Exception):
     This ``HereCredentialsException`` is raised when the HERE platform credentials are
     not accepted.
     """
-
-
-def update_conn_info_from_here_credentials(
-    conn_info: SpaceConnectionInfo, here_credentials: HereCredentials
-):
-    conn_info.set_(
-        here_client_key=here_credentials.key,
-        here_client_secret=here_credentials.secret,
-        here_endpoint=here_credentials.endpoint,
-    )
