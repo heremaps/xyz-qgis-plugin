@@ -71,7 +71,7 @@ from .xyz_qgis.iml.loader import (
     IMLLayerLoader,
     IMLEditSyncController,
 )
-from .xyz_qgis.iml.loader.iml_auth_loader import HomeProjectNotFound
+from .xyz_qgis.iml.loader.iml_auth_loader import HomeProjectNotFound, AuthenticationError
 from .xyz_qgis.iml.network import IMLNetworkManager
 from .xyz_qgis.iml.models import IMLServerTokenConfig
 
@@ -396,7 +396,9 @@ class XYZHubConnector(object):
         else:
             e0 = err
         if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
-            self.handle_net_err(e0)
+            skip_error = self.handle_net_err(e0)
+            if not skip_error:
+                self.show_net_err(e0)
             return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub", "Requested query returns no features")
@@ -407,6 +409,10 @@ class XYZHubConnector(object):
         elif isinstance(e0, HomeProjectNotFound):
             self.log_err(e0)
             return
+        elif isinstance(e0, AuthenticationError):
+            if isinstance(e0.error, net_handler.NetworkError):
+                self.handle_net_err(e0.error)
+                return
         self.show_err_msgbar(err)
 
     def handle_net_err(self, err):
@@ -414,12 +420,11 @@ class XYZHubConnector(object):
         conn_info = err.get_response().get_conn_info()
         reply_tag = err.get_response().get_reply_tag()
         if reply_tag in ["count", "statistics"]:  # too many error
-            return
+            return True
         if status in [401, 403]:
             if conn_info.is_platform_server() and conn_info.is_user_login():
                 self.user_auth_iml.reset_auth(conn_info)
-                # return
-        return self.show_net_err(err)
+        return
 
     def show_net_err(self, err):
         response = err.get_response()
