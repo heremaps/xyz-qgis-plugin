@@ -1,0 +1,7 @@
+include CHANGELOG.md
+include README.md
+include LICENSE
+include requirements.txt
+include requirements_dev.txt
+include XYZHubConnector/metadata.txt
+include XYZHubConnector/LICENSE
