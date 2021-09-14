@@ -177,10 +177,9 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=Fal
 
     def _livemap_props(props, xyz_id=None):
         # handle editing of delta layer
-        changeState = "UPDATED" if "@ns:com:here:mom:delta" in props else "CREATED"
-        delta = {"reviewState": "UNPUBLISHED", "changeState": changeState, "taskGridId": ""}
+        delta = {"changeState": "CREATED", "reviewState": "UNPUBLISHED", "taskGridId": ""}
         if xyz_id:
-            delta.update({"originId": xyz_id})
+            delta.update({"changeState": "UPDATED", "originId": xyz_id})
         return {"@ns:com:here:mom:delta": delta}
 
     def _clean_props(props):
