@@ -33,7 +33,7 @@ class TestParser(BaseTestAsync):
         super().__init__(*a, **kw)
         self.similarity_threshold = 80
 
-    ######## Parse xyz geojson -> QgsFeature
+    # ######## Parse xyz geojson -> QgsFeature
     def test_parse_xyzjson(self):
         folder = "xyzjson-small"
         fnames = ["airport-xyz.geojson", "water-xyz.geojson"]
@@ -49,7 +49,7 @@ class TestParser(BaseTestAsync):
             obj = json.loads(txt)
             obj_feat = obj["features"]
             fields = QgsFields()
-            feat = [parser.xyz_json_to_feat(ft, fields) for ft in obj_feat]
+            feat = [parser.xyz_json_to_feature(ft, fields) for ft in obj_feat]
 
             self._assert_parsed_fields(obj_feat, feat, fields)
             self._assert_parsed_geom(obj_feat, feat, fields)
@@ -152,7 +152,7 @@ class TestParser(BaseTestAsync):
         for fname in fnames:
             self.subtest_parse_xyzjson(folder, fname)
 
-    ######## Parse xyz geojson -> struct of geom: [fields], [[QgsFeature]]
+    # ######## Parse xyz geojson -> struct of geom: [fields], [[QgsFeature]]
     def test_parse_xyzjson_map(self):
         folder = "xyzjson-small"
         fnames = [
@@ -433,7 +433,7 @@ class TestParser(BaseTestAsync):
         for fname in fnames:
             self.subtest_parse_xyzjson_map(folder, fname)
 
-    ######## Parse QgsFeature -> json
+    # ######## Parse QgsFeature -> json
     def test_parse_qgsfeature(self):
         # self.subtest_parse_qgsfeature("geojson-small", "airport-qgis.geojson")  # no xyz_id
         self.subtest_parse_qgsfeature("xyzjson-small", "airport-xyz.geojson")

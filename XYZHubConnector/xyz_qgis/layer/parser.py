@@ -365,7 +365,7 @@ def _attrs(props):
         yield k, o
 
 
-def xyz_json_to_feat(feat_json, fields):
+def xyz_json_to_feature(feat_json, fields):
     """
     Convert xyz geojson to feature, given fields
     """
@@ -525,7 +525,7 @@ def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
         else:
             fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold / 100)
 
-        ft = xyz_json_to_feat(feat_json, fields)
+        ft = xyz_json_to_feature(feat_json, fields)
 
         lst = map_feat.setdefault(g, list())
 
