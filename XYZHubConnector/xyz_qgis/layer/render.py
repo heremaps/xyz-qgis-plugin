@@ -93,7 +93,11 @@ def add_feature_render(vlayer, feat, new_fields):
     ok, out_feat = pr.addFeatures(feat)
     vlayer.updateExtents()  # will hide default progress bar
     # post_render(vlayer) # disable in order to keep default progress bar running
-    vlayer.reload()
+    # vlayer.reload() # comment out to have less crash when loading large geometries
+    # TODO: should find a better place to reload() and not crash,
+    #  comment it out did not crash for some case, but still crash for others,
+    #  probably need to work on threading.
+    #  Reload is required to sync between provider and layer (fields consistency)
     return ok, out_feat
 
 
