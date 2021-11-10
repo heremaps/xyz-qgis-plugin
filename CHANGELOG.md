@@ -1,5 +1,36 @@
 # Changelog 
 
+## Version 1.9.0 (2021-11-15)
+
+#### New Features
+
+* Officially supports HERE Platform Interactive Map Layer (IML)
+    * HERE Platform authentication via App credentials or Email login
+    * Visualize and edit IML data
+    * Manage IML layers: add/edit/delete layer
+
+#### Improvements
+
+* Improves editing delta layers
+* Supports Z coordinates (elevation)
+
+#### Bug Fixes
+
+* Prevents app crash when loading large geometries
+* Does not convert string to integer when parsing feature
+* Fixed vertex editor not working properly after loading
+* Fixed ordering of vector layer when opening saved project
+* Ensure xyz_id uniqueness via sqlite trigger instead of 'on replace conflict' constraint
+* Ensure fields to be consistent with provider fields to prevent data corruption, especially after editing
+* Ensure the paired order of fields-vector layer after a layer is removed (set fields to empty for deleted layer)
+* Handle virtual fields (expression fields) in data loading
+* Update test for parser and renderer
+* Disconnect signal silently to avoid exception
+* Fixed compatibility issues with QGIS 3.20
+* Fixed overwritten layer properties when loading style
+* Fixed dangling QgsFields of deleted layer
+* Minor bug fixes
+
 ## Version 1.8.10 (2021-08-30)
 
 #### Improvements
