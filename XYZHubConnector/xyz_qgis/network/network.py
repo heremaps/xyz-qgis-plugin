@@ -187,7 +187,7 @@ class NetManager(QObject):
         kw_tile = dict(tile_schema=tile_schema, tile_id=tile_id)
         endpoint_key = "load_features_tile"
         self._process_queries(kw)
-        kw_prop = dict(reply_tag=reply_tag, **dict(kw, **kw_tile))
+        kw_prop = dict(reply_tag=reply_tag, **kw, **kw_tile)
         return self._send_request(
             conn_info, endpoint_key, kw_path=kw_tile, kw_request=kw, kw_prop=kw_prop
         )
