@@ -164,7 +164,9 @@ class PlatformUserAuthentication:
         # parent = self.network
         parent = None
         api_env = self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
-        CookieUtils.load_from_settings(self.network, API_TYPES.PLATFORM, api_env)
+        CookieUtils.load_from_settings(
+            self.network, API_TYPES.PLATFORM, api_env, conn_info.get_user_email()
+        )
         token = self.get_access_token()
         if token:
             conn_info.set_(token=token)
@@ -181,11 +183,11 @@ class PlatformUserAuthentication:
 
     def reset_auth(self, conn_info):
         api_env = self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
-        self._reset_auth(api_env)
+        self._reset_auth(api_env, conn_info.get_user_email())
         conn_info.set_(token=None)
 
-    def _reset_auth(self, api_env):
-        CookieUtils.remove_cookies_from_settings(API_TYPES.PLATFORM, api_env)
+    def _reset_auth(self, api_env, email: str = None):
+        CookieUtils.remove_cookies_from_settings(API_TYPES.PLATFORM, api_env, email)
 
     # private
 
@@ -194,10 +196,10 @@ class PlatformUserAuthentication:
         set_qt_property(qobj, conn_info=conn_info, **kw_prop)
         return qobj
 
-    def cb_dialog_closed(self, api_env: str, *a):
+    def cb_dialog_closed(self, api_env: str, email: str, *a):
         self.dialog = None
         if self.get_access_token():
-            CookieUtils.save_to_settings(self.network, API_TYPES.PLATFORM, api_env)
+            CookieUtils.save_to_settings(self.network, API_TYPES.PLATFORM, api_env, email)
 
     def cb_url_changed(self, url: QUrl):
         if "/authHandler" in url.toString():
@@ -206,6 +208,7 @@ class PlatformUserAuthentication:
             # "action=already signed in" in url.toString()
             self.dialog.close()
             api_env = self.API_SIT if url.host() == self.HERE_URL_SIT else self.API_PRD
+            # TODO: reset only auth of the input email
             self._reset_auth(api_env)
 
     def cb_auth_handler(self, reply):
@@ -266,7 +269,7 @@ class PlatformUserAuthentication:
                 url = "&".join([url, "prefill-email-addr={email}".format(email=email)])
 
             page.currentFrame().urlChanged.connect(self.cb_url_changed)
-            dialog.finished.connect(lambda *a: self.cb_dialog_closed(api_env, *a))
+            dialog.finished.connect(lambda *a: self.cb_dialog_closed(api_env, email, *a))
 
             dialog.open()
             view.load(QUrl(url))
