@@ -43,6 +43,7 @@ class UploadUX(SpaceUX):
 
     def set_layer(self, vlayer):
         self.mMapLayerComboBox.setLayer(vlayer)
+        self._set_layer(vlayer)
 
     def _set_layer(self, vlayer):
         self.vlayer = vlayer
