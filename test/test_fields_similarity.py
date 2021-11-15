@@ -26,7 +26,7 @@ class TestFieldsSimilarity(BaseTestAsync):
 
         # from parser.prepare_fields
         orig_props_names = [k for k, v in props.items() if v is not None]
-        parser.rename_special_props(props)  # rename fid in props
+        props = parser.rename_special_props(props)  # rename fid in props
         props_names = [k for k, v in props.items() if v is not None]
 
         return parser.fields_similarity(fields_names, orig_props_names, props_names)

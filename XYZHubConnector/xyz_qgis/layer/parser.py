@@ -346,13 +346,10 @@ def normal_field_name(name):
 
 def rename_special_props(props):
     """
-    rename json properties that duplicate qgis special keys
+    rename json properties that duplicate qgis special keys, eg. id, fid
     """
-    for key in props:
-        if key.lower() not in QGS_SPECIAL_KEYS:
-            continue
-        new_name = unique_field_name(key)
-        props[new_name] = props.pop(key, None)  # rename fid in props
+    mapper = lambda key: unique_field_name(key) if key.lower() in QGS_SPECIAL_KEYS else key
+    return {mapper(key): value for key, value in props.items()}
 
 
 def _attrs(props):
@@ -384,7 +381,7 @@ def xyz_json_to_feature(feat_json, fields):
 
     props = feat_json.get("properties")
     if isinstance(props, dict):
-        rename_special_props(props)  # rename fid in props
+        props = rename_special_props(props)  # rename fid in props
         attrs = list(_attrs(props))
         for k, v in attrs:
             val = QVariant(v)
@@ -469,7 +466,7 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
         props_names = list()
     else:
         orig_props_names = [k for k, v in props.items() if v is not None]
-        rename_special_props(props)  # rename fid in props
+        props = rename_special_props(props)  # rename fid in props
         props_names = [k for k, v in props.items() if v is not None]
     lst_score = [
         fields_similarity(
