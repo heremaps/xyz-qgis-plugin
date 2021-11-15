@@ -466,7 +466,7 @@ class XYZHubConnector(object):
                 else (
                     "Please input valid Platform app credentials."
                     if not conn_info.is_user_login()
-                    else "Please input valid Platform user login."
+                    else "Please retry to login with valid Platform user credentials."
                 )
             )
             msg = status_msg + "Authentication failed" "\n\n" + instruction_msg
