@@ -229,6 +229,14 @@ class CookieUtils:
         s.endGroup()
 
     @classmethod
+    def remove_all_cookies_from_settings(cls):
+        s = QSettings()
+        key = "xyz_qgis/cookies"
+        s.beginGroup(key)
+        s.remove("")
+        s.endGroup()
+
+    @classmethod
     def get_cookies_from_url(cls, network: QNetworkAccessManager, url: QUrl):
         return network.cookieJar().cookiesForUrl(url)
 

@@ -63,6 +63,7 @@ from .xyz_qgis.layer.layer_props import QProps
 
 
 from .xyz_qgis.network import NetManager, net_handler
+from .xyz_qgis.network.net_utils import CookieUtils
 from .xyz_qgis.iml.loader import (
     IMLTileLayerLoader,
     IMLLiveTileLayerLoader,
@@ -554,6 +555,7 @@ class XYZHubConnector(object):
 
         # clear cache btn
         dialog.signal_clear_cache.connect(self.open_clear_cache_dialog)
+        dialog.signal_clear_cookies.connect(self.open_clear_cookies_dialog)
 
         # add map tile btn
         dialog.signal_add_basemap.connect(self.add_basemap_layer)
@@ -975,6 +977,14 @@ class XYZHubConnector(object):
             return
 
         utils.clear_cache()
+
+    def open_clear_cookies_dialog(self):
+        dialog = ConfirmDialog("Are you sure to clear all cookies ?")
+        ret = dialog.exec_()
+        if ret != dialog.Ok:
+            return
+
+        CookieUtils.remove_all_cookies_from_settings()
 
     def open_connection_dialog(self):
         dialog = self.new_main_dialog()
