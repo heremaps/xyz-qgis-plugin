@@ -20,7 +20,7 @@ IMLTokenEditUI = get_ui_class("edit_iml_token_dialog.ui")
 
 class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
     ui_class = IMLTokenEditUI
-    txt_value = "Credentials"
+    txt_value = "App Credentials"
     file_filter = "*.properties"
 
     def __init__(self, parent=None):
@@ -36,7 +36,7 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         self.mQgsFileWidget.fileChanged.connect(self.ui_enable_btn)
         self.lineEdit_email.textChanged.connect(self.ui_enable_btn)
         self.checkBox_user_login.toggled.connect(self.ui_enable_btn)
-        self._cb_user_login(False)
+        self.checkBox_user_login.setChecked(True)
         self.ui_enable_btn()
 
     def _cb_user_login(self, flag):
