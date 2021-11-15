@@ -92,6 +92,7 @@ class IMLServerInfoDialog(ServerInfoDialog):
         self.comboBox_api_type.setVisible(True)
         self.comboBox_api_type.addItems([s.upper() for s in API_TYPES])
         self.comboBox_token.addItems(self.PLATFORM_SERVERS)
+        self.comboBox_token.setEnabled(False)
 
         self.comboBox_api_type.currentIndexChanged.connect(self.cb_change_api_type)
         self.comboBox_api_type.currentIndexChanged.connect(self.ui_enable_btn)
