@@ -360,7 +360,13 @@ class ServerModel(WritableItemModel, UsedToken):
         return data in self._protected_data
 
     def set_default_servers(self, default_api_urls):
-        default_servers = [dict(name="HERE Server", server=default_api_urls["PRD"])]
+        default_servers = filter(
+            lambda m: m.get("server"),
+            [
+                dict(name="HERE Server", server=default_api_urls.get("PRD")),
+                dict(name="HERE Platform", server=default_api_urls.get("PLATFORM_PRD")),
+            ],
+        )
         self._protected_data = default_servers
         self._init_default_servers(default_servers)
 

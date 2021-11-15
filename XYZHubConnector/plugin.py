@@ -235,7 +235,9 @@ class XYZHubConnector(object):
 
         # token
         self.token_config = IMLServerTokenConfig(config.USER_PLUGIN_DIR + "/token.ini", parent)
-        self.token_config.set_default_servers(NetManager.API_URL)
+        self.token_config.set_default_servers(
+            dict(NetManager.API_URL, PLATFORM_PRD="PLATFORM_PRD")
+        )
         self.token_model = self.token_config.get_token_model()
         self.server_model = self.token_config.get_server_model()
 
