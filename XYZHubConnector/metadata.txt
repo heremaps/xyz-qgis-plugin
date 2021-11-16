@@ -10,7 +10,7 @@
 [general]
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
-description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer on HERE Platform (experimental)
+description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer inside the HERE Platform.
 version=1.9.0
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
