@@ -72,7 +72,8 @@ class EditableItemModel(QStandardItemModel):
 
     def get_text(self, row, col):
         it = self.item(row, col)
-        return it.text().strip() if it else "None"
+        txt = it.text().strip() if it else ""
+        return txt if txt != "None" else ""
 
     def get_data(self, row):
         return dict([k, self.get_text(row, col)] for col, k in enumerate(self.get_info_keys()))
@@ -220,6 +221,7 @@ class TokenInfoSerializer:
 
     def serialize(self, token_info):
         lst_txt = [token_info.get(k, "").strip() for k in self.serialize_keys]
+        print(lst_txt, token_info)
         return self.delim.join(lst_txt)
 
 
