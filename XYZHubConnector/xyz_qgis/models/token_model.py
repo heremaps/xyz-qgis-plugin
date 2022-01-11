@@ -221,7 +221,6 @@ class TokenInfoSerializer:
 
     def serialize(self, token_info):
         lst_txt = [token_info.get(k, "").strip() for k in self.serialize_keys]
-        print(lst_txt, token_info)
         return self.delim.join(lst_txt)
 
 
