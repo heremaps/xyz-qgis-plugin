@@ -540,9 +540,11 @@ class XYZHubConnector(object):
 
             con = self.con_man.make_con("list", api_type)
             con.signal.results.connect(make_fun_args(dialog.cb_display_spaces))
+            con.signal.results.connect(make_fun_args(dialog.cb_update_conn_info))
             con.signal.error.connect(self.cb_handle_error_msg)
             con.signal.error.connect(lambda e: dialog.cb_enable_token_ui())
             con.signal.finished.connect(dialog.cb_enable_token_ui)
+            con.signal.finished.connect(dialog.cb_token_used_success)
             con.signal.finished.connect(dialog.ui_valid_token)
 
             con = self.con_man.make_con("edit", api_type)

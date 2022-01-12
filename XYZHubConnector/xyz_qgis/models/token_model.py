@@ -173,7 +173,7 @@ class EditableItemModel(QStandardItemModel):
             yield data
 
     def _validate_data(self, data):
-        return data and sum(bool(v) for v in data.values()) / len(data) > 0.5
+        return data and data.get(self.TOKEN_KEY)
 
 
 class GroupEditableItemModel(EditableItemModel):

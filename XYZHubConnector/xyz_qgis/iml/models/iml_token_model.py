@@ -22,13 +22,16 @@ def get_api_type(server):
 class IMLTokenModel(TokenModel):
     """Grouped Token Model, Cached changes and write to file at the end"""
 
-    INFO_KEYS = ["name", "token", "user_login"]
-    SERIALIZE_KEYS = ["token", "name", "user_login"]
+    INFO_KEYS = ["name", "token", "user_login", "realm"]
+    SERIALIZE_KEYS = ["token", "name", "user_login", "realm"]
     TOKEN_KEY = "token"
 
     def get_api_type(self):
         server = self.get_server()
         return get_api_type(server)
+
+    def _validate_data(self, data):
+        return data and (data.get(self.TOKEN_KEY) or data.get("user_login"))
 
 
 class IMLServerTokenConfig(ServerTokenConfig):
@@ -59,3 +62,6 @@ class IMLComboBoxProxyModel(ComboBoxProxyModel):
 
     def get_user_login(self, row):
         return self.get_value_from_key("user_login", row)
+
+    def get_realm(self, row):
+        return self.get_value_from_key("realm", row)

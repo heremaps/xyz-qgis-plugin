@@ -30,7 +30,7 @@ class IMLTokenDialog(TokenDialog):
         elif api_type == API_TYPES.PLATFORM:
             self.NewInfoDialog = NewIMLTokenInfoDialog
             self.EditInfoDialog = EditIMLTokenInfoDialog
-            self.token_info_keys = ["name", "here_credentials", "user_login"]
+            self.token_info_keys = ["name", "here_credentials", "user_login", "realm"]
             self.title = "Setup HERE Credentials"
             self.message = ""
         self.setWindowTitle(self.title)

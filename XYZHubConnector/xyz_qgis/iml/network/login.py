@@ -10,14 +10,18 @@
 
 # from PyQt5.QtWebEngineWidgets import QWebEngineView # import error
 import json
-from typing import Optional
+import re
+from typing import Optional, Dict
 
 from qgis.PyQt.QtCore import QUrl, QObject
-from qgis.PyQt.QtNetwork import QNetworkAccessManager
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtNetwork import (
+    QNetworkAccessManager,
+    QNetworkReply,
+)
 from qgis.PyQt.QtWebKit import QWebSettings
 from qgis.PyQt.QtWebKitWidgets import QWebPage, QWebView, QWebInspector
 from qgis.PyQt.QtWidgets import QDialog, QGridLayout
-from qgis.PyQt.QtCore import Qt
 
 from .net_handler import IMLNetworkHandler
 from ...common.signal import BasicSignal
@@ -52,20 +56,19 @@ class WebPage(QWebPage):
 
         parent = self.parent_widget
         dialog = QDialog(parent)
-        page = self.new_page(dialog, self.networkAccessManager())
+        page = self.new_page(dialog)
         dialog.show()
 
         return page
 
     @classmethod
-    def new_page(cls, dialog: QDialog, network: QNetworkAccessManager):
+    def new_page(cls, dialog: QDialog):
         parent = dialog
         dialog.setAttribute(Qt.WA_DeleteOnClose, True)
         dialog.raise_()
         # dialog.setWindowModality(Qt.WindowModal)
 
         page = WebPage(parent)
-        page.setNetworkAccessManager(network)
 
         view = QWebView(parent)
         view.setPage(page)
@@ -97,7 +100,7 @@ class PlatformUserAuthentication:
     HERE_URL_SIT = "st.p.account.here.com"
     PLATFORM_LOGIN_URL_SIT = (
         "https://st.p.account.here.com/sign-in?version=4&oidc=true"
-        "&client-id=TlZSbQzENfNkUFrOXh8Oag&no-sign-up=true"
+        "&client-id=QGIS-TlZSbQzENfNkUFrOXh8Oag&no-sign-up=true"
         "&realm-input=true&sign-in-template=olp&self-certify-age=true"
         "&theme=brand&authorizeUri=%2Fauthorize%3Fresponse_type%3Dcode"
         "%26client_id%3DTlZSbQzENfNkUFrOXh8Oag%26scope%3Dopenid%2520email"
@@ -111,7 +114,7 @@ class PlatformUserAuthentication:
     )
     PLATFORM_LOGIN_URL_PRD = (
         "https://account.here.com/sign-in?version=4&oidc=true"
-        "&client-id=YQijV3hAPdxySAVtE6ZT&no-sign-up=true"
+        "&client-id=QGIS-YQijV3hAPdxySAVtE6ZT&no-sign-up=true"
         "&realm-input=true&sign-in-template=olp&self-certify-age=true"
         "&theme=brand&authorizeUri=%2Fauthorize%3Fresponse_type%3Dcode"
         "%26client_id%3DYQijV3hAPdxySAVtE6ZT%26scope%3Dopenid%2520email"
@@ -127,15 +130,17 @@ class PlatformUserAuthentication:
     ENDPOINT_TOKEN_EXCHANGE = "/api/portal/authTokenExchange"
     ENDPOINT_SCOPED_TOKEN = "/api/portal/scopedTokenExchange"
 
+    REGEX_REALM = re.compile("realmID=([^&]*)")
+
     def __init__(self, network: QNetworkAccessManager):
         self.signal = BasicSignal()
         self.network = network
-        self.dialog: QDialog = None
+        self.dialogs: Dict[str, QDialog] = dict()
         self.page: WebPage = None
 
     # public
 
-    def auth_project(self, conn_info):
+    def auth_project(self, conn_info: SpaceConnectionInfo):
         reply_tag = "oauth"
 
         project_hrn = conn_info.get_("project_hrn")
@@ -163,16 +168,19 @@ class PlatformUserAuthentication:
 
         # parent = self.network
         parent = None
-        api_env = self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
+        api_env = self.get_api_env(conn_info)
         CookieUtils.load_from_settings(
-            self.network, API_TYPES.PLATFORM, api_env, conn_info.get_user_email()
+            self.network,
+            API_TYPES.PLATFORM,
+            api_env,
+            conn_info.get_user_email(),
+            conn_info.get_realm(),
         )
         token = self.get_access_token()
         if token:
             conn_info.set_(token=token)
         else:
-            email = conn_info.get_("user_login")
-            dialog = self.open_login_dialog(api_env, email=email)
+            dialog = self.open_login_dialog(conn_info)
             dialog.exec_()
             token = self.get_access_token()
             if token:
@@ -181,42 +189,68 @@ class PlatformUserAuthentication:
                 self.reset_auth(conn_info)
         return self.make_dummy_reply(parent, conn_info, **kw_prop)
 
-    def reset_auth(self, conn_info):
-        api_env = self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
-        self._reset_auth(api_env, conn_info.get_user_email())
+    def reset_auth(self, conn_info: SpaceConnectionInfo):
+        self._reset_auth(conn_info)
         conn_info.set_(token=None)
 
-    def _reset_auth(self, api_env, email: str = None):
-        CookieUtils.remove_cookies_from_settings(API_TYPES.PLATFORM, api_env, email)
+    def _reset_auth(self, conn_info: SpaceConnectionInfo):
+        api_env = self.get_api_env(conn_info)
+        email = conn_info.get_user_email()
+        realm = conn_info.get_realm()
+        CookieUtils.remove_cookies_from_settings(API_TYPES.PLATFORM, api_env, email, realm)
 
     # private
 
-    def make_dummy_reply(self, parent, conn_info, **kw_prop):
+    def make_dummy_reply(self, parent, conn_info: SpaceConnectionInfo, **kw_prop):
         qobj = QObject(parent)
         set_qt_property(qobj, conn_info=conn_info, **kw_prop)
         return qobj
 
-    def cb_dialog_closed(self, api_env: str, email: str, *a):
-        self.dialog = None
-        if self.get_access_token():
-            CookieUtils.save_to_settings(self.network, API_TYPES.PLATFORM, api_env, email)
+    def get_api_env(self, conn_info: SpaceConnectionInfo):
+        return self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
 
-    def cb_url_changed(self, url: QUrl):
+    def cb_dialog_closed(self, conn_info: SpaceConnectionInfo, *a):
+        self.set_dialog(None, conn_info)
+        if self.get_access_token():
+            api_env = self.get_api_env(conn_info)
+            email = conn_info.get_user_email()
+            realm = conn_info.get_realm()
+            CookieUtils.save_to_settings(self.network, API_TYPES.PLATFORM, api_env, email, realm)
+
+    def cb_response_handler(self, reply: QNetworkReply, conn_info: SpaceConnectionInfo):
+        url = reply.url().toString()
+        if "/api/account/realm" in url:
+            m = self.REGEX_REALM.search(url)
+            if m and len(m.groups()):
+                realm = m.group(1)
+                self._update_conn_info(conn_info, realm=realm)
+
+    def _update_conn_info(self, conn_info, **kw_conn_info):
+        dialog = self.get_dialog(conn_info)
+        self.set_dialog(None, conn_info)
+        conn_info.set_(**kw_conn_info)
+        self.set_dialog(dialog, conn_info)
+
+    def cb_url_changed(self, url: QUrl, conn_info: SpaceConnectionInfo):
         if "/authHandler" in url.toString():
-            self.auth_handler(url)
+            self.auth_handler(url, conn_info)
         elif "/sdk-callback-page" in url.toString():
             # "action=already signed in" in url.toString()
-            self.dialog.close()
-            api_env = self.API_SIT if url.host() == self.HERE_URL_SIT else self.API_PRD
+            # api_env = self.API_SIT if url.host() == self.HERE_URL_SIT else self.API_PRD
+            dialog = self.get_dialog(conn_info)
+            if dialog:
+                dialog.close()
             # TODO: reset only auth of the input email
-            self._reset_auth(api_env)
+            self._reset_auth(conn_info)
 
-    def cb_auth_handler(self, reply):
+    def cb_auth_handler(self, reply, conn_info: SpaceConnectionInfo):
         try:
             IMLNetworkHandler.on_received(reply)
         except NetworkError as e:
             self.signal.error.emit(e)
-        self.dialog.close()
+        dialog = self.get_dialog(conn_info)
+        if dialog:
+            dialog.close()
 
     def get_access_token(self) -> Optional[str]:
         cookie = CookieUtils.get_cookie(self.network, "olp_portal_access")
@@ -226,10 +260,11 @@ class PlatformUserAuthentication:
         obj = json.loads(val)
         return obj.get("accessToken")
 
-    def auth_handler(self, url: QUrl):
+    def auth_handler(self, url: QUrl, conn_info: SpaceConnectionInfo):
         """
         Handle auth handler url to get cookies with access token
         :param url:
+        :param conn_info:
         :return:
 
         Example:
@@ -246,16 +281,19 @@ class PlatformUserAuthentication:
             make_conn_request(url, token=None, req_type="json"),
             make_payload(query_kv),
         )
-        reply.finished.connect(lambda: self.cb_auth_handler(reply))
+        reply.finished.connect(lambda: self.cb_auth_handler(reply, conn_info))
         # reply.waitForReadyRead(1000)
         # self.cb_auth_handler(reply)
 
-    def open_login_dialog(self, api_env: str, email: str = None, parent=None):
-        if not self.dialog:
+    def open_login_dialog(self, conn_info: SpaceConnectionInfo, parent=None):
+        api_env = self.get_api_env(conn_info)
+        email = conn_info.get_user_email()
+        realm = conn_info.get_realm()
+        if not self.get_dialog(conn_info):
             dialog = QDialog(parent)
-            page = WebPage.new_page(dialog, self.network)
+            page = WebPage.new_page(dialog)
             self.page = page
-            self.dialog = dialog
+            self.set_dialog(dialog, conn_info)
 
             view = page.view()
 
@@ -266,14 +304,45 @@ class PlatformUserAuthentication:
                 else self.PLATFORM_LOGIN_URL_SIT
             )
             if email:
-                url = "&".join([url, "prefill-email-addr={email}".format(email=email)])
+                url = "&".join(
+                    [
+                        url,
+                        "prefill-email-addr={email}".format(email=email),
+                        "realm={realm}".format(realm=realm),
+                    ]
+                )
 
-            page.currentFrame().urlChanged.connect(self.cb_url_changed)
-            dialog.finished.connect(lambda *a: self.cb_dialog_closed(api_env, email, *a))
+            page.networkAccessManager().finished.connect(
+                lambda reply: self.cb_response_handler(reply, conn_info)
+            )
+            page.currentFrame().urlChanged.connect(lambda url: self.cb_url_changed(url, conn_info))
+            dialog.finished.connect(lambda *a: self.cb_dialog_closed(conn_info))
 
             dialog.open()
             view.load(QUrl(url))
         else:
-            dialog = self.dialog
+            dialog = self.get_dialog(conn_info)
             dialog.show()
         return dialog
+
+    def _credential_id(self, conn_info: SpaceConnectionInfo):
+        api_env = self.get_api_env(conn_info)
+        email = conn_info.get_user_email()
+        realm = conn_info.get_realm()
+        return "|".join(map(str, [api_env, email, realm]))
+
+    def set_dialog(self, dialog, conn_info: SpaceConnectionInfo):
+        self.dialogs[self._credential_id(conn_info)] = dialog
+        if dialog:
+            api_env = self.get_api_env(conn_info)
+            realm = conn_info.get_realm()
+            hrn = conn_info.get_("hrn")
+            title = "{server} - Realm: {realm} - Hrn: {hrn}".format(
+                server="HERE Platform" if api_env == self.API_PRD else "HERE Platform SIT",
+                realm=realm,
+                hrn=hrn,
+            )
+            dialog.setWindowTitle(title)
+
+    def get_dialog(self, conn_info: SpaceConnectionInfo):
+        return self.dialogs.get(self._credential_id(conn_info))

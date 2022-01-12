@@ -62,6 +62,7 @@ class TokenUX(UXDecorator):
         self.conn_info = None
 
     def config(self, token_model: TokenModel):
+        self.used_token_status_txt = "Connect"
         self.conn_info = SpaceConnectionInfo()
 
         self.token_model = token_model
@@ -110,19 +111,39 @@ class TokenUX(UXDecorator):
         proxy_model = self.comboBox_token.model()
         return proxy_model.get_user_login(self.comboBox_token.currentIndex())
 
+    def get_input_realm(self):
+        proxy_model = self.comboBox_token.model()
+        return proxy_model.get_realm(self.comboBox_token.currentIndex())
+
     def _get_input_conn_info_without_id(self):
         token = self.get_input_token()
         server = self.get_input_server()
         here_credentials = self.get_input_here_credentials()
         user_login = self.get_input_user_login()
+        realm = self.get_input_realm()
         conn_info = SpaceConnectionInfo()
         conn_info.set_(
             token=token,
             server=server,
             here_credentials=here_credentials,
             user_login=user_login,
+            realm=realm,
         )
         return conn_info
+
+    def cb_update_conn_info(self, conn_info: SpaceConnectionInfo, *a, **kw):
+        realm = conn_info.get_realm()
+        if realm:
+            row = self.comboBox_token.currentIndex()
+            token_info = self.token_model.get_data(row)
+            token_info["realm"] = realm
+            for col, qitem in enumerate(
+                self.token_model.qitems_from_data(
+                    token_info, info_keys=self.token_model.get_info_keys()
+                )
+            ):
+                self.token_model.setItem(row, col, qitem)
+            self.token_model.submit_cache()
 
     def cb_enable_token_ui(self, flag=True):
         txt_clicked = "Checking.."
@@ -134,10 +155,14 @@ class TokenUX(UXDecorator):
         self.btn_use.setEnabled(flag)
         self.comboBox_token.setEnabled(flag)
 
+    def cb_token_used_success(self, *a):
+        self.used_token_status_txt = "Success"
+
     def cb_token_used(self, *a):
         conn_info = self._get_input_conn_info_without_id()
         if not conn_info.is_valid():
             return
+        self.used_token_status_txt = "Connect"
         # disable button
         self.cb_enable_token_ui(False)
         # gui -> pending token
@@ -157,7 +182,7 @@ class TokenUX(UXDecorator):
         # self.btn_clear_token.setEnabled(flag_token)
         idx = self.comboBox_token.currentIndex()
         flag = self.token_model.is_used_token_idx(idx)
-        txt = "Ok!" if flag else "Connect"
+        txt = self.used_token_status_txt if flag else "Connect"
         self.btn_use.setText(txt)
         return flag
 

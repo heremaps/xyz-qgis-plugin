@@ -27,14 +27,14 @@
       <item row="0" column="1">
        <widget class="QLineEdit" name="lineEdit_name"/>
       </item>
-      <item row="3" column="0">
+      <item row="4" column="0">
        <widget class="QLabel" name="label_value">
         <property name="text">
          <string>Credentials</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QgsFileWidget" name="mQgsFileWidget"/>
       </item>
       <item row="1" column="0">
@@ -60,6 +60,16 @@
       </item>
       <item row="2" column="1">
        <widget class="QLineEdit" name="lineEdit_email"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_realm">
+        <property name="text">
+         <string>Realm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="lineEdit_realm"/>
       </item>
      </layout>
     </widget>

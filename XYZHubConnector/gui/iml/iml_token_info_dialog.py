@@ -35,6 +35,7 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         self.lineEdit_name.textChanged.connect(self.ui_enable_btn)
         self.mQgsFileWidget.fileChanged.connect(self.ui_enable_btn)
         self.lineEdit_email.textChanged.connect(self.ui_enable_btn)
+        self.lineEdit_realm.textChanged.connect(self.ui_enable_btn)
         self.checkBox_user_login.toggled.connect(self.ui_enable_btn)
         self.checkBox_user_login.setChecked(True)
         self.ui_enable_btn()
@@ -44,14 +45,18 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         self.mQgsFileWidget.setEnabled(not flag)
         self.mQgsFileWidget.setFilePath("")
         self.label_email.setEnabled(flag)
+        self.label_realm.setEnabled(flag)
         self.lineEdit_email.setEnabled(flag)
         self.lineEdit_email.setText("")
+        self.lineEdit_realm.setEnabled(flag)
+        self.lineEdit_realm.setText("")
 
     def ui_enable_btn(self, *a):
         flag = all(
             [
                 self.lineEdit_name.text().strip(),
-                self.mQgsFileWidget.filePath().strip() or self.lineEdit_email.text().strip(),
+                self.mQgsFileWidget.filePath().strip()
+                or (self.lineEdit_email.text().strip() and self.lineEdit_realm.text().strip()),
             ]
         )
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
@@ -62,12 +67,14 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
             "name": self.lineEdit_name.text().strip(),
             "here_credentials": self.mQgsFileWidget.filePath().strip(),
             "user_login": self.lineEdit_email.text().strip(),
+            "realm": self.lineEdit_realm.text().strip(),
         }
         return d
 
     def set_info(self, token_info):
         self.checkBox_user_login.setChecked(bool(token_info.get("user_login")))
         self.lineEdit_email.setText(token_info.get("user_login"))
+        self.lineEdit_realm.setText(token_info.get("realm"))
         self.lineEdit_name.setText(token_info.get("name", ""))
         self.mQgsFileWidget.setFilePath(
             token_info.get("token", "")

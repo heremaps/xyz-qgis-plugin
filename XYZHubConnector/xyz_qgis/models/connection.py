@@ -109,6 +109,18 @@ class SpaceConnectionInfo(object):
     def get_user_email(self):
         return self.get_("user_login")
 
+    def get_realm(self):
+        # "hrn:here:data::realm:layer_id"
+        hrn = self.get_("hrn", "")
+        if hrn:
+            lst = hrn.split(":")
+            realm = lst[4] if len(lst) >= 4 else self.get_("realm")
+            self.set_(realm=realm)
+            return realm
+        else:
+            realm = self.get_("realm")
+        return realm
+
     def is_valid(self):
         server = self.get_("server")
         token = self.get_("token")

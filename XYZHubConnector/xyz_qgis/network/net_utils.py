@@ -182,48 +182,66 @@ class CookieUtils:
 
     @classmethod
     def save_to_settings(
-        cls, network: QNetworkAccessManager, api_type: str, api_env: str, user_email: str
+        cls,
+        network: QNetworkAccessManager,
+        api_type: str,
+        api_env: str,
+        user_email: str,
+        realm: str,
     ):
         return cls.save_cookies_to_settings(
-            network.cookieJar().allCookies(), api_type, api_env, user_email
+            network.cookieJar().allCookies(), api_type, api_env, user_email, realm
         )
 
     @classmethod
     def load_from_settings(
-        cls, network: QNetworkAccessManager, api_type: str, api_env: str, user_email: str
+        cls,
+        network: QNetworkAccessManager,
+        api_type: str,
+        api_env: str,
+        user_email: str,
+        realm: str,
     ):
-        cookies = cls.load_cookies_from_settings(api_type, api_env, user_email)
+        cookies = cls.load_cookies_from_settings(api_type, api_env, user_email, realm)
         cookie_jar = QNetworkCookieJar()
         cookie_jar.setAllCookies(cookies)
         network.setCookieJar(cookie_jar)
 
     @classmethod
-    def _cookies_key(cls, api_type: str, api_env: str, user_email: str):
-        return "xyz_qgis/cookies/{api_type}/{api_env}/{user_email}".format(
+    def _cookies_key(cls, api_type: str, api_env: str, user_email: str, realm: str):
+        return "xyz_qgis/cookies/{api_type}/{api_env}/{user_email}/{realm}".format(
             api_type=api_type.lower(),
             api_env=api_env.lower(),
             user_email="None" if not user_email else user_email.lower(),
+            realm="None" if not realm else realm.lower(),
         )
 
     @classmethod
     def save_cookies_to_settings(
-        cls, cookies: List[QNetworkCookie], api_type: str, api_env: str, user_email: str
+        cls,
+        cookies: List[QNetworkCookie],
+        api_type: str,
+        api_env: str,
+        user_email: str,
+        realm: str,
     ):
-        key = cls._cookies_key(api_type, api_env, user_email)
+        key = cls._cookies_key(api_type, api_env, user_email, realm)
         txt = json.dumps([bytes(c.toRawForm()).decode("utf-8") for c in cookies])
         QSettings().setValue(key, txt)
 
     @classmethod
-    def load_cookies_from_settings(cls, api_type: str, api_env: str, user_email: str):
-        key = cls._cookies_key(api_type, api_env, user_email)
+    def load_cookies_from_settings(cls, api_type: str, api_env: str, user_email: str, realm: str):
+        key = cls._cookies_key(api_type, api_env, user_email, realm)
         txt = QSettings().value(key)
         obj = json.loads(txt) if txt else list()
         return [c for raw in obj for c in QNetworkCookie.parseCookies(raw.encode("utf-8"))]
 
     @classmethod
-    def remove_cookies_from_settings(cls, api_type: str, api_env: str, user_email: str = None):
+    def remove_cookies_from_settings(
+        cls, api_type: str, api_env: str, user_email: str = None, realm: str = None
+    ):
         s = QSettings()
-        key = cls._cookies_key(api_type, api_env, user_email)
+        key = cls._cookies_key(api_type, api_env, user_email, realm)
         s.beginGroup(key)
         s.remove("")
         s.endGroup()

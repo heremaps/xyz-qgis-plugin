@@ -117,17 +117,22 @@ class SpaceUX(TokenWithServerUX):
         for conn_info in lst_conn_info:
             self.signal_space_count.emit(make_qt_args(conn_info))
 
-    def cb_display_space_count(self, conn_info, obj):
+    def cb_display_space_count(self, conn_info: SpaceConnectionInfo, obj):
         token, space_id = conn_info.get_xyz_space()
         here_credentials = conn_info.get_("here_credentials")
-        user_login = conn_info.get_("user_login")
         server = conn_info.get_("server")
+        user_login = conn_info.get_user_email()
+        realm = conn_info.get_realm()
         if not (
             (server and server == self.get_input_server())
             and (
                 (token and token == self.get_input_token())
                 or (here_credentials and here_credentials == self.get_input_here_credentials())
-                or (user_login and user_login == self.get_input_user_login())
+                or (
+                    user_login
+                    and user_login == self.get_input_user_login()
+                    and realm == self.get_input_realm()
+                )
             )
         ):
             return
