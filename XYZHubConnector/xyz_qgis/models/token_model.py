@@ -121,7 +121,7 @@ class EditableItemModel(QStandardItemModel):
         self.rowsAboutToBeRemoved.connect(self._cb_item_removed)
 
         try:
-            self.itemChanged.disconnect()
+            self.dataChanged.disconnect()
         except TypeError:
             pass
         self.dataChanged.connect(self._cb_item_changed)
