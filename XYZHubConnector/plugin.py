@@ -416,7 +416,12 @@ class XYZHubConnector(object):
             if isinstance(e0.error, net_handler.NetworkError):
                 self.handle_net_err(e0.error)
                 return
+            else:
+                self.show_err_msgbar(e0)
+                self.log_err_traceback(e0.error)
+                return
         self.show_err_msgbar(err)
+        self.log_err_traceback(err)
 
     def handle_net_err(self, err):
         status = err.get_response().get_status()
@@ -475,7 +480,6 @@ class XYZHubConnector(object):
 
     def show_err_msgbar(self, err):
         self.iface.messageBar().pushMessage(config.TAG_PLUGIN, repr(err), Qgis.Warning, 3)
-        self.log_err_traceback(err)
 
     def log_err_traceback(self, err):
         msg = format_traceback(err)
@@ -690,6 +694,7 @@ class XYZHubConnector(object):
             con_load = self.make_loader_from_mode(loading_mode, conn_info)
         except Exception as e:
             self.show_err_msgbar(e)
+            self.log_err_traceback(e)
             return
 
         if loading_mode == LOADING_MODES.STATIC:
@@ -937,6 +942,7 @@ class XYZHubConnector(object):
                 cnt += 1
             except Exception as e:
                 self.show_err_msgbar(e)
+                self.log_err_traceback(e)
 
         # print_qgis(self.con_man._layer_ptr)
         self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported" % cnt, dt=2)
