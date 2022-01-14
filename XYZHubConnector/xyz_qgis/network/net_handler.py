@@ -130,9 +130,6 @@ class NetworkResponse:
             )
             QgsMessageLog.logMessage("Network Ok! : %s" % msg, config.TAG_PLUGIN, Qgis.Success)
 
-    def __del__(self):
-        self.reply.deleteLater()
-
 
 def on_received(reply):
     return NetworkHandler.on_received(reply)
