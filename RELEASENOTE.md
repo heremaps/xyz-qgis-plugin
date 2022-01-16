@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 1.9.1 (2022-01-17)
+
+⚡️ IMPROVEMENTS ⚡️
+* Handles multiple Platform credentials and realms
+
+🐛 FIXES 🐛
+* Resolves "RuntimeError: wrapped C/C++ object of type has been deleted"
+* Logs authentication error traceback
+
 ## Version 1.9.0 (2021-11-15)
 
 ✨ NEW FEATURES ✨

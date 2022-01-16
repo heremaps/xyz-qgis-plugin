@@ -1,5 +1,16 @@
 # Changelog 
 
+## Version 1.9.1 (2022-01-17)
+
+#### Improvements
+
+* Handles multiple Platform credentials and realms
+
+#### Bug Fixes
+
+* Resolves "RuntimeError: wrapped C/C++ object of type QNetworkReply has been deleted"
+* Logs authentication error traceback
+
 ## Version 1.9.0 (2021-11-15)
 
 #### New Features
