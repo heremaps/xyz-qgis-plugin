@@ -55,8 +55,7 @@ class IMLTokenInfoDialog(QDialog, IMLTokenEditUI):
         flag = all(
             [
                 self.lineEdit_name.text().strip(),
-                self.mQgsFileWidget.filePath().strip()
-                or (self.lineEdit_email.text().strip() and self.lineEdit_realm.text().strip()),
+                self.mQgsFileWidget.filePath().strip() or self.lineEdit_email.text().strip(),
             ]
         )
         self.buttonBox.button(self.buttonBox.Ok).setEnabled(flag)
