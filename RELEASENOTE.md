@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.9.2 (2022-02-04)
+
+🐛 FIXES 🐛
+* Fixes platform realm not updated properly via UI
+
 ## Version 1.9.1 (2022-01-17)
 
 ⚡️ IMPROVEMENTS ⚡️
