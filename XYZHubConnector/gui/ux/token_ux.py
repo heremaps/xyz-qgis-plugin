@@ -137,12 +137,13 @@ class TokenUX(UXDecorator):
             row = self.comboBox_token.currentIndex()
             token_info = self.token_model.get_data(row)
             token_info["realm"] = realm
-            for col, qitem in enumerate(
-                self.token_model.qitems_from_data(
-                    token_info, info_keys=self.token_model.get_info_keys()
-                )
+            info_keys = self.token_model.get_info_keys()
+            for col, (key, qitem,) in enumerate(
+                zip(info_keys, self.token_model.qitems_from_data(token_info, info_keys=info_keys))
             ):
-                self.token_model.setItem(row, col, qitem)
+                if key in ["realm"]:
+                    self.token_model.setItem(row, col, qitem)
+            self.token_model.modify_token_idx(row)
             self.token_model.submit_cache()
 
     def cb_enable_token_ui(self, flag=True):
