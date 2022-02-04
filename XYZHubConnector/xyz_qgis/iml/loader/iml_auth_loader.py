@@ -131,6 +131,7 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
         if isinstance(e, HomeProjectNotFound):
             self.signal.results.emit(make_qt_args(e.get_conn_info()))
             self.signal.finished.emit()
+            return
         elif isinstance(e, NetworkError):
             response = e.get_response()
             status = response.get_status()
