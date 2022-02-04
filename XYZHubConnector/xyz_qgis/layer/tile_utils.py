@@ -75,10 +75,10 @@ def get_row_col_bounds(level, schema="here"):
     """
     if schema == "here":
         nrow = 2 ** (level - 1) if level else 1
-        ncol = 2 ** level
+        ncol = 2**level
     else:
         nrow = 2 ** (level) if level else 1
-        ncol = 2 ** level
+        ncol = 2**level
     return nrow, ncol
 
 
