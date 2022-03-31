@@ -851,7 +851,7 @@
           <item row="0" column="1" colspan="4">
            <widget class="QComboBox" name="comboBox_basemap"/>
           </item>
-          <item row="3" column="1">
+          <item row="2" column="1">
            <widget class="QLineEdit" name="lineEdit_app_id">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -861,20 +861,23 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_6">
             <property name="text">
              <string>App Id</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="3" column="1">
            <widget class="QLineEdit" name="lineEdit_app_code">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>1</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="echoMode">
+             <enum>QLineEdit::PasswordEchoOnEdit</enum>
             </property>
            </widget>
           </item>
@@ -911,7 +914,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="label_7">
             <property name="text">
              <string>App Code</string>
@@ -925,6 +928,9 @@
               <horstretch>1</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="echoMode">
+             <enum>QLineEdit::PasswordEchoOnEdit</enum>
             </property>
            </widget>
           </item>
@@ -1074,8 +1080,8 @@
   <tabstop>btn_edit</tabstop>
   <tabstop>btn_delete</tabstop>
   <tabstop>comboBox_basemap</tabstop>
-  <tabstop>lineEdit_app_code</tabstop>
   <tabstop>lineEdit_app_id</tabstop>
+  <tabstop>lineEdit_app_code</tabstop>
   <tabstop>lineEdit_api_key</tabstop>
   <tabstop>btn_basemap</tabstop>
   <tabstop>btn_clear_cache</tabstop>
