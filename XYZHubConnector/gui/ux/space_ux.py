@@ -31,6 +31,7 @@ class SpaceUX(TokenWithServerUX):
 
         proxy_model = QSortFilterProxyModel()
         proxy_model.setSourceModel(space_model)
+        proxy_model.setFilterKeyColumn(-1)
         self.tableView_space.setModel(proxy_model)
         self.tableView_space.setSelectionMode(self.tableView_space.SingleSelection)
         self.tableView_space.setSelectionBehavior(self.tableView_space.SelectRows)
@@ -38,6 +39,10 @@ class SpaceUX(TokenWithServerUX):
 
         # connect gui
         self.tableView_space.selectionModel().currentChanged.connect(self.cb_table_row_selected)
+        self.lineEdit_space_filter.valueChanged.connect(self.cb_space_filter_changed)
+        self.checkBox_case_sensitive.toggled.connect(self.cb_case_sensitive_toggled)
+        self.checkBox_case_sensitive.setChecked(False)
+        self.cb_case_sensitive_toggled(False)
 
         TokenWithServerUX.config(self, token_model, server_model)
 
@@ -156,6 +161,14 @@ class SpaceUX(TokenWithServerUX):
             header = space_model.FIXED_HEADER_DATAHUB
         space_model.set_fixed_header(header)
         space_model.reset()
+
+    def cb_space_filter_changed(self, value):
+        self._get_proxy_model().setFilterFixedString(value)
+        self.tableView_space.selectionModel().clear()
+
+    def cb_case_sensitive_toggled(self, flag):
+        self._get_proxy_model().setFilterCaseSensitivity(flag)
+        self.tableView_space.selectionModel().clear()
 
     # UI function
     def ui_display_spaces(self, obj):
