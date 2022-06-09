@@ -431,6 +431,16 @@ class XYZLayer(object):
             self._save_meta_node(group)
         return group
 
+    def _get_geom_order(self, geom: str, lst_geom: list[str]):
+        """Get order of new geometry group name `geom`
+        in existing list of geometry group names `lst_geom` for insertion
+        """
+        if geom not in self.GEOM_ORDER:
+            return len(lst_geom)
+        lst_geom = list(lst_geom) + [geom]
+        lst_geom.sort(key=lambda g: self.GEOM_ORDER.get(g, len(self.GEOM_ORDER)))
+        return lst_geom.index(geom)
+
     def add_ext_layer(self, geom_str, idx):
         """Add layer group structure
         qgroups: dict["main"] = group
@@ -445,10 +455,14 @@ class XYZLayer(object):
         group = self.add_empty_group()
 
         geom = self._group_geom_name(geom_str)
-        order = self.GEOM_ORDER.get(geom)
-        group_geom = group.findGroup(geom) or (
-            group.insertGroup(order, geom) if order is not None else group.addGroup(geom)
-        )
+        lst_geom = [g.name() for g in group.findGroups()]
+        if geom in lst_geom:
+            group_geom = group.findGroup(geom)
+        else:
+            order = self._get_geom_order(geom, lst_geom)
+            group_geom = group.insertGroup(
+                order, geom
+            )  # if order < len(lst_geom) else group.addGroup(geom)
 
         crs = QgsCoordinateReferenceSystem("EPSG:4326").toWkt()
 
