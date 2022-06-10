@@ -1,5 +1,17 @@
 # Changelog 
 
+## Version 1.9.3 (2022-06-27)
+
+#### Improvements
+
+* Added search bar to query for space/layer
+* Masked AppCode, ApiKey
+
+#### Bug Fixes
+
+* Fixed layer ordering
+* Handled layer without home project (HomeProjectNotFound error)
+
 ## Version 1.9.2 (2022-02-04)
 
 #### Bug Fixes
