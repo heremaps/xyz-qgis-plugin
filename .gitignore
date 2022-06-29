@@ -25,3 +25,6 @@ output/
 
 ### token
 token_space.json
+
+### logs
+*.log
