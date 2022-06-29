@@ -11,9 +11,9 @@
 
 from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
 
-from ...xyz_qgis.models import SpaceConnectionInfo, XYZSpaceModel, API_TYPES
-from ...xyz_qgis.controller import make_qt_args
 from .token_server_ux import TokenWithServerUX
+from ...models import SpaceConnectionInfo, XYZSpaceModel, API_TYPES
+from ...controller import make_qt_args
 
 
 class SpaceUX(TokenWithServerUX):

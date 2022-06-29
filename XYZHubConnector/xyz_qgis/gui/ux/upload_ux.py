@@ -8,14 +8,14 @@
 #
 ###############################################################################
 
-from qgis.core import QgsMapLayerProxyModel
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator
+from qgis.core import QgsMapLayerProxyModel
 
-from ...xyz_qgis.controller import make_qt_args
-from ..util_dialog import ConfirmDialog
-from .space_ux import SpaceUX, SpaceConnectionInfo
+from .space_ux import SpaceUX
 from .ux import strip_list_string
+from ..util_dialog import ConfirmDialog
+from ...controller import make_qt_args
 
 
 class UploadUX(SpaceUX):

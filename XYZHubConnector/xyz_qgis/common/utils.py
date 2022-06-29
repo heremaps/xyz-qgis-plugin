@@ -35,7 +35,7 @@ def disconnect_silent(signal, fn=None):
 
 def get_ui_class(ui_file):
     """return class object of a uifile"""
-    ui_file_full = os.path.join(config.PLUGIN_DIR, "gui", "ui", ui_file)
+    ui_file_full = os.path.join(config.PLUGIN_DIR, "xyz_qgis", "gui", "ui", ui_file)
     return loadUiType(ui_file_full)[0]
 
 

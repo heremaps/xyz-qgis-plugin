@@ -10,13 +10,13 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from .space_ux import SpaceUX, SpaceConnectionInfo
+from .space_ux import SpaceUX
 from ..space_info_dialog import NewSpaceDialog, EditSpaceDialog
 from ..iml.iml_space_info_dialog import IMLNewSpaceDialog, IMLEditSpaceDialog
 
 from ..util_dialog import ConfirmDialog
-from ...xyz_qgis.models import API_TYPES
-from ...xyz_qgis.controller import make_qt_args
+from ...models import API_TYPES
+from ...controller import make_qt_args
 
 
 class ManageUX(SpaceUX):

@@ -10,7 +10,6 @@
 
 from .base_token_dialog import BaseTokenDialog
 from .iml.iml_token_info_dialog import NewIMLServerInfoDialog, EditIMLServerInfoDialog
-from .token_info_dialog import EditServerInfoDialog, NewServerInfoDialog
 
 
 class ServerDialog(BaseTokenDialog):

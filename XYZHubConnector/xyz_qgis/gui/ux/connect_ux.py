@@ -11,12 +11,12 @@
 from qgis.PyQt.QtCore import QRegExp, pyqtSignal
 from qgis.PyQt.QtGui import QRegExpValidator, QIntValidator
 
-from ...xyz_qgis.controller import make_qt_args
-from ...xyz_qgis.models import LOADING_MODES
-from ...xyz_qgis.models.filter_model import FilterModel
-from ..filter_dialog import FilterDialog
 from .space_ux import SpaceUX, SpaceConnectionInfo
 from .ux import strip_list_string
+from ..filter_dialog import FilterDialog
+from ...controller import make_qt_args
+from ...models import LOADING_MODES
+from ...models.filter_model import FilterModel
 
 
 class ConnectUX(SpaceUX):

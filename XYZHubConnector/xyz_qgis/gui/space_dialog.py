@@ -11,10 +11,6 @@
 from qgis.PyQt.QtWidgets import QDialog
 
 from . import get_ui_class
-from ..xyz_qgis.models import SpaceConnectionInfo, XYZSpaceModel
-from ..xyz_qgis.controller import make_qt_args
-from .space_info_dialog import EditSpaceDialog, NewSpaceDialog
-from .util_dialog import ConfirmDialog
 from .ux import ConnectUX, ManageUX, SpaceUX, UploadUX, BasemapUX, SettingUX
 
 ConnDialogUI = get_ui_class("tab_dialog.ui")

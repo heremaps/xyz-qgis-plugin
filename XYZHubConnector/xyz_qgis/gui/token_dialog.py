@@ -9,9 +9,9 @@
 ###############################################################################
 
 
-from ..xyz_qgis.models.token_model import TokenModel, ServerModel
 from .base_token_dialog import BaseTokenDialog
 from .ux.server_ux import ServerUX
+from ..models.token_model import TokenModel, ServerModel
 
 
 class TokenDialog(BaseTokenDialog, ServerUX):

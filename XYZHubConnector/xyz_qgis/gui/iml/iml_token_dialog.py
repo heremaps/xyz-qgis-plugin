@@ -11,7 +11,7 @@
 from .iml_token_info_dialog import NewIMLTokenInfoDialog, EditIMLTokenInfoDialog
 from ..token_dialog import TokenDialog
 from ..token_info_dialog import NewTokenInfoDialog, EditTokenInfoDialog
-from ...xyz_qgis.models import API_TYPES
+from ...models import API_TYPES
 
 
 class IMLTokenDialog(TokenDialog):

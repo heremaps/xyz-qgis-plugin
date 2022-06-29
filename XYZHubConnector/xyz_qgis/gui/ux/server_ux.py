@@ -9,9 +9,9 @@
 ###############################################################################
 
 
-from ...xyz_qgis.models.token_model import ComboBoxProxyModel, TokenModel, ServerModel
-from ..server_dialog import ServerDialog
 from .ux import UXDecorator
+from ..server_dialog import ServerDialog
+from ...models.token_model import ComboBoxProxyModel
 
 
 class ServerUX(UXDecorator):

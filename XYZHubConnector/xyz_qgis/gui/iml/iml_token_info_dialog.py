@@ -9,11 +9,11 @@
 ###############################################################################
 
 from qgis.PyQt.QtWidgets import QDialog
+
 from .. import get_ui_class
 from ..token_info_dialog import ServerInfoDialog
-from ...xyz_qgis.models import API_TYPES
-from ...xyz_qgis.iml.models.iml_token_model import get_api_type
-
+from ...models import API_TYPES
+from ...iml.models.iml_token_model import get_api_type
 
 IMLTokenEditUI = get_ui_class("edit_iml_token_dialog.ui")
 

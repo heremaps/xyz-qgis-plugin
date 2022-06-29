@@ -10,10 +10,10 @@
 
 from qgis.PyQt.QtWidgets import QDialog
 
-from ..xyz_qgis.models.token_model import TokenModel
 from . import get_ui_class
 from .token_info_dialog import EditTokenInfoDialog, NewTokenInfoDialog
 from .util_dialog import ConfirmDialog
+from ..models.token_model import TokenModel
 
 TokenUI = get_ui_class("token_dialog.ui")
 

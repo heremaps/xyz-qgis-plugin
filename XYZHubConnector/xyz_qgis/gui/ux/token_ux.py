@@ -11,15 +11,12 @@
 
 from qgis.PyQt.QtCore import pyqtSignal
 
-from ...xyz_qgis.controller import make_qt_args
-from ...xyz_qgis.models import SpaceConnectionInfo
-from ...xyz_qgis.models.token_model import ComboBoxProxyModel, TokenModel
-from ..token_dialog import TokenDialog
-
-from ..iml.iml_token_dialog import IMLTokenDialog
-from ...xyz_qgis.iml.models.iml_token_model import IMLComboBoxProxyModel
-
 from .ux import UXDecorator
+from ..iml.iml_token_dialog import IMLTokenDialog
+from ...iml.models.iml_token_model import IMLComboBoxProxyModel
+from ...models import SpaceConnectionInfo
+from ...models.token_model import TokenModel
+from ...controller import make_qt_args
 
 
 class SecretServerUX(UXDecorator):

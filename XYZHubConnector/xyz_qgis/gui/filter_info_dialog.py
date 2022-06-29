@@ -9,6 +9,7 @@
 ###############################################################################
 
 from qgis.PyQt.QtWidgets import QDialog
+
 from . import get_ui_class
 from .ux import strip_list_string
 

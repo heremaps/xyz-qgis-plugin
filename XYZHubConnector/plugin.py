@@ -18,8 +18,8 @@ from qgis.PyQt.QtWidgets import QProgressBar
 
 from . import config
 
-from .gui.space_dialog import MainDialog
-from .gui.util_dialog import ConfirmDialog, exec_warning_dialog
+from .xyz_qgis.gui.space_dialog import MainDialog
+from .xyz_qgis.gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .xyz_qgis.common.utils import disconnect_silent
 
 from .xyz_qgis.models import (
