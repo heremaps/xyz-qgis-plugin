@@ -342,7 +342,7 @@ class XYZLayer(object):
                 db_layer_name = p.replace(key, "")
                 break
         if not db_layer_name:
-            return QgsWkbTypes.NoGeometry, 0
+            return QgsWkbTypes.displayString(QgsWkbTypes.NoGeometry), 0
         return self._parse_db_layer_name(db_layer_name)
 
     def _layer_fname(self):
