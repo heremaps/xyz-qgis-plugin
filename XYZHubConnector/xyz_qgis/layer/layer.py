@@ -12,6 +12,7 @@ import sqlite3
 import time
 import json
 import re
+from typing import List
 
 REGEX_LOADING_MODE = re.compile(r"\(\w+\)$")
 
@@ -438,7 +439,7 @@ class XYZLayer(object):
             self._save_meta_node(group)
         return group
 
-    def _get_geom_order(self, geom: str, lst_geom: list[str]):
+    def _get_geom_order(self, geom: str, lst_geom: List[str]):
         """Get order of new geometry group name `geom`
         in existing list of geometry group names `lst_geom` for insertion
         """
