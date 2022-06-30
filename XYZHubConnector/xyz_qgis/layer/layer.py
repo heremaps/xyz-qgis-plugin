@@ -333,8 +333,15 @@ class XYZLayer(object):
         returns geom_str, idx from vlayer
         """
         uri = vlayer.source()
-        key = "|layername="
-        db_layer_name = uri[uri.find(key) + len(key) :]
+        uri_parts = uri.split("|")
+        db_layer_name = ""
+        key = "layername="
+        for p in uri_parts:
+            if key in p:
+                db_layer_name = p.replace(key, "")
+                break
+        if not db_layer_name:
+            return QgsWkbTypes.NoGeometry, 0
         return self._parse_db_layer_name(db_layer_name)
 
     def _layer_fname(self):
