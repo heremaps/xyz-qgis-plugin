@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.9.4 (2022-06-30)
+
+🐛 FIXES 🐛
+* Fixed crashes in QGIS 3.16
+
 ## Version 1.9.3 (2022-06-27)
 
 ⚡️ IMPROVEMENTS ⚡️

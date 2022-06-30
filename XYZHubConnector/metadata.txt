@@ -11,7 +11,7 @@
 name=XYZ Hub Connector
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer inside the HERE Platform.
-version=1.9.3
+version=1.9.4
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,14 +42,9 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.3 (2022-06-27)
-
-    ⚡️ IMPROVEMENTS ⚡️
-    * Added search bar to query for space/layer
-    * Masked AppCode, ApiKey
+changelog=Version 1.9.4 (2022-06-30)
 
     🐛 FIXES 🐛
-    * Fixed layer ordering
-    * Handled layer without home project (HomeProjectNotFound error)
+    * Fixed crashes in QGIS 3.16
 
     * .. more details on Github repos
