@@ -712,7 +712,18 @@ class XYZHubConnector(object):
             if is_xyz_supported_layer(vl):
                 yield vl
         for g in iter_group_node(root):
-            if len(g.findLayers()) == 0 and g.isVisible() and is_xyz_supported_node(g):
+            if (
+                g.isVisible()
+                and is_xyz_supported_node(g)
+                and len(
+                    [
+                        qnode
+                        for qnode in g.findLayers()
+                        if qnode.isVisible() and is_xyz_supported_node(qnode.layer())
+                    ]
+                )
+                == 0
+            ):
                 yield g
 
     def iter_all_xyz_node(self):

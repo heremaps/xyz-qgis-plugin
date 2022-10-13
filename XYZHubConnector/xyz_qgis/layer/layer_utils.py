@@ -190,7 +190,7 @@ def is_xyz_supported_node(qnode):
 
 
 def is_xyz_supported_layer(vlayer):
-    return is_xyz_supported_node(vlayer)
+    return vlayer and is_xyz_supported_node(vlayer)
 
 
 def iter_group_node(root):

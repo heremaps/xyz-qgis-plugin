@@ -32,7 +32,12 @@ from qgis.PyQt.QtXml import QDomDocument
 
 from . import parser
 from .layer_props import QProps
-from .layer_utils import get_feat_cnt_from_src, get_customProperty_str, load_json_default
+from .layer_utils import (
+    get_feat_cnt_from_src,
+    get_customProperty_str,
+    load_json_default,
+    is_xyz_supported_layer,
+)
 from ..models import SpaceConnectionInfo, parse_copyright
 from ..common import config
 from ..common.utils import make_unique_full_path, make_fixed_full_path
@@ -107,8 +112,21 @@ class XYZLayer(object):
 
         for q in qnode.findLayers():
             vlayer = q.layer()
-            if not vlayer.isValid():
+            if not (
+                isinstance(vlayer, QgsVectorLayer)
+                and vlayer.dataProvider().name() != "virtual"
+                and is_xyz_supported_layer(vlayer)
+            ):
                 continue
+
+            if not vlayer.isValid():
+                obj._fix_invalid_vlayer(vlayer)
+
+            # vlayer uri must not be subsetted (|subset=)
+            if obj._has_uri_subset(vlayer):
+                continue
+
+            # assign vlayer, fields into map according to geom_str and idx
             geom_str, idx = obj.geom_str_idx_from_vlayer(vlayer)
 
             lst_vlayer = obj.map_vlayer.setdefault(geom_str, list())
@@ -125,6 +143,19 @@ class XYZLayer(object):
                 obj.update_z_geom(geom_str, idx, vlayer)
             vlayer.reload()
         return obj
+
+    def _fix_invalid_vlayer(self, vlayer):
+        geom_str, idx = self.geom_str_idx_from_vlayer(vlayer)
+        crs = QgsCoordinateReferenceSystem("EPSG:4326").toWkt()
+        vlayer_new = self._init_ext_layer(geom_str, idx, crs)
+
+        vlayer.setDataSource(
+            vlayer.source().replace(
+                self._base_uri_from_vlayer(vlayer), self._base_uri_from_vlayer(vlayer_new)
+            ),
+            vlayer.name(),
+            vlayer.providerType(),
+        )
 
     def _save_params_to_node(self, qnode):
         qnode.setCustomProperty(
@@ -344,6 +375,18 @@ class XYZLayer(object):
         if not db_layer_name:
             return QgsWkbTypes.displayString(QgsWkbTypes.NoGeometry), 0
         return self._parse_db_layer_name(db_layer_name)
+
+    def _base_uri_from_vlayer(self, vlayer):
+        uri = vlayer.source()
+        return uri.split("|")[0]
+
+    def _has_uri_subset(self, vlayer):
+        uri = vlayer.source()
+        for p in uri.split("|"):
+            # c:\file.gpg|layername=Linestring_0|subset=
+            if "subset=" in p:
+                return True
+        return False
 
     def _layer_fname(self):
         """
