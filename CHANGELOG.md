@@ -1,5 +1,12 @@
 # Changelog 
 
+## Version 1.9.5 (2022-10-18)
+
+#### Improvements
+
+* Automatically repairs HERE vector layers with invalid GeoPackage storage
+* Handles Platform catalog with linked project in addition to home project
+
 ## Version 1.9.4 (2022-06-30)
 
 #### Bug Fixes
