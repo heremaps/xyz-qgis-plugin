@@ -115,9 +115,25 @@ class IMLProjectScopedAuthLoader(IMLAuthLoader):
             ]
         )
 
-    def _update_project_hrn(self, conn_info, project):
-        if project:
+    def _sorted_key_from_project_item_response(self, project):
+        if project["relation"] == "home":
+            order = 0
+        elif "writeResource" in project.get("allowedActions", []):
+            order = 1
+        elif "readResource" in project.get("allowedActions", []):
+            order = 2
+        else:
+            order = 3
+        return "{order}{id}".format(order=order, id=project["id"])
+
+    def _update_project_hrn(self, conn_info, projects):
+        if projects["total"] > 0:
+            sorted_projects = list(
+                sorted(projects["items"], key=self._sorted_key_from_project_item_response)
+            )
+            project = sorted_projects[0]
             conn_info.set_(project_hrn=project.get("hrn"))
+            conn_info.set_(project_item=project)
         else:
             raise HomeProjectNotFound(conn_info=conn_info)
         return conn_info

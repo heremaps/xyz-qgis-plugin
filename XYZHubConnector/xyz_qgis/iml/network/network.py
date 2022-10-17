@@ -203,7 +203,7 @@ class IMLNetworkManager(NetManager):
 
     def get_project(self, conn_info):
         endpoint_key = "get_project"
-        kw_request = dict(relation="home")
+        kw_request = dict()  # dict(relation="home")
         kw_prop = dict(reply_tag=endpoint_key)
         return self._send_request(conn_info, endpoint_key, kw_request=kw_request, kw_prop=kw_prop)
 

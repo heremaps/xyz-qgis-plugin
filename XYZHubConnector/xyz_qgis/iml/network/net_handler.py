@@ -123,8 +123,8 @@ class IMLNetworkHandler(NetworkHandler):
             args = [conn_info, obj]
         elif reply_tag in ("get_project",):
             print_qgis(txt[:100])
-            project = obj["items"][0] if obj["total"] > 0 else dict()
-            args = [conn_info, project]
+            projects = obj
+            args = [conn_info, projects]
         else:
             print_qgis(reply_tag)
             print_qgis(txt[:100])

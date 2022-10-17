@@ -86,6 +86,7 @@ class XYZSpaceModel(QJsonTableModel):
     HEADER_RIGHT = "rights"
     HEADER_PROJECT = "project"
     HEADER_PROJECT_HRN = "project_hrn"
+    HEADER_PROJECT_ITEM = "project_item"
     FIXED_HEADER_DATAHUB = [
         "id",
         "title",
@@ -105,6 +106,7 @@ class XYZSpaceModel(QJsonTableModel):
         HEADER_CNT,
         HEADER_PROJECT,
         HEADER_PROJECT_HRN,
+        HEADER_PROJECT_ITEM,
     ]
     _header = FIXED_HEADER_DATAHUB
 
@@ -134,6 +136,7 @@ class XYZSpaceModel(QJsonTableModel):
         if project_hrn:
             self.obj[irow][self.HEADER_PROJECT] = project_hrn.split("/")[-1]
             self.obj[irow][self.HEADER_PROJECT_HRN] = project_hrn
+            self.obj[irow][self.HEADER_PROJECT_ITEM] = conn_info.get_("project_item")
 
     def refresh(self):
         self.beginResetModel()
