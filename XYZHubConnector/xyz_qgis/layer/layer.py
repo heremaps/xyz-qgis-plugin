@@ -122,10 +122,6 @@ class XYZLayer(object):
             if not vlayer.isValid():
                 obj._fix_invalid_vlayer(vlayer)
 
-            # vlayer uri must not be subsetted (|subset=)
-            if obj._has_uri_subset(vlayer):
-                continue
-
             # assign vlayer, fields into map according to geom_str and idx
             geom_str, idx = obj.geom_str_idx_from_vlayer(vlayer)
 
@@ -134,8 +130,11 @@ class XYZLayer(object):
             while len(lst_vlayer) < idx + 1:
                 lst_vlayer.append(None)
                 lst_fields.append(parser.new_fields_gpkg())
-            lst_vlayer[idx] = vlayer
-            lst_fields[idx] = vlayer.dataProvider().fields()
+
+            # favor vlayer uri without subset (|subset=)
+            if lst_vlayer[idx] is None or not obj._has_uri_subset(vlayer):
+                lst_vlayer[idx] = vlayer
+                lst_fields[idx] = vlayer.dataProvider().fields()
 
             obj.update_constraint_trigger(geom_str, idx)
             vlayer_geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
