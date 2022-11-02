@@ -705,25 +705,20 @@ class XYZHubConnector(object):
             kw.update(self.make_tile_params())
             con_load.start_args(make_qt_args(*a, **kw))
 
-    def iter_checked_xyz_subnode(self):
+    def iter_visible_xyz_node(self):
         """iterate through visible xyz nodes (vector layer and group node)"""
         root = QgsProject.instance().layerTreeRoot()
-        for vl in root.checkedLayers():
-            if is_xyz_supported_layer(vl):
-                yield vl
-        for g in iter_group_node(root):
+
+        scale = self.iface.mapCanvas().scale()
+        for qnode in root.findLayers():
             if (
-                g.isVisible()
-                and is_xyz_supported_node(g)
-                and len(
-                    [
-                        qnode
-                        for qnode in g.findLayers()
-                        if qnode.isVisible() and is_xyz_supported_node(qnode.layer())
-                    ]
-                )
-                == 0
+                qnode.isVisible()
+                and is_xyz_supported_node(qnode.layer())
+                and qnode.layer().isInScaleRange(scale)
             ):
+                yield qnode
+        for g in self.iter_all_xyz_node():
+            if g.isVisible() and len(g.findLayers()) == 0:
                 yield g
 
     def iter_all_xyz_node(self):
@@ -782,11 +777,17 @@ class XYZHubConnector(object):
         """
         editing_xid = set()
         unique_xid = set()
-        for qnode in self.iter_checked_xyz_subnode():
-            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        for qnode in self.iter_visible_xyz_node():
+            if qnode.nodeType() == qnode.NodeLayer:
+                layer = qnode.layer()
+                xlayer_id = get_customProperty_str(layer, QProps.UNIQUE_ID)
+                is_editable = layer.isEditable()
+            else:
+                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                is_editable = None
             if xlayer_id in editing_xid:
                 continue
-            if hasattr(qnode, "isEditable") and qnode.isEditable():
+            if is_editable:
                 editing_xid.add(xlayer_id)
                 continue
             con = self.con_man.get_interactive_loader(xlayer_id)
