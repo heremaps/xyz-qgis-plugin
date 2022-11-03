@@ -47,9 +47,6 @@ class Controller(object):
     def start(self, *a, **kw):
         self.lst_fun[0].call(make_qt_args(*a, **kw))
 
-    def __repr__(self):
-        return self.__class__.__name__
-
 
 class ChainInterrupt(Exception):
     def __init__(self, error, error_index, error_string, controller):
