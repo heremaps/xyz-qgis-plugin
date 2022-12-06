@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.9.6 (2022-12-06)
+
+🐛 FIXES 🐛
+* Fixed error where some repaired layers are not displayed
+
 ## Version 1.9.5 (2022-10-18)
 
 ⚡️ IMPROVEMENTS ⚡️
