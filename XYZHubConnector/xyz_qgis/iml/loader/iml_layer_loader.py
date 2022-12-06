@@ -97,7 +97,7 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
 
 class IMLLiveTileLayerLoader(IMLTileLayerLoader, LiveTileLayerLoader):
     def __init__(self, network, *a, **kw):
-        LiveTileLayerLoader.__init__(self, network, *a, **kw)
+        # LiveTileLayerLoader init is same as TileLayerLoader, thus redundant here
         IMLTileLayerLoader.__init__(self, network, *a, **kw)
 
     def _start(self, **kw):
