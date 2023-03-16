@@ -140,6 +140,10 @@ class XYZLayer(object):
             vlayer_geom_str = QgsWkbTypes.displayString(vlayer.wkbType())
             if vlayer_geom_str and not vlayer_geom_str.endswith("Z"):
                 obj.update_z_geom(geom_str, idx, vlayer)
+
+            # update name of child qnode layers
+            q.setName(obj._layer_name(geom_str, idx))
+
             vlayer.reload()
         return obj
 
@@ -315,13 +319,16 @@ class XYZLayer(object):
         """
         returns main layer group name
         """
-        tags = "-(%s)" % (self.tags) if len(self.tags) else ""
-        temp = "{title}-{id}{tags}" if idx is None else "{title}-{id}{tags}-{idx}"
-        name = temp.format(
-            id=self.meta.get("id", ""),
-            title=self.meta.get("title", ""),
-            tags=tags,
-            idx=idx,
+        name = "-".join(
+            str(s)
+            for s in [
+                self.meta.get("catalog", ""),
+                self.meta.get("title", "") or self.meta.get("name", ""),
+                self.meta.get("id", ""),
+                self.tags,
+                idx,
+            ]
+            if s
         )
         return name
 
@@ -435,14 +442,15 @@ class XYZLayer(object):
         group.setName(name)
 
     def _get_base_group_name(self, name):
+        """return base group name from detailed group name,
+        alternative to _make_unique_group_name()"""
         match = REGEX_LOADING_MODE.search(name)
         if match:
             name = name[: match.start()]
         return name.strip()
 
     def _update_group_name(self, group):
-        name = group.name()
-        name = self._get_base_group_name(name)
+        name = self._make_unique_group_name()
         self._base_group_name = name
         name = self._detailed_group_name(name)
         self._group_name = name
