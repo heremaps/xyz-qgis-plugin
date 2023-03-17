@@ -23,5 +23,17 @@ find build/XYZHubConnector -ipath '*/__pycache__' -type d | xargs rm -r
 
 ### Zip file
 # cd build && zip -q -r QGIS-XYZ-Plugin-$ver.zip XYZHubConnector
-cd build && python ../zip_dir.py XYZHubConnector QGIS-XYZ-Plugin-$ver.zip
-cd ..
+if $( echo $ver | grep -q alpha ); then
+  (
+  cd build
+  mv XYZHubConnector XYZHubConnector_alpha
+  sed -i -e 's/name=.*/name=XYZ Hub Connector alpha/' \
+    -e "s/version=.*/version=$ver/" \
+    ./XYZHubConnector_alpha/metadata.txt
+  python ../zip_dir.py XYZHubConnector_alpha QGIS-XYZ-Plugin-$ver.zip
+  )
+else
+  (
+  cd build && python ../zip_dir.py XYZHubConnector QGIS-XYZ-Plugin-$ver.zip
+  )
+fi
