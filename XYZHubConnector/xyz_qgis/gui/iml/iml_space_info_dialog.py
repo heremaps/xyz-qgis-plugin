@@ -42,7 +42,6 @@ class IMLSpaceInfoDialog(QDialog, EditSpaceDialogUI):
         self.lineEdit_title.textChanged.connect(self.ui_enable_btn)
         self.lineEdit_tags.textChanged.connect(self.ui_enable_btn)
         self.lineEdit_billing_tags.textChanged.connect(self.ui_enable_btn)
-        self.lineEdit_searchable_properties.textChanged.connect(self.ui_enable_btn)
         self.plainTextEdit_description.textChanged.connect(self.ui_enable_btn)
         self.plainTextEdit_summary.textChanged.connect(self.ui_enable_btn)
         self.btn_advanced.clicked.connect(self.update_space_info_json)
@@ -91,7 +90,6 @@ class IMLSpaceInfoDialog(QDialog, EditSpaceDialogUI):
         return delim.join(str(s) for s in lst)
 
     def _get_space_info(self):
-        lst_searchableProperties = self._txt_to_list(self.lineEdit_searchable_properties.text())
         return {
             "layerType": self.comboBox_layer_type.currentText(),
             "catalog_hrn": self.lineEdit_catalog_hrn.text().strip(),
@@ -101,9 +99,6 @@ class IMLSpaceInfoDialog(QDialog, EditSpaceDialogUI):
             "description": self.plainTextEdit_description.toPlainText().strip(),
             "tags": self._txt_to_list(self.lineEdit_tags.text()),
             "billingTags": self._txt_to_list(self.lineEdit_billing_tags.text()),
-            "interactiveMapsProperties": {"searchableProperties": lst_searchableProperties}
-            if lst_searchableProperties
-            else None,
         }
 
     def _get_space_info_fn_mapping(self):
@@ -116,9 +111,6 @@ class IMLSpaceInfoDialog(QDialog, EditSpaceDialogUI):
             "description": self.plainTextEdit_description.setPlainText,
             "tags": lambda obj: self.lineEdit_tags.setText(self._list_to_txt(obj)),
             "billingTags": lambda obj: self.lineEdit_billing_tags.setText(self._list_to_txt(obj)),
-            "interactiveMapsProperties": lambda obj: self.lineEdit_searchable_properties.setText(
-                self._list_to_txt(obj.get("searchableProperties", list()))
-            ),
         }
 
     def get_updated_conn_info(self, conn_info):

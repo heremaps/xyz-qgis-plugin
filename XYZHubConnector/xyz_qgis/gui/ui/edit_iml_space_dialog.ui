@@ -159,17 +159,6 @@
       <item row="7" column="1">
        <widget class="QLineEdit" name="lineEdit_billing_tags"/>
       </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>Searchable
-Properties</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="1">
-       <widget class="QLineEdit" name="lineEdit_searchable_properties"/>
-      </item>
      </layout>
     </widget>
    </item>
@@ -213,7 +202,6 @@ Properties</string>
   <tabstop>plainTextEdit_description</tabstop>
   <tabstop>lineEdit_tags</tabstop>
   <tabstop>lineEdit_billing_tags</tabstop>
-  <tabstop>lineEdit_searchable_properties</tabstop>
  </tabstops>
  <resources/>
  <connections>
