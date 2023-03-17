@@ -8,10 +8,10 @@
 # Mandatory items:
 
 [general]
-name=XYZ Hub Connector
+name=XYZ Hub Connector alpha
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer inside the HERE Platform.
-version=1.9.6
+version=1.9.7-alpha-0317
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,9 +42,9 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.6 (2022-12-06)
+changelog=Version 1.9.7-alpha-0317 (2023-03-17)
 
-    🐛 FIXES 🐛
-    * Fixed error where some repaired layers are not displayed
+    * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id: AF-873, AF-865
+    * Remove non-mandatory field "Searchable properties" from "Manager layer" dialog
 
     * .. more details on Github repos
