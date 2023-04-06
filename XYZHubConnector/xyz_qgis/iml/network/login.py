@@ -307,7 +307,7 @@ class PlatformUserAuthentication:
                 url = "&".join(
                     [
                         url,
-                        "prefill-email-addr={email}".format(email=email),
+                        # "prefill-email-addr={email}".format(email=email),
                         "realm={realm}".format(realm=realm),
                     ]
                 )
