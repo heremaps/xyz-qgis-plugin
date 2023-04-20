@@ -445,15 +445,20 @@ class ComboBoxProxyModel(QIdentityProxyModel):
         return self.get_value(row, col, Qt.DisplayRole)
 
     def get_text(self, row, col):
-        return self.sourceModel().item(row, col).text().strip()
-
-    def get_token(self, row):
-        it = self.sourceModel().item(row, self.col_token)
+        it = self.sourceModel().item(row, col)
         return it.text().strip() if it else ""
 
+    # public
+
+    def get_token(self, row):
+        return self.get_text(row, self.col_token)
+
+    def get_name(self, row):
+        return self.get_text(row, self.col_name)
+
     def get_display_msg(self, row):
-        name = self.get_text(row, self.col_name)
-        token = self.get_text(row, self.col_token)
+        name = self.get_name(row)
+        token = self.get_token(row)
         if token:
             msg = (
                 self.named_token.format(name=name, token=token)
@@ -462,6 +467,8 @@ class ComboBoxProxyModel(QIdentityProxyModel):
             )
             return msg
         return None
+
+    # override
 
     def data(self, index, role):
         val = super().data(index, role)

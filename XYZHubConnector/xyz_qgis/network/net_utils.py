@@ -29,6 +29,7 @@ from qgis.PyQt.Qt import PYQT_VERSION_STR
 from qgis.core import Qgis
 import platform
 from ..common import config
+from ..models import API_TYPES
 
 USER_AGENT = (
     "xyz-qgis-plugin/{plugin_version} QGIS/{qgis_version} Python/"
@@ -272,3 +273,61 @@ class CookieUtils:
             if c.name() == name:
                 cookie = c
         return cookie
+
+
+class PlatformSettings:
+    API_TYPE = API_TYPES.PLATFORM
+
+    @classmethod
+    def save_token_json(
+        cls,
+        token_json: str,
+        api_env: str,
+        user_email: str,
+        realm: str,
+    ):
+        key = cls._token_setting_key(api_env, user_email, realm)
+        QSettings().setValue(key, token_json)
+
+    @classmethod
+    def load_token_json(
+        cls,
+        api_env: str,
+        user_email: str,
+        realm: str,
+    ) -> str:
+        key = cls._token_setting_key(api_env, user_email, realm)
+        txt = QSettings().value(key)
+        return txt
+
+    @classmethod
+    def remove_token_json(
+        cls,
+        api_env: str,
+        user_email: str,
+        realm: str,
+    ):
+        s = QSettings()
+        key = cls._token_setting_key(api_env, user_email, realm)
+        s.beginGroup(key)
+        s.remove("")
+        s.endGroup()
+
+    @classmethod
+    def _token_setting_key(cls, api_env: str, user_email: str, realm: str):
+        return cls._setting_key(api_env, user_email, realm, "tokenJson")
+
+    @classmethod
+    def _setting_key(cls, api_env: str, user_email: str, realm: str, key: str):
+        # api_type: datahub, platform
+        # api_env: prd, sit
+        # user_email: default or some@email.com
+        # realm: olp-here, ..
+        return "{settings_prefix}/{api_type}/{api_env}/{user_email}/{realm}/{key}".format(
+            settings_prefix="xyz_qgis/settings",
+            api_type=cls.API_TYPE.lower(),
+            api_env=api_env.lower(),
+            user_email="None" if not user_email else user_email.lower(),
+            realm="None" if not realm else realm.lower(),
+            key=key,
+        )

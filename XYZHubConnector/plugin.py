@@ -21,12 +21,14 @@ from . import config
 from .xyz_qgis.gui.space_dialog import MainDialog
 from .xyz_qgis.gui.util_dialog import ConfirmDialog, exec_warning_dialog
 from .xyz_qgis.common.utils import disconnect_silent
+from .xyz_qgis.gui.platform_auth_dialog import PlatformAuthDialog
 
 from .xyz_qgis.models import (
     LOADING_MODES,
     InvalidLoadingMode,
     API_TYPES,
     InvalidApiType,
+    SpaceConnectionInfo,
 )
 from .xyz_qgis.controller import (
     parse_qt_args,
@@ -63,7 +65,7 @@ from .xyz_qgis.layer.layer_props import QProps
 
 
 from .xyz_qgis.network import NetManager, net_handler
-from .xyz_qgis.network.net_utils import CookieUtils
+from .xyz_qgis.network.net_utils import CookieUtils, PlatformSettings
 from .xyz_qgis.iml.loader import (
     IMLTileLayerLoader,
     IMLLiveTileLayerLoader,
@@ -139,6 +141,12 @@ class XYZHubConnector(object):
             QIcon("%s/%s" % (config.PLUGIN_DIR, "images/delete.svg")), "Clear cache", parent
         )
 
+        self.action_platform_auth = QAction(
+            QIcon("%s/%s" % (config.PLUGIN_DIR, "images/auth.svg")),
+            "Select HERE Platform Credentials",
+            parent,
+        )
+
         # self.action_sync_edit.setVisible(False) # disable magic sync
         self.edit_buffer.config_ui(self.enable_sync_btn)
 
@@ -148,14 +156,20 @@ class XYZHubConnector(object):
         self.action_connect.triggered.connect(self.open_connection_dialog)
         self.action_sync_edit.triggered.connect(self.open_sync_edit_dialog)
         self.action_clear_cache.triggered.connect(self.open_clear_cache_dialog)
+        self.action_platform_auth.triggered.connect(self.open_platform_auth_dialog)
 
         # Add the toolbar + button
         self.toolbar = self.iface.addToolBar(PLUGIN_NAME)
         self.toolbar.setObjectName(config.PLUGIN_FULL_NAME)
 
-        self.actions_menu = [self.action_connect, self.action_sync_edit, self.action_clear_cache]
+        self.actions_menu = [
+            self.action_connect,
+            self.action_platform_auth,
+            self.action_sync_edit,
+            self.action_clear_cache,
+        ]
 
-        for a in [self.action_connect, self.action_sync_edit]:
+        for a in [self.action_connect, self.action_platform_auth, self.action_sync_edit]:
             self.toolbar.addAction(a)
 
         for a in self.actions_menu:
@@ -218,7 +232,7 @@ class XYZHubConnector(object):
         self.secret = Secret(config.USER_PLUGIN_DIR + "/secret.ini")
         # Init xyz modules
         self.map_basemap_meta = basemap.load_default_xml()
-        self.auth_manager = AuthManager(config.USER_PLUGIN_DIR + "/auth.ini")
+        self.auth_manager = AuthManager(config.USER_PLUGIN_DIR + "/auth.ini")  # basemap creds
 
         self.network = NetManager(parent)
         self.network_iml = IMLNetworkManager(parent)
@@ -430,6 +444,7 @@ class XYZHubConnector(object):
         if reply_tag in ["count", "statistics"]:  # too many error
             return True
         if status in [401, 403]:
+            # TODO: do not reset auth
             if conn_info.is_platform_server() and conn_info.is_user_login():
                 self.user_auth_iml.reset_auth(conn_info)
         return
@@ -990,6 +1005,35 @@ class XYZHubConnector(object):
     #
     # Open dialog
     #
+    def open_platform_auth_dialog(self):
+        parent = self.iface.mainWindow()
+        dialog = PlatformAuthDialog(parent)
+
+        dialog.config(
+            self.token_model,
+            self.network_iml.get_connected_conn_info()
+            or SpaceConnectionInfo.from_dict(dict(server="PLATFORM_PRD")),
+        )
+
+        self.network_iml.set_connected_conn_info(dialog.get_connected_conn_info())
+
+        dialog.signal_open_login_view.connect(make_fun_args(self.network_iml.open_login_view))
+        dialog.signal_clear_auth.connect(make_fun_args(self.network_iml.clear_auth))
+
+        con = self.con_man.make_con("list", API_TYPES.PLATFORM, is_cached=False)
+        con.signal.results.connect(make_fun_args(dialog.cb_login_finish))
+        con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
+        con.signal.error.connect(self.cb_handle_error_msg)
+        con.signal.error.connect(lambda e: dialog.cb_login_fail())
+
+        # con.signal.finished.connect(dialog.cb_enable_token_ui)
+        # con.signal.finished.connect(dialog.cb_token_used_success)
+        # con.signal.finished.connect(dialog.ui_valid_token)
+
+        dialog.signal_login_view_closed.connect(con.start_args)
+
+        dialog.exec_()
+
     def open_clear_cache_dialog(self):
         dialog = ConfirmDialog("Delete cache will make loaded layer unusable !!")
         ret = dialog.exec_()

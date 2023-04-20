@@ -39,6 +39,10 @@ def get_ui_class(ui_file):
     return loadUiType(ui_file_full)[0]
 
 
+def get_qml_full_path(qml_file):
+    return os.path.join(config.PLUGIN_DIR, "xyz_qgis", "gui", "qml", qml_file)
+
+
 def make_unique_full_path(ext="json"):
     return os.path.join(config.TMP_DIR, "%s.%s" % (time.time(), ext))
 

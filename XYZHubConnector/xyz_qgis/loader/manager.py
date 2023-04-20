@@ -234,7 +234,7 @@ class LoaderManager(LayerControllerManager):
     def get_con(self, key, api_type=API_TYPES.DATAHUB):
         return self._map_fun_con[api_type][key]
 
-    def make_con(self, key, api_type=API_TYPES.DATAHUB):
+    def make_con(self, key, api_type=API_TYPES.DATAHUB, is_cached=True):
         if api_type not in self._map_fun_cls:
             raise Exception(
                 "Unknown api_type: %s (Available api_types: %s)"
@@ -250,5 +250,6 @@ class LoaderManager(LayerControllerManager):
         con = C(network)
         if api_type not in self._map_fun_con:
             self._map_fun_con[api_type] = dict()
-        self._map_fun_con[api_type][key] = con
+        if is_cached:
+            self._map_fun_con[api_type][key] = con
         return con

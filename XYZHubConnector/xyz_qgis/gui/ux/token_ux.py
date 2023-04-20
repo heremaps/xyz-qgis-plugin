@@ -166,6 +166,7 @@ class TokenUX(UXDecorator):
         # gui -> pending token
         self.token_model.set_used_token_idx(self.comboBox_token.currentIndex())
         # emit
+        conn_info.mark_protected()
         self.signal_use_token.emit(make_qt_args(conn_info))
         self.conn_info = conn_info
 

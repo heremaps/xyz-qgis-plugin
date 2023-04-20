@@ -29,8 +29,10 @@ class SpaceConnectionInfo(object):
     PLATFORM_SIT = "PLATFORM_SIT"
     PLATFORM_PRD = "PLATFORM_PRD"
     PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT]
+    PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
 
     def __init__(self, conn_info=None):
+        self._is_protected = False
         if conn_info is None:
             self.obj = dict()
         else:
@@ -68,6 +70,18 @@ class SpaceConnectionInfo(object):
     def get_xyz_space(self):
         return self.get_("token"), self.get_("space_id")
 
+    def set_server(self, server):
+        self.set_(server=server)
+
+    def get_server(self):
+        return self.get_("server")
+
+    def get_token(self):
+        return self.get_("token")
+
+    def has_token(self):
+        return bool(self.get_token())
+
     def get_(self, key, default=None):
         if key is dict:
             return dict(self.obj)
@@ -80,13 +94,10 @@ class SpaceConnectionInfo(object):
     def get_id(self):
         return self.get_("id") or self.get_("space_id")
 
-    def set_server(self, server):
-        self.set_(server=server)
-        # sv = server.strip().upper()
-        # self.server = sv
-
     def to_project_dict(self):
         d = self.to_dict()
+        if self.get_("user_login"):
+            d["user_login"] = "email"
         for ex in self.EXCLUDE_PROJECT_KEYS:
             d.pop(ex, "")
         return d
@@ -112,6 +123,9 @@ class SpaceConnectionInfo(object):
     def get_realm(self):
         return self.get_("realm")
 
+    def get_platform_auth(self):
+        return {k: self.get_(k) for k in self.PLATFORM_AUTH_KEYS}
+
     def is_valid(self):
         server = self.get_("server")
         token = self.get_("token")
@@ -119,14 +133,28 @@ class SpaceConnectionInfo(object):
         user_login = self.get_("user_login")
         return bool(server and (token or here_credentials or user_login))
 
-    def load_here_credentials(self):
+    def _load_here_credentials(self):
         credentials_file = self.get_("here_credentials")
         here_credentials = None
         if credentials_file and not self.is_user_login():
             here_credentials = HereCredentials.from_file(credentials_file)
-            self.set_(
-                here_client_key=here_credentials.key,
-                here_client_secret=here_credentials.secret,
-                here_endpoint=here_credentials.endpoint,
-            )
         return here_credentials
+
+    def load_here_credentials(self):
+        here_credentials = self._load_here_credentials()
+        self.set_(
+            here_client_key=here_credentials.key,
+            here_client_secret=here_credentials.secret,
+            here_endpoint=here_credentials.endpoint,
+        )
+        return here_credentials
+
+    def has_valid_here_credentials(self):
+        return bool(self._load_here_credentials())
+
+    def mark_protected(self):
+        self._is_protected = True
+
+    def is_protected(self):
+        """Returns True if the connection auth should not be overriden by default connected auth"""
+        return self._is_protected

@@ -12,11 +12,16 @@ import time
 import base64
 import json
 
-from .login import PlatformUserAuthentication
+from .login_webengine import PlatformUserAuthentication, PlatformAuthLoginView
 from .net_handler import IMLNetworkHandler
 from ...models import SpaceConnectionInfo
 from ...network.network import NetManager
-from ...network.net_utils import CookieUtils, make_conn_request, make_payload, make_bytes_payload
+from ...network.net_utils import (
+    CookieUtils,
+    make_conn_request,
+    make_payload,
+    make_bytes_payload,
+)
 from ...common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("iml.network")
@@ -162,11 +167,14 @@ class IMLNetworkManager(NetManager):
     def __init__(self, parent):
         super().__init__(parent)
         self.user_auth_module = PlatformUserAuthentication(self.network)
+        self.platform_auth = PlatformAuthLoginView()
+        self._connected_conn_info: SpaceConnectionInfo = None
 
-    def _get_api_env(self, conn_info: SpaceConnectionInfo):
+    @classmethod
+    def _get_api_env(cls, conn_info: SpaceConnectionInfo):
         server: str = conn_info.get_("server")
         if conn_info.is_platform_server():
-            return self.API_SIT if conn_info.is_platform_sit() else self.API_PRD
+            return cls.API_SIT if conn_info.is_platform_sit() else cls.API_PRD
         else:
             raise Exception(
                 "Unrecognized Platform Server: {}. "
@@ -262,6 +270,7 @@ class IMLNetworkManager(NetManager):
             return self.app_auth_project(conn_info, expires_in=expires_in)
 
     def auth(self, conn_info, expires_in=7200, project_hrn: str = None):
+        self.apply_connected_conn_info(conn_info)
         if conn_info.is_user_login():
             return self.user_auth_module.auth(conn_info)
         else:
@@ -306,6 +315,34 @@ class IMLNetworkManager(NetManager):
 
     def on_received(self, reply):
         return IMLNetworkHandler.on_received(reply)
+
+    #################
+    # Select Auth
+    #################
+
+    def apply_connected_conn_info(self, conn_info: SpaceConnectionInfo):
+        if not conn_info.is_protected():
+            connected = self.get_connected_conn_info()
+            auth = connected.get_platform_auth() if connected and connected.is_valid() else dict()
+            conn_info.set_(**auth)
+        return conn_info
+
+    def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
+        self.platform_auth.apply_token(conn_info)
+        if not conn_info.has_token():
+            self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
+        else:
+            if callback:
+                callback()
+
+    def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
+        self._connected_conn_info = conn_info
+
+    def clear_auth(self, conn_info: SpaceConnectionInfo):
+        self._connected_conn_info = None
+
+    def get_connected_conn_info(self):
+        return self._connected_conn_info
 
 
 def generate_oauth_header(url, conn_info):
