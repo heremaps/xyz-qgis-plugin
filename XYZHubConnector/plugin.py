@@ -400,8 +400,8 @@ class XYZHubConnector(object):
             e0 = err
         if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
             skip_error = self.handle_net_err(e0)
-            if not skip_error:
-                self.show_net_err(e0)
+            # if not skip_error:
+            #     self.show_net_err(e0)
             return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub", "Requested query returns no features")
