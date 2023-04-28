@@ -8,12 +8,11 @@
  */
 
 
-import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQml 2.15
-import QtWebEngine 1.10
-
-import QtQuick.Layouts 1.15
+import QtQuick 2.10
+import QtQuick.Window 2.10
+import QtQml 2.10
+import QtWebEngine 1.3
+import QtQuick.Layouts 1.10
 
 // https://doc.qt.io/qt-5/qml-qtwebengine-webengineview.html#newViewRequested-signal
 Item {
