@@ -11,7 +11,7 @@
 name=XYZ Hub Connector alpha
 qgisMinimumVersion=3.0
 description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer inside the HERE Platform.
-version=1.9.7-alpha-0317
+version=1.9.7-alpha-0428
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,8 +42,11 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.7-alpha-0317 (2023-03-17)
+changelog=Version 1.9.7-alpha-0428 (2023-04-28)
 
+    * Fixed credential issues with Here Platform
+    * Used QtWebEngine and QML window instead of QtWebKit
+    * Used Platform credential globally, enabling easy switch between User and App credentials
     * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id: AF-873, AF-865
     * Remove non-mandatory field "Searchable properties" from "Manager layer" dialog
 
