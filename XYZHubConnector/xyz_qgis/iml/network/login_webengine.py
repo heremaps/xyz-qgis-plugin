@@ -96,7 +96,10 @@ class PlatformAuthLoginView:
             conn_info.get_user_email(),
             conn_info.get_realm(),
         )
-        token_obj = json.loads(token_json) if token_json else dict()
+        try:
+            token_obj = json.loads(token_json) if token_json else dict()
+        except json.JSONDecodeError:
+            token_obj = dict()
         return token_obj.get("accessToken", "") if isinstance(token_obj, dict) else ""
 
     @classmethod
