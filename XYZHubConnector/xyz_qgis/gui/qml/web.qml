@@ -33,7 +33,7 @@ Item {
     Component.onCompleted: {
 
         // debug
-        //let debugWindow = debugWindowComponent.createObject(windowParent)
+        let debugWindow = debugWindowComponent.createObject(windowParent)
     }
 
     function logText(txt) {
