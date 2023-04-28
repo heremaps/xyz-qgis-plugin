@@ -412,10 +412,12 @@ class XYZHubConnector(object):
             e0, idx = err.args[0:2]
         else:
             e0 = err
-        if isinstance(e0, (net_handler.NetworkError, net_handler.NetworkTimeout)):
-            skip_error = self.handle_net_err(e0)
-            # if not skip_error:
-            #     self.show_net_err(e0)
+        if isinstance(e0, net_handler.NetworkTimeout):
+            return
+        elif isinstance(e0, net_handler.NetworkError):
+            # error during list/spaces request
+            self.handle_net_err(e0)
+            self.show_err_msgbar(e0)
             return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub", "Requested query returns no features")
@@ -428,7 +430,11 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, AuthenticationError):
             if isinstance(e0.error, net_handler.NetworkError):
+                # error during layer loader
                 self.handle_net_err(e0.error)
+                self.show_err_msgbar(
+                    e0, "Please select valid HERE Platform credential and try again"
+                )
                 return
             else:
                 self.show_err_msgbar(e0)
@@ -493,8 +499,11 @@ class XYZHubConnector(object):
         ret = exec_warning_dialog("Network Error", msg, detail)
         return True
 
-    def show_err_msgbar(self, err):
-        self.iface.messageBar().pushMessage(config.TAG_PLUGIN, repr(err), Qgis.Warning, 3)
+    def show_err_msgbar(self, err, msg=""):
+        txt = repr(err)
+        if msg:
+            txt += ". " + str(msg)
+        self.iface.messageBar().pushMessage(config.TAG_PLUGIN, txt, Qgis.Warning, 3)
 
     def log_err_traceback(self, err):
         msg = format_traceback(err)
