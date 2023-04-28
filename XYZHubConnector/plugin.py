@@ -570,6 +570,10 @@ class XYZHubConnector(object):
             con.signal.finished.connect(dialog.cb_enable_token_ui)
             con.signal.finished.connect(dialog.cb_token_used_success)
             con.signal.finished.connect(dialog.ui_valid_token)
+            # platform iml, connected auth logic to be applied across iml requests
+            if api_type == API_TYPES.PLATFORM:
+                con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
+                con.signal.error.connect(lambda e: self.network_iml.clear_auth())
 
             con = self.con_man.make_con("edit", api_type)
             con.signal.finished.connect(dialog.btn_use.clicked.emit)
@@ -640,9 +644,8 @@ class XYZHubConnector(object):
         if api_type == API_TYPES.PLATFORM:
             # self.open_platform_auth_dialog()
 
-            # implicit set
-            self.network_iml.set_connected_conn_info(conn_info)
-
+            # implicit set + extra callback
+            # self.network_iml.set_connected_conn_info(conn_info)
             # con = self.con_man.make_con("list", API_TYPES.PLATFORM, is_cached=False)
             # con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
             # con.signal.error.connect(self.cb_handle_error_msg)
