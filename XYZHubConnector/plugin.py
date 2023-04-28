@@ -637,8 +637,28 @@ class XYZHubConnector(object):
             con.reset_fun()
         # common
         api_type = self.get_api_type_from_qt_args(args)
-        con = self.con_man.get_con("list", api_type)
-        con.start_args(args)
+        if api_type == API_TYPES.PLATFORM:
+            # self.open_platform_auth_dialog()
+
+            # implicit set
+            self.network_iml.set_connected_conn_info(conn_info)
+
+            # con = self.con_man.make_con("list", API_TYPES.PLATFORM, is_cached=False)
+            # con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
+            # con.signal.error.connect(self.cb_handle_error_msg)
+            # con.signal.error.connect(lambda e: self.network_iml.clear_auth())
+
+            con = self.con_man.get_con("list", api_type)
+            if conn_info.get_user_email() and not conn_info.has_token():
+                self.network_iml.open_login_view(
+                    conn_info,
+                    callback=lambda: con.start(conn_info),
+                )
+            else:
+                con.start(conn_info)
+        else:
+            con = self.con_man.get_con("list", api_type)
+            con.start_args(args)
 
     def start_count_feat(self, args):
         api_type = self.get_api_type_from_qt_args(args)
@@ -1034,10 +1054,6 @@ class XYZHubConnector(object):
         con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
         con.signal.error.connect(self.cb_handle_error_msg)
         con.signal.error.connect(lambda e: dialog.cb_login_fail())
-
-        # con.signal.finished.connect(dialog.cb_enable_token_ui)
-        # con.signal.finished.connect(dialog.cb_token_used_success)
-        # con.signal.finished.connect(dialog.ui_valid_token)
 
         dialog.signal_login_view_closed.connect(con.start_args)
 

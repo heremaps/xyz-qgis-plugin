@@ -338,7 +338,7 @@ class IMLNetworkManager(NetManager):
     def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
         self._connected_conn_info = conn_info
 
-    def clear_auth(self, conn_info: SpaceConnectionInfo):
+    def clear_auth(self, conn_info: SpaceConnectionInfo = None):
         self._connected_conn_info = None
 
     def get_connected_conn_info(self):
