@@ -51,7 +51,6 @@ class PlatformAuthLoginView:
     # public
 
     def save_access_token(self, conn_info: SpaceConnectionInfo):
-        # TODO: get from web engine, save to settings
         if not self.view:
             return
         token_json = self.view.rootObject().getToken()
@@ -81,9 +80,17 @@ class PlatformAuthLoginView:
         return self.view
 
     def cb_login_view_closed(self, conn_info: SpaceConnectionInfo, callback, *a):
+        self._handle_error()
         self.save_access_token(conn_info)
         if callback:
             callback()
+
+    def _handle_error(self):
+        if not self.view:
+            return
+        error = self.view.rootObject().getError()
+        if error:
+            raise QmlError(error)
 
     # static
 
