@@ -68,7 +68,7 @@ Item {
         }
     }
 
-    function closeWindow(item = this) {
+    function closeWindow(item) {
         item.Window.window.close()
     }
 
