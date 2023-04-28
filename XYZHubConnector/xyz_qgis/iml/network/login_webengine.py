@@ -110,9 +110,7 @@ class PlatformAuthLoginView:
         view = QQuickView()
         view.setSource(QUrl.fromLocalFile(get_qml_full_path("web.qml")))
         errors = [e.toString() for e in view.errors()]
-        print("qml")
-        print(errors)
-        print(view)
+        # print(errors)
         if len(errors):
             raise QmlError(errors)
         if cb_login_view_closed:
@@ -121,7 +119,6 @@ class PlatformAuthLoginView:
             view.setTitle(title)
         # view.resize(600, 600)
         # view.setResizeMode(view.SizeRootObjectToView)
-        print("view")
         return view
 
     # helper
