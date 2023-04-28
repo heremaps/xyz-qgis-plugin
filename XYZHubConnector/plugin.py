@@ -649,7 +649,7 @@ class XYZHubConnector(object):
             # con.signal.error.connect(lambda e: self.network_iml.clear_auth())
 
             con = self.con_man.get_con("list", api_type)
-            if conn_info.get_user_email() and not conn_info.has_token():
+            if conn_info.get_user_email():
                 self.network_iml.open_login_view(
                     conn_info,
                     callback=lambda: con.start(conn_info),

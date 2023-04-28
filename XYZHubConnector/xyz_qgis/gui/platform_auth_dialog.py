@@ -49,7 +49,7 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
     def _do_auth(self):
         conn_info = self._get_input_conn_info_without_id()
         conn_info.mark_protected()
-        if conn_info.get_user_email() and not conn_info.has_token():
+        if conn_info.get_user_email():
             self.signal_open_login_view.emit(
                 make_qt_args(
                     conn_info,
