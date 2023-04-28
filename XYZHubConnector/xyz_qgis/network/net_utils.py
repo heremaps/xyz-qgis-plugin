@@ -314,6 +314,17 @@ class PlatformSettings:
         s.endGroup()
 
     @classmethod
+    def remove_settings(cls):
+        key = "{settings_prefix}/{api_type}".format(
+            settings_prefix="xyz_qgis/settings",
+            api_type=cls.API_TYPE.lower(),
+        )
+        s = QSettings()
+        s.beginGroup(key)
+        s.remove("")
+        s.endGroup()
+
+    @classmethod
     def _token_setting_key(cls, api_env: str, user_email: str, realm: str):
         return cls._setting_key(api_env, user_email, realm, "tokenJson")
 
