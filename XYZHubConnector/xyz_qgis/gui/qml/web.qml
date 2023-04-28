@@ -102,7 +102,10 @@ Item {
 
         profile: profile_ // use new cookies everytime
         Component.onCompleted: {
-
+            logText("settings " + Object.keys(this.settings)
+            .filter((k) => typeof this.settings[k] != 'function')
+            .map((k) => "<br/> >>" + k + ": " + this.settings[k]).join(""))
+            this.settings.javascriptEnabled = true
         }
 
         onNewViewRequested: function (request) {
