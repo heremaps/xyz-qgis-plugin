@@ -110,11 +110,17 @@ Item {
             request.openIn(newWindow.webView)
         }
 
+        onCertificateError: function(error) {
+            logText("certificateError description: " + error.description + " error: " + error.error + " overridable: " + error.overridable + "<br/> >> " + error.url)
+            error.ignoreCertificateError() // ignore cert error
+        }
+
         onLoadingChanged: {
+            logText("loadRequest errorDomain: " + loadRequest.errorDomain + " errorString: " + loadRequest.errorString + " status: " + loadRequest.status + "<br/> >> " + loadRequest.url)
+
             if (loadRequest.status == WebEngineView.LoadStartedStatus) {
                 return
             }
-            logText(loadRequest.url.toString().length + " " + loadRequest.url)
 
             let url1 = loadRequest.url.toString().replace(/\/$/, "")
             let url2 = loginUrl.replace(/\/$/, "")
