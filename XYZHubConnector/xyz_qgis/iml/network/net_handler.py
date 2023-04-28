@@ -28,6 +28,10 @@ class IMLNetworkUnauthorized(NetworkUnauthorized):
     pass
 
 
+class IMLProjectScopedAuthorizationError(NetworkUnauthorized):
+    pass
+
+
 def on_received(reply):
     return IMLNetworkHandler.on_received(reply)
 
@@ -37,12 +41,15 @@ class IMLNetworkHandler(NetworkHandler):
     def handle_error(cls, response: NetworkResponse):
         err = response.get_error()
         status = response.get_status()
+        reply_tag = response.get_reply_tag()
 
         if err == response.get_reply().OperationCanceledError:  # operation canceled
             raise NetworkTimeout(response)
         elif status in (401, 403):
             raise IMLNetworkUnauthorized(response)
         elif err > 0 or not status:
+            if reply_tag == "oauth_project":
+                raise IMLProjectScopedAuthorizationError(response)
             raise NetworkError(response)
 
     @classmethod
@@ -118,7 +125,7 @@ class IMLNetworkHandler(NetworkHandler):
         elif reply_tag in ("statistics", "count", "space_meta"):
             print_qgis(txt[:100])
             args = [conn_info, obj]
-        elif reply_tag in ("oauth",):
+        elif reply_tag in ("oauth", "oauth_project"):
             print_qgis(txt[:100])
             args = [conn_info, obj]
         elif reply_tag in ("get_project",):

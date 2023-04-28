@@ -141,7 +141,7 @@ class PlatformUserAuthentication:
     # public
 
     def auth_project(self, conn_info: SpaceConnectionInfo):
-        reply_tag = "oauth"
+        reply_tag = "oauth_project"
 
         project_hrn = conn_info.get_("project_hrn")
         platform_server = (

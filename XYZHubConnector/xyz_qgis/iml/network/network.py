@@ -299,6 +299,7 @@ class IMLNetworkManager(NetManager):
 
         if project_hrn:
             payload.update({"scope": project_hrn})
+            reply_tag = "oauth_project"
 
         kw_prop = dict(reply_tag=reply_tag, auth_req_payload=payload)
 
