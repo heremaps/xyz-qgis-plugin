@@ -1,5 +1,6 @@
 [[ "$#" -lt 1 ]] && echo No version given. Exiting.. && exit
 ver=$1
+folderSuffix=$2
 # if [ "$#" -lt 1 ]; then
 	# ver=dev
 # else
@@ -23,14 +24,15 @@ find build/XYZHubConnector -ipath '*/__pycache__' -type d | xargs rm -r
 
 ### Zip file
 # cd build && zip -q -r QGIS-XYZ-Plugin-$ver.zip XYZHubConnector
-if $( echo $ver | grep -q alpha ); then
+if [[ -n "${folderSuffix}" ]]; then
   (
   cd build
-  mv XYZHubConnector XYZHubConnector_alpha
+  folder=XYZHubConnector_${folderSuffix}
+  mv XYZHubConnector $folder
   sed -i -e 's/name=.*/name=XYZ Hub Connector alpha/' \
     -e "s/version=.*/version=$ver/" \
-    ./XYZHubConnector_alpha/metadata.txt
-  python ../zip_dir.py XYZHubConnector_alpha QGIS-XYZ-Plugin-$ver.zip
+    ./$folder/metadata.txt
+  python ../zip_dir.py $folder QGIS-XYZ-Plugin-$ver.zip
   )
 else
   (
