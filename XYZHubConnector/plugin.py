@@ -449,10 +449,10 @@ class XYZHubConnector(object):
         reply_tag = err.get_response().get_reply_tag()
         if reply_tag in ["count", "statistics"]:  # too many error
             return True
-        if status in [401, 403]:
-            # TODO: do not reset auth
-            if conn_info.is_platform_server() and conn_info.is_user_login():
-                self.user_auth_iml.reset_auth(conn_info)
+        # # do not reset auth
+        # if status in [401, 403]:
+        #     if conn_info.is_platform_server() and conn_info.is_user_login():
+        #         self.user_auth_iml.reset_auth(conn_info)
         return
 
     def show_net_err(self, err):
