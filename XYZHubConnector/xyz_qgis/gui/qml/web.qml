@@ -34,10 +34,32 @@ Item {
 
         // debug
         let debugWindow = debugWindowComponent.createObject(windowParent)
+
+        logText("saving log to " + Qt.resolvedUrl("log.html"))
+        saveLogFile(Qt.resolvedUrl("log.html"), loggingText)
     }
 
     function logText(txt) {
         loggingText += "<p>" + txt + "</p>"
+    }
+
+    function cbConsoleLog(level, message, lineNumber, sourceId) {
+        let levels = ["INFO", "WARN", "ERROR"]
+        logText(levels[level] + " - " + message + " - " + sourceId + ":" + lineNumber)
+    }
+    function saveLogFile(fileUrl, text) {
+        var request = new XMLHttpRequest();
+        request.open("PUT", fileUrl, false);
+        request.send(text);
+        return request.status;
+    }
+
+    Connections { // not working
+        target: windowParent
+        Component.onDestruction: {
+            logText("saving log to " + Qt.resolvedUrl("log.html"))
+            saveLogFile(Qt.resolvedUrl("log.html"), loggingText)
+        }
     }
 
     function getToken() {
@@ -102,6 +124,7 @@ Item {
 
         profile: profile_ // use new cookies everytime
         Component.onCompleted: {
+            this.javaScriptConsoleMessage.connect(cbConsoleLog)
             logText("settings " + Object.keys(this.settings)
             .filter((k) => typeof this.settings[k] != 'function')
             .map((k) => "<br/> >>" + k + ": " + this.settings[k]).join(""))
@@ -136,6 +159,7 @@ Item {
         onWindowCloseRequested: {
             closeWindow(this)
         }
+
     }
 
     property Component windowComponent: Window {
@@ -172,6 +196,8 @@ Item {
                 text: loggingText
                 Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                 textFormat: TextEdit.AutoText
+                wrapMode: TextEdit.Wrap
+                width: 100
                 height: 100
             }
         }
