@@ -27,16 +27,21 @@ Item {
     property int initialHeight: 600
     width: initialWidth
     height: initialHeight
+    property var debugMode: ""
+
     //    property var debugWindow: debugWindowComponent.createObject(windowParent)
 
     // Create the initial browsing windows and open the startup page.
     Component.onCompleted: {
 
         // debug
-        let debugWindow = debugWindowComponent.createObject(windowParent)
+        let debugWindow = isDebug() ? debugWindowComponent.createObject(windowParent) : null
 
-        logText("saving log to " + Qt.resolvedUrl("log.html"))
         saveLogFile(Qt.resolvedUrl("log.html"), loggingText)
+    }
+
+    function isDebug() {
+        return debugMode != ""
     }
 
     function logText(txt) {
@@ -47,17 +52,19 @@ Item {
         let levels = ["INFO", "WARN", "ERROR"]
         logText(levels[level] + " - " + message + " - " + sourceId + ":" + lineNumber)
     }
+
     function saveLogFile(fileUrl, text) {
-        var request = new XMLHttpRequest();
-        request.open("PUT", fileUrl, false);
-        request.send(text);
-        return request.status;
+        if (!isDebug()) return
+        logText("saving log to " + fileUrl)
+        var request = new XMLHttpRequest()
+        request.open("PUT", fileUrl, false)
+        request.send(text)
+        return request.status
     }
 
     Connections { // not working
         target: windowParent
         Component.onDestruction: {
-            logText("saving log to " + Qt.resolvedUrl("log.html"))
             saveLogFile(Qt.resolvedUrl("log.html"), loggingText)
         }
     }
@@ -124,11 +131,12 @@ Item {
 
         profile: profile_ // use new cookies everytime
         Component.onCompleted: {
-            this.javaScriptConsoleMessage.connect(cbConsoleLog)
-            logText("settings " + Object.keys(this.settings)
-            .filter((k) => typeof this.settings[k] != 'function')
-            .map((k) => "<br/> >>" + k + ": " + this.settings[k]).join(""))
-            this.settings.javascriptEnabled = true
+            // this.javaScriptConsoleMessage.connect(cbConsoleLog)
+            // // show webview settings
+            // logText("settings " + Object.keys(this.settings)
+            // .filter((k) => typeof this.settings[k] != 'function')
+            // .map((k) => "<br/> >>" + k + ": " + this.settings[k]).join(""))
+            // this.settings.javascriptEnabled = true
         }
 
         onNewViewRequested: function (request) {

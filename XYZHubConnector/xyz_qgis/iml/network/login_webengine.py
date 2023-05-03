@@ -9,6 +9,7 @@
 ###############################################################################
 
 import json
+import os
 
 from PyQt5.QtQuick import QQuickView
 from qgis.PyQt.QtCore import QUrl, QObject
@@ -109,6 +110,7 @@ class PlatformAuthLoginView:
     @classmethod
     def create_qml_view(cls, title="", cb_login_view_closed=None):
         view = QQuickView()
+        view.setInitialProperties({"debugMode": os.environ.get("HERE_QML_DEBUG", "")})
         view.setSource(QUrl.fromLocalFile(get_qml_full_path("web.qml")))
         errors = [e.toString() for e in view.errors()]
         # print(errors)
