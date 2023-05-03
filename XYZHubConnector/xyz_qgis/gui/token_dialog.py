@@ -22,6 +22,7 @@ class TokenDialog(BaseTokenDialog, ServerUX):
         self.btn_server.setVisible(True)
 
     def exec_(self):
+        self.comboBox_server_url.setCurrentIndex(-1)
         self.comboBox_server_url.setCurrentIndex(self.get_active_server_idx())
         return super().exec_()
 
