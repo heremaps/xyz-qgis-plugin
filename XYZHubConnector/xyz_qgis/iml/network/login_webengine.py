@@ -8,27 +8,18 @@
 #
 ###############################################################################
 
-# from PyQt5.QtWebEngineWidgets import QWebEngineView # import error
 import json
-import re
-from typing import Optional, Dict
 
+from PyQt5.QtQuick import QQuickView
 from qgis.PyQt.QtCore import QUrl, QObject
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtNetwork import (
     QNetworkAccessManager,
-    QNetworkReply,
 )
-from PyQt5.QtQuick import QQuickView
-from qgis.PyQt.QtCore import Qt
-from PyQt5.QtQml import QQmlComponent, QQmlEngine
-from qgis.PyQt.QtWebKitWidgets import QWebInspector
-from qgis.PyQt.QtWidgets import QDialog, QGridLayout
 
-from .net_handler import IMLNetworkHandler
 from ...common.signal import BasicSignal
-from ...common.utils import disconnect_silent, get_qml_full_path
+from ...common.utils import get_qml_full_path
 from ...models import SpaceConnectionInfo
-from ...network.net_handler import NetworkError
 from ...network.net_utils import (
     PlatformSettings,
     make_payload,
