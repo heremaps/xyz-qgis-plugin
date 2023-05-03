@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 1.9.7 (2023-05-12)
+
+🐛 FIXES 🐛
+* Fixed credential issues with Here Platform
+* Used QtWebEngine and QML window instead of QtWebKit
+* Applied one Here Platform credential to all layers, enabling easy switch between User and App credentials
+
+⚡️ IMPROVEMENTS ⚡️
+* Display formatted JSON attribute
+* Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id
+* Remove non-mandatory field "Searchable properties" from "Manager layer" dialog
+
 ## Version 1.9.6 (2022-12-06)
 
 🐛 FIXES 🐛

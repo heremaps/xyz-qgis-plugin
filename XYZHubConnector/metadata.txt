@@ -8,14 +8,14 @@
 # Mandatory items:
 
 [general]
-name=XYZ Hub Connector alpha
+name=HERE Maps for QGIS
 qgisMinimumVersion=3.0
-description=Connect QGIS to your personal space on HERE Data Hub and to your Interactive Map Layer inside the HERE Platform.
-version=1.9.7-alpha-0504
+description=Connect QGIS to Interactive Map Layers in the HERE Platform (https://platform.here.com) and your personal spaces in HERE Data Hub.
+version=1.9.7
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
-about=XYZ Hub Connector is a QGIS plugin which can be used to visualize, edit and analyze data from HERE Data Hub spaces and from Interactive Map Layer inside the HERE Platform directly on a map.
+about=XYZ Hub Connector is a QGIS plugin which can be used to visualize, edit and analyze data from Interactive Map Layer inside the HERE Platform (https://platform.here.com) and from HERE Data Hub spaces directly on a map.
 
 
 
@@ -30,7 +30,7 @@ repository=https://github.com/heremaps/xyz-qgis-plugin
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=HERE, XYZ, Data Hub, cloud, storage, connector, api, vector, layer, upload, download, tile, basemap, Interactive Map Layer, IML, HERE Platform
+tags=HERE, Platform, HERE Platform, Interactive Map Layer, IML, cloud, storage, connector, api, vector, layer, upload, download, tile, basemap, XYZ, Data Hub, QGIS, GIS
 
 homepage=https://github.com/heremaps/xyz-qgis-plugin
 category=Plugins
@@ -42,12 +42,16 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.7-alpha-0504 (2023-05-04)
+changelog=Version 1.9.7 (2023-05-12)
 
+    🐛 FIXES 🐛
     * Fixed credential issues with Here Platform
     * Used QtWebEngine and QML window instead of QtWebKit
-    * Used Platform credential globally, enabling easy switch between User and App credentials
-    * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id: AF-873, AF-865
+    * Applied one Here Platform credential to all layers, enabling easy switch between User and App credentials
+
+    ⚡️ IMPROVEMENTS ⚡️
+    * Display formatted JSON attribute
+    * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id
     * Remove non-mandatory field "Searchable properties" from "Manager layer" dialog
 
     * .. more details on Github repos
