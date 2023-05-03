@@ -340,7 +340,12 @@ class IMLNetworkManager(NetManager):
         self._connected_conn_info = conn_info
 
     def clear_auth(self, conn_info: SpaceConnectionInfo = None):
+        conn_info = conn_info or self.get_connected_conn_info()
         self._connected_conn_info = None
+        if not conn_info:
+            return
+        if conn_info.is_user_login():
+            self.user_auth_module.reset_auth(conn_info)
 
     def get_connected_conn_info(self):
         return self._connected_conn_info

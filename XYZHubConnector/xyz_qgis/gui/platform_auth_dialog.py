@@ -26,7 +26,6 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
 
     signal_open_login_view = pyqtSignal(object)
     signal_login_view_closed = pyqtSignal(object)
-    signal_clear_auth = pyqtSignal(object)
 
     def __init__(self, parent=None):
         """init window"""
@@ -71,7 +70,6 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
             self.cb_login_success()
         else:
             self.cb_login_fail()
-            self.signal_clear_auth.emit(make_qt_args(conn_info))
 
     def cb_login_success(self):
         # ui token

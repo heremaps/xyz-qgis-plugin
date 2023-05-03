@@ -1050,13 +1050,13 @@ class XYZHubConnector(object):
         self.network_iml.set_connected_conn_info(dialog.get_connected_conn_info())
 
         dialog.signal_open_login_view.connect(make_fun_args(self.network_iml.open_login_view))
-        dialog.signal_clear_auth.connect(make_fun_args(self.network_iml.clear_auth))
 
         con = self.con_man.make_con("list", API_TYPES.PLATFORM, is_cached=False)
         con.signal.results.connect(make_fun_args(dialog.cb_login_finish))
         con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
         con.signal.error.connect(self.cb_handle_error_msg)
         con.signal.error.connect(lambda e: dialog.cb_login_fail())
+        con.signal.error.connect(lambda e: self.network_iml.clear_auth())
 
         dialog.signal_login_view_closed.connect(con.start_args)
 
