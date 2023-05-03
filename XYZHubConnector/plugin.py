@@ -414,6 +414,13 @@ class XYZHubConnector(object):
             e0 = err
         if isinstance(e0, net_handler.NetworkTimeout):
             return
+        elif isinstance(e0, net_handler.NetworkUnauthorized):
+            # error during list/spaces request
+            self.show_err_msgbar(
+                e0,
+                "Credential expired or not authorized. Please try again or use a valid credential",
+            )
+            return
         elif isinstance(e0, net_handler.NetworkError):
             # error during list/spaces request
             self.handle_net_err(e0)
