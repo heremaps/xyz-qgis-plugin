@@ -12,6 +12,15 @@ import json
 import os
 import platform
 
+
+try:
+    from PyQt5.Qt import PYQT_VERSION_STR
+
+    PYQT_STR = "PyQt5 (Qt {version})".format(version=PYQT_VERSION_STR)
+    print(PYQT_STR)
+except Exception as e:
+    PYQT_STR = "PyQt (unknown){error}".format(error=" - " + repr(e))
+
 from PyQt5.QtQuick import QQuickView
 
 from qgis.PyQt.QtCore import QUrl, QObject
@@ -32,7 +41,8 @@ from ...network.net_utils import (
 
 
 class QmlError(Exception):
-    pass
+    def __init__(self, *a, **kw):
+        super().__init__(PYQT_STR, *a, **kw)
 
 
 class PlatformAuthLoginView:
