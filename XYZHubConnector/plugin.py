@@ -648,27 +648,15 @@ class XYZHubConnector(object):
             con.reset_fun()
         # common
         api_type = self.get_api_type_from_qt_args(args)
-        if api_type == API_TYPES.PLATFORM:
-            # self.open_platform_auth_dialog()
+        con = self.con_man.get_con("list", api_type)
 
-            # implicit set + extra callback
-            # self.network_iml.set_connected_conn_info(conn_info)
-            # con = self.con_man.make_con("list", API_TYPES.PLATFORM, is_cached=False)
-            # con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
-            # con.signal.error.connect(self.cb_handle_error_msg)
-            # con.signal.error.connect(lambda e: self.network_iml.clear_auth())
-
-            con = self.con_man.get_con("list", api_type)
-            if conn_info.get_user_email():
-                self.network_iml.open_login_view(
-                    conn_info,
-                    callback=lambda: con.start(conn_info),
-                )
-            else:
-                con.start(conn_info)
+        if api_type == API_TYPES.PLATFORM and conn_info.get_user_email():
+            self.network_iml.open_login_view(
+                conn_info,
+                callback=lambda: con.start(conn_info),
+            )
         else:
-            con = self.con_man.get_con("list", api_type)
-            con.start_args(args)
+            con.start(conn_info)
 
     def start_count_feat(self, args):
         api_type = self.get_api_type_from_qt_args(args)

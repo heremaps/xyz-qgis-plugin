@@ -9,7 +9,7 @@
 ###############################################################################
 
 from qgis.PyQt.QtCore import pyqtSignal, QObject
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Any
 
 QtArgs = Tuple[tuple, dict]
 
@@ -23,7 +23,7 @@ def parse_qt_args(args: QtArgs) -> Tuple[tuple, dict]:
     return a, kw
 
 
-def make_fun_args(fun: Callable) -> Callable[[QtArgs], Callable]:
+def make_fun_args(fun: Callable) -> Callable[[QtArgs], Any]:
     def _fun_args(args):
         a, kw = parse_qt_args(args)
         return fun(*a, **kw)
