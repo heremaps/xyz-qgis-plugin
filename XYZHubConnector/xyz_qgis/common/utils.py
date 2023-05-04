@@ -43,6 +43,11 @@ def get_qml_full_path(qml_file):
     return os.path.join(config.PLUGIN_DIR, "xyz_qgis", "gui", "qml", qml_file)
 
 
+def add_qml_import_path(qml_engine, platform="macosx"):
+    qml_engine.addImportPath(os.path.join(config.get_external_os_lib(), platform, "qml"))
+    qml_engine.addImportPath(os.path.join(config.get_external_os_lib(), platform, "bin"))
+
+
 def make_unique_full_path(ext="json"):
     return os.path.join(config.TMP_DIR, "%s.%s" % (time.time(), ext))
 

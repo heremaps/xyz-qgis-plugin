@@ -10,6 +10,8 @@
 
 import os
 
+from qgis.PyQt.QtCore import QSettings
+
 from ... import __version__ as version
 
 
@@ -27,3 +29,10 @@ class Config:
     def set_config(self, config):
         for k, v in config.items():
             setattr(self, k, v)
+
+    def get_external_os_lib(self):
+        key = "xyz_qgis/settings/ext_lib"
+
+        txt = QSettings().value(key) or os.environ.get("HERE_QGIS_EXT_LIB")
+        lib_path = os.path.abspath(txt) if txt else self.EXTERNAL_LIB_DIR
+        return lib_path
