@@ -136,8 +136,13 @@ class PlatformAuthLoginView:
         print(engine.importPathList())
         print(engine.pluginPathList())
 
-        view.setInitialProperties({"debugMode": os.environ.get("HERE_QML_DEBUG", "")})
-        view.setSource(QUrl.fromLocalFile(get_qml_full_path("web.qml")))
+        debugMode = os.environ.get("HERE_QML_DEBUG", "")
+        if debugMode:
+            view.setInitialProperties({"debugMode": debugMode})
+            view.setSource(QUrl.fromLocalFile(get_qml_full_path("web_debug.qml")))
+        else:
+            view.setSource(QUrl.fromLocalFile(get_qml_full_path("web.qml")))
+
         errors = [e.toString() for e in view.errors()]
         # print(errors)
         if len(errors):
