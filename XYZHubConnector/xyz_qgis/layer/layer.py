@@ -596,20 +596,11 @@ class XYZLayer(object):
         )
         options.layerName = db_layer_name
         options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer  # update mode
-        if hasattr(QgsVectorFileWriter, "writeAsVectorFormatV2"):
-            err = QgsVectorFileWriter.writeAsVectorFormatV2(
-                vlayer, fname, vlayer.transformContext(), options
-            )
-        else:
-            err = QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        err = self._write_vector_file(vlayer, fname, options)
         if err[0] == QgsVectorFileWriter.ErrCreateDataSource:
             options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
-            if hasattr(QgsVectorFileWriter, "writeAsVectorFormatV2"):
-                err = QgsVectorFileWriter.writeAsVectorFormatV2(
-                    vlayer, fname, vlayer.transformContext(), options
-                )
-            else:
-                err = QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+            err = self._write_vector_file(vlayer, fname, options)
+
         if err[0] != QgsVectorFileWriter.NoError:
             raise Exception("%s: %s" % err)
 
@@ -620,6 +611,19 @@ class XYZLayer(object):
         self._save_meta_vlayer(vlayer)
 
         return vlayer
+
+    def _write_vector_file(self, vlayer, fname, options):
+        if hasattr(QgsVectorFileWriter, "writeAsVectorFormatV3"):
+            err = QgsVectorFileWriter.writeAsVectorFormatV3(
+                vlayer, fname, vlayer.transformContext(), options
+            )
+        elif hasattr(QgsVectorFileWriter, "writeAsVectorFormatV2"):
+            err = QgsVectorFileWriter.writeAsVectorFormatV2(
+                vlayer, fname, vlayer.transformContext(), options
+            )
+        else:
+            err = QgsVectorFileWriter.writeAsVectorFormat(vlayer, fname, options)
+        return err
 
     def update_constraint_trigger(self, geom_str, idx):
         fname = make_fixed_full_path(self._layer_fname(), ext=self.ext)
