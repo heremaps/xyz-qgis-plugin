@@ -12,7 +12,6 @@ import QtQuick 2.10
 import QtQuick.Window 2.10
 import QtQml 2.10
 import QtWebEngine 1.3
-import QtQuick.Layouts 1.10
 
 // https://doc.qt.io/qt-5/qml-qtwebengine-webengineview.html#newViewRequested-signal
 Item {
@@ -29,15 +28,8 @@ Item {
     height: initialHeight
     property string debugMode: ""
 
-    //    property var debugWindow: debugWindowComponent.createObject(windowParent)
-
     // Create the initial browsing windows and open the startup page.
     Component.onCompleted: {
-
-        // debug
-        let debugWindow = isDebug() ? debugWindowComponent.createObject(
-                                          windowParent) : null
-
         saveLogFile(Qt.resolvedUrl("log.html"), loggingText)
     }
 
@@ -187,34 +179,6 @@ Item {
 
         property WebEngineView webView: {
             webViewComponent.createObject(this)
-        }
-    }
-
-    property Component debugWindowComponent: Window {
-        // Destroy on close to release the Window's QML resources.
-        // Because it was created with a parent, it won't be garbage-collected.
-        onClosing: destroy()
-        visible: true
-        width: initialWidth
-        height: initialHeight
-        modality: Qt.WindowModal
-        title: "Debug"
-
-        ColumnLayout {
-            TextEdit {
-                text: "token: " + tokenJson
-                Layout.alignment: Qt.AlignLeft | Qt.AlignTop
-                textFormat: TextEdit.AutoText
-                height: 100
-            }
-            TextEdit {
-                text: loggingText
-                Layout.alignment: Qt.AlignLeft | Qt.AlignTop
-                textFormat: TextEdit.AutoText
-                wrapMode: TextEdit.Wrap
-                width: 100
-                height: 100
-            }
         }
     }
 }
