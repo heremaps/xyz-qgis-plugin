@@ -60,10 +60,9 @@ class PlatformAuthLoginView:
         token_json = self.view.rootObject().getToken()
         if not token_json:
             return
-        api_env = self.get_api_env(conn_info)
         PlatformSettings.save_token_json(
             token_json,
-            api_env,
+            conn_info.get_server(),
             conn_info.get_user_email(),
             conn_info.get_realm(),
         )
@@ -100,10 +99,8 @@ class PlatformAuthLoginView:
 
     @classmethod
     def get_access_token(self, conn_info: SpaceConnectionInfo) -> str:
-        # TODO: get from settings
-        api_env = self.get_api_env(conn_info)
         token_json = PlatformSettings.load_token_json(
-            api_env,
+            conn_info.get_server(),
             conn_info.get_user_email(),
             conn_info.get_realm(),
         )
@@ -159,22 +156,18 @@ class PlatformAuthLoginView:
 
     @classmethod
     def _dialog_title(cls, conn_info: SpaceConnectionInfo):
-        api_env = cls.get_api_env(conn_info)
-        title = "HERE Platform" if api_env == cls.API_PRD else "HERE Platform SIT"
+        title = "HERE Platform" if not conn_info.is_platform_sit() else "HERE Platform SIT"
         return title
-
-    @classmethod
-    def get_api_env(cls, conn_info: SpaceConnectionInfo):
-        return cls.API_SIT if conn_info.is_platform_sit() else cls.API_PRD
 
     # other
 
     @classmethod
     def remove_access_token(cls, conn_info: SpaceConnectionInfo):
-        api_env = cls.get_api_env(conn_info)
-        email = conn_info.get_user_email()
-        realm = conn_info.get_realm()
-        PlatformSettings.remove_token_json(api_env, email, realm)
+        PlatformSettings.remove_token_json(
+            conn_info.get_server(),
+            conn_info.get_user_email(),
+            conn_info.get_realm(),
+        )
         conn_info.set_(token=None)
         return conn_info
 

@@ -279,20 +279,20 @@ class PlatformSettings:
     API_TYPE = API_TYPES.PLATFORM
 
     @classmethod
-    def save_token_json(cls, token_json: str, api_env: str, user_email: str, realm: str):
-        key = cls._token_setting_key(api_env, user_email, realm)
+    def save_token_json(cls, token_json: str, server: str, user_email: str, realm: str):
+        key = cls._token_setting_key(server, user_email, realm)
         QSettings().setValue(key, token_json)
 
     @classmethod
-    def load_token_json(cls, api_env: str, user_email: str, realm: str) -> str:
-        key = cls._token_setting_key(api_env, user_email, realm)
+    def load_token_json(cls, server: str, user_email: str, realm: str) -> str:
+        key = cls._token_setting_key(server, user_email, realm)
         txt = QSettings().value(key)
         return txt
 
     @classmethod
-    def remove_token_json(cls, api_env: str, user_email: str, realm: str):
+    def remove_token_json(cls, server: str, user_email: str, realm: str):
         s = QSettings()
-        key = cls._token_setting_key(api_env, user_email, realm)
+        key = cls._token_setting_key(server, user_email, realm)
         s.beginGroup(key)
         s.remove("")
         s.endGroup()
@@ -309,44 +309,43 @@ class PlatformSettings:
         s.endGroup()
 
     @classmethod
-    def _token_setting_key(cls, api_env: str, user_email: str, realm: str):
-        return cls._setting_key(api_env, user_email, realm, "tokenJson")
+    def _token_setting_key(cls, server: str, user_email: str, realm: str):
+        return cls._setting_key(server, user_email, realm, "tokenJson")
 
     @classmethod
-    def _setting_key(cls, api_env: str, user_email: str, realm: str, key: str):
+    def _setting_key(cls, server: str, user_email: str, realm: str, key: str):
         # api_type: datahub, platform
-        # api_env: prd, sit
+        # server: prd, sit
         # user_email: default or some@email.com
         # realm: olp-here, ..
-        return "{settings_prefix}/{api_type}/{api_env}/{user_email}/{realm}/{key}".format(
-            settings_prefix="xyz_qgis/settings",
+        return "{settings_prefix}/{api_type}/{server}/{user_email}/{realm}/{key}".format(
+            settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
-            api_env=api_env.lower(),
+            server=server,
             user_email="None" if not user_email else user_email.lower(),
             realm="None" if not realm else realm.lower(),
             key=key,
         )
 
     @classmethod
-    def _connected_conn_info_setting_key(cls, api_env: str):
-        return "{settings_prefix}/{api_type}/{api_env}/{key}".format(
-            settings_prefix="xyz_qgis/settings",
+    def _connected_conn_info_setting_key(cls, server: str):
+        return "{settings_prefix}/{api_type}/{server}/{key}".format(
+            settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
-            api_env=api_env.lower(),
+            server=server,
             key="connected_conn_info",
         )
 
     @classmethod
     def save_connected_conn_info(cls, conn_info: SpaceConnectionInfo):
-        api_env = cls.get_api_env(conn_info)
-        key = cls._connected_conn_info_setting_key(api_env)
+        server = conn_info.get_server()
+        key = cls._connected_conn_info_setting_key(server)
         json_str = json.dumps(conn_info.to_platform_dict(), ensure_ascii=False)
         QSettings().setValue(key, json_str)
 
     @classmethod
-    def load_connected_conn_info(cls, conn_info: SpaceConnectionInfo):
-        api_env = cls.get_api_env(conn_info)
-        key = cls._connected_conn_info_setting_key(api_env)
+    def load_connected_conn_info(cls, server: str):
+        key = cls._connected_conn_info_setting_key(server)
         txt = QSettings().value(key)
         try:
             d = json.loads(txt)
@@ -355,13 +354,9 @@ class PlatformSettings:
         return SpaceConnectionInfo.from_dict(d)
 
     @classmethod
-    def remove_connected_conn_info(cls, api_env: str):
+    def remove_connected_conn_info(cls, server: str):
         s = QSettings()
-        key = cls._connected_conn_info_setting_key(api_env)
+        key = cls._connected_conn_info_setting_key(server)
         s.beginGroup(key)
         s.remove("")
         s.endGroup()
-
-    @classmethod
-    def get_api_env(cls, conn_info: SpaceConnectionInfo):
-        return cls.API_SIT if conn_info.is_platform_sit() else cls.API_PRD
