@@ -144,6 +144,7 @@ class XYZLayer(object):
             q.setName(obj._layer_name(geom_str, idx))
 
             update_vlayer_editorWidgetSetup(vlayer)
+            vlayer.reload()
 
         return obj
 
