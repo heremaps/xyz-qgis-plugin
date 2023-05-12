@@ -331,7 +331,12 @@ class IMLNetworkManager(NetManager):
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
         self.platform_auth.apply_token(conn_info)
         if not conn_info.has_token():
-            self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
+            try:
+                self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
+            except Exception as e:
+                if callback:
+                    callback()
+                raise e
         else:
             if callback:
                 callback()
