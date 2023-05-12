@@ -9,16 +9,15 @@
 ###############################################################################
 
 import copy
-import json
-from typing import Any, Callable, Dict, List, Union
+from typing import Callable, Dict
 
-from qgis.core import QgsProject, QgsVectorLayer, QgsRectangle
 from qgis.PyQt.QtCore import QThreadPool
 from qgis.PyQt.QtNetwork import QNetworkReply
+from qgis.core import QgsVectorLayer, QgsRectangle
 
+from .loop_loader import BaseLoader, BaseLoop, ParallelFun
 from ..controller import (
     AsyncFun,
-    BasicSignal,
     ChainController,
     ChainInterrupt,
     LoopController,
@@ -26,14 +25,13 @@ from ..controller import (
     WorkerFun,
     make_qt_args,
     parse_exception_obj,
-    parse_qt_args,
 )
-from ..layer import XYZLayer, bbox_utils, layer_utils, parser, queue, render, tile_utils
+from ..layer import XYZLayer, layer_utils, queue, render, tile_utils
 from ..layer.edit_buffer import LayeredEditBuffer
-from ..network import NetManager, net_handler
-from .loop_loader import BaseLoader, BaseLoop, ParallelFun
+from ..layer.layer_utils import update_vlayer_editorWidgetSetup
 from ..models import SpaceConnectionInfo
 from ..models.connection import mask_token
+from ..network import NetManager, net_handler
 
 from ..common.signal import make_print_qgis
 
@@ -90,6 +88,7 @@ class LoadLayerController(BaseLoader):
 
     def post_render(self, *a, **kw):
         for v in self.layer.iter_layer():
+            update_vlayer_editorWidgetSetup(v)
             v.triggerRepaint()
 
     def _config_layer_callback(self, layer):
@@ -144,9 +143,9 @@ class LoadLayerController(BaseLoader):
                 WorkerFun(render.parse_feature, self.pool),
                 AsyncFun(self._dispatch_render),
                 ParallelFun(self._render_single),
+                AsyncFun(self.post_render),
             ]
         )
-        self.signal.finished.connect(self.post_render)
 
     def _check_status(self):
         if self.status == self.FINISHED:

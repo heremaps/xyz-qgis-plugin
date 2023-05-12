@@ -11,7 +11,7 @@
 import json
 
 from qgis.PyQt.QtCore import QVariant
-from qgis.core import QgsFeatureRequest, QgsProject
+from qgis.core import QgsFeatureRequest, QgsProject, QgsEditorWidgetSetup
 
 from . import parser
 from .layer_props import QProps
@@ -119,6 +119,29 @@ def get_xyz_id_from_iter(feat_iter):
 def get_xyz_id_from_layer(vlayer, fid):
     ft = vlayer.getFeature(fid)
     return get_xyz_id_from_feat(ft)
+
+
+def get_one_feature_without_geom(vlayer):
+    lst = list(
+        vlayer.getFeatures(QgsFeatureRequest().setFlags(QgsFeatureRequest.NoGeometry).setLimit(1))
+    )
+    return lst[0] if len(lst) else None
+
+
+def update_vlayer_editorWidgetSetup(vlayer):
+    feat = get_one_feature_without_geom(vlayer)
+    if not feat:
+        return
+    # set jsonedit format for field
+    for i, val in enumerate(feat.attributes()):
+        if parser.is_json_string(val):
+            # https://github.com/qgis/QGIS/blob/dd00077472c4b68eeb1164c448410c8d95d0c106/src/gui/editorwidgets/qgsjsoneditwidget.h
+            # https://github.com/qgis/QGIS/blob/dd00077472c4b68eeb1164c448410c8d95d0c106/src/gui/editorwidgets/qgsjsoneditwrapper.cpp#L37
+            View_Text = 0
+            FormatJson_Indented = 0
+            formType = "JsonEdit"
+            formConfig = {"DefaultView": View_Text, "FormatJson": FormatJson_Indented}
+            vlayer.setEditorWidgetSetup(i, QgsEditorWidgetSetup(formType, formConfig))
 
 
 def is_layer_committed(vlayer):

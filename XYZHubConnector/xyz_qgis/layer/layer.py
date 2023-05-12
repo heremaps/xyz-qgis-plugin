@@ -8,23 +8,21 @@
 #
 ###############################################################################
 
-import sqlite3
-import time
 import json
 import re
+import sqlite3
+import time
 from typing import List
 
 REGEX_LOADING_MODE = re.compile(r"\(\w+\)$")
 
 from qgis.core import (
     QgsCoordinateReferenceSystem,
-    QgsFeatureRequest,
     QgsProject,
     QgsVectorFileWriter,
     QgsVectorLayer,
     QgsCoordinateTransform,
     QgsWkbTypes,
-    QgsFields,
 )
 
 from qgis.utils import iface
@@ -37,10 +35,11 @@ from .layer_utils import (
     get_customProperty_str,
     load_json_default,
     is_xyz_supported_layer,
+    update_vlayer_editorWidgetSetup,
 )
 from ..models import SpaceConnectionInfo, parse_copyright
 from ..common import config
-from ..common.utils import make_unique_full_path, make_fixed_full_path
+from ..common.utils import make_fixed_full_path
 from .style import LAYER_QML
 
 from ..common.signal import make_print_qgis
@@ -144,7 +143,8 @@ class XYZLayer(object):
             # update name of child qnode layers
             q.setName(obj._layer_name(geom_str, idx))
 
-            vlayer.reload()
+            update_vlayer_editorWidgetSetup(vlayer)
+
         return obj
 
     def _fix_invalid_vlayer(self, vlayer):
