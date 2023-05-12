@@ -1076,7 +1076,7 @@ class XYZHubConnector(object):
             return
 
         CookieUtils.remove_all_cookies_from_settings()
-        PlatformSettings.remove_settings()
+        PlatformSettings.remove_all_token_json()
 
     def open_connection_dialog(self):
         dialog = self.new_main_dialog()

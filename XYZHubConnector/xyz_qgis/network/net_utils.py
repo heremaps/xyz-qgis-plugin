@@ -299,10 +299,11 @@ class PlatformSettings:
         s.endGroup()
 
     @classmethod
-    def remove_settings(cls):
-        key = "{settings_prefix}/{api_type}".format(
+    def remove_all_token_json(cls):
+        key = "{settings_prefix}/{api_type}/{key}".format(
             settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
+            key="tokenJson",
         )
         s = QSettings()
         s.beginGroup(key)
@@ -319,7 +320,7 @@ class PlatformSettings:
         # server: prd, sit
         # user_email: default or some@email.com
         # realm: olp-here, ..
-        return "{settings_prefix}/{api_type}/{server}/{user_email}/{realm}/{key}".format(
+        return "{settings_prefix}/{api_type}/{key}/{server}/{user_email}/{realm}".format(
             settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
             server=server,
@@ -330,7 +331,7 @@ class PlatformSettings:
 
     @classmethod
     def _connected_conn_info_setting_key(cls, server: str):
-        return "{settings_prefix}/{api_type}/{server}/{key}".format(
+        return "{settings_prefix}/{api_type}/{key}/{server}".format(
             settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
             server=server,
