@@ -1005,6 +1005,10 @@ class XYZHubConnector(object):
 
     def cb_qnode_visibility_changed(self, qnode):
         if qnode.isVisible():
+            # reload visible layers
+            for vlayer in qnode.checkedLayers():
+                if is_xyz_supported_layer(vlayer):
+                    vlayer.reload()
             return
         xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         con = self.con_man.get_interactive_loader(xlayer_id)
