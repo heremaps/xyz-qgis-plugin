@@ -16,8 +16,8 @@ from qgis.core import QgsApplication
 from . import __version__ as version
 from .xyz_qgis.common import override_config
 
-TAG_PLUGIN = "XYZ Hub Connector"
-PLUGIN_FULL_NAME = "XYZ Hub Connector"
+TAG_PLUGIN = "HERE Maps for QGIS"
+PLUGIN_FULL_NAME = "HERE Maps for QGIS"
 PLUGIN_NAME = __package__
 PLUGIN_VERSION = version
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))

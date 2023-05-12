@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>XYZ Hub Connector</string>
+   <string>HERE Maps for QGIS</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

@@ -1,7 +1,7 @@
-# XYZ Hub Connector - QGIS plugin
+# HERE Maps for QGIS Plugin
 
 
-XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [HERE Data Hub](https://www.here.xyz/) spaces and from Interactive Map Layer inside the [HERE Platform](https://platform.here.com/).
+HERE Maps for QGIS is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [HERE Data Hub](https://www.here.xyz/) spaces and from Interactive Map Layer inside the [HERE Platform](https://platform.here.com/).
 
 ![new connection](res/new-connection.png)
 
@@ -14,18 +14,18 @@ XYZ Hub Connector is a [QGIS](https://www.qgis.org) plugin which can be used to 
 ### Install via plugin repository in QGIS
 
 1. In QGIS, navigate to menu **Plugins** > **Manage and Install Plugins...** > **All**
-2. Search for `XYZ Hub Connector` > **Install plugin**
-3. Switch to tab **Installed**, make sure the plugin `XYZ Hub Connector` is enabled.
+2. Search for `HERE Maps for QGIS` > **Install plugin**
+3. Switch to tab **Installed**, make sure the plugin `HERE Maps for QGIS` is enabled.
 
 ### Install manually from zip file in QGIS
 
 1. Download the [latest release](https://github.com/heremaps/xyz-qgis-plugin/releases) zip file
 2. In QGIS, navigate to menu **Plugins** > **Manage and Install Plugins...** > **Install from ZIP**, then select the downloaded zip file.
-3. Switch to tab **Installed**, make sure the plugin `XYZ Hub Connector` is enabled.
+3. Switch to tab **Installed**, make sure the plugin `HERE Maps for QGIS` is enabled.
 
 ## Usage
 
-Once you have installed and enabled the plugin XYZ Hub Connector in QGIS, it can be accessed via the toolbar, or the menu **Web**. The main dialog contains 5 tabs:
+Once you have installed and enabled the plugin HERE Maps for QGIS, it can be accessed via the toolbar, or the menu **Web**. The main dialog contains 5 tabs:
 
 + `Load` : load data from an XYZ space into QGIS, given a valid token and server (PRD/CIT). To learn more about how to generate a token, refer to https://www.here.xyz/api/getting-token/ and https://xyz.api.here.com/token-ui/. 
 
@@ -55,7 +55,7 @@ When the user make some edits to the loaded layer, the changes can be pushed to 
 
 Official Data Hub server is predefined under name "HERE Server" and thus is not required to be created. The following steps are only required for self-hosted Data Hub server and HERE Platform server.
 
-1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+1. From the "Web" menu in QGIS, select "HERE Maps for QGIS" > "Add HERE Layer".
 2. Press the "Setup" button and then "Setup Server" to add a new server. 
 3. Click "Add" to add a new server.
 4. Select server type
@@ -68,7 +68,7 @@ Official Data Hub server is predefined under name "HERE Server" and thus is not 
 
 ### Add HERE Data Hub Token
 
-1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+1. From the "Web" menu in QGIS, select "HERE Maps for QGIS" > "Add HERE Layer".
 2. Press the "Setup", ensure that "HERE Server" is selected in the Server drop down.
 3. Click on "Add" to add your token.
 4. Enter a name and corresponding Data Hub token created previously according to the guide https://www.here.xyz/api/getting-token/
@@ -76,7 +76,7 @@ Official Data Hub server is predefined under name "HERE Server" and thus is not 
 
 ### Add HERE Platform Credentials
 
-1. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer".
+1. From the "Web" menu in QGIS, select "HERE Maps for QGIS" > "Add HERE Layer".
 2. Press the "Setup", ensure that "HERE Platform" is selected in the Server drop down.
 3. Click on "Add" to add your credentials.
 4. Enter "My credentials" as the name.
@@ -88,7 +88,7 @@ Official Data Hub server is predefined under name "HERE Server" and thus is not 
 ### Load Your Data from HERE Platform
 
 1. Create a new project (Project → New), save the project
-2. From the "Web" menu in QGIS, select "XYZ Hub Connector" > "Add HERE Layer"
+2. From the "Web" menu in QGIS, select "HERE Maps for QGIS" > "Add HERE Layer"
 3. From the Connection drop down, select the "HERE Platform" connection and the "My Credentials" credentials that you created previously
 4. Click "Connect"
 5. Select one or more Interactive Map Layer entries
