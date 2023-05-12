@@ -279,34 +279,18 @@ class PlatformSettings:
     API_TYPE = API_TYPES.PLATFORM
 
     @classmethod
-    def save_token_json(
-        cls,
-        token_json: str,
-        api_env: str,
-        user_email: str,
-        realm: str,
-    ):
+    def save_token_json(cls, token_json: str, api_env: str, user_email: str, realm: str):
         key = cls._token_setting_key(api_env, user_email, realm)
         QSettings().setValue(key, token_json)
 
     @classmethod
-    def load_token_json(
-        cls,
-        api_env: str,
-        user_email: str,
-        realm: str,
-    ) -> str:
+    def load_token_json(cls, api_env: str, user_email: str, realm: str) -> str:
         key = cls._token_setting_key(api_env, user_email, realm)
         txt = QSettings().value(key)
         return txt
 
     @classmethod
-    def remove_token_json(
-        cls,
-        api_env: str,
-        user_email: str,
-        realm: str,
-    ):
+    def remove_token_json(cls, api_env: str, user_email: str, realm: str):
         s = QSettings()
         key = cls._token_setting_key(api_env, user_email, realm)
         s.beginGroup(key)
