@@ -277,6 +277,7 @@ class CookieUtils:
 
 class PlatformSettings:
     API_TYPE = API_TYPES.PLATFORM
+    SETTINGS_PREFIX = "xyz_qgis/settings"
 
     @classmethod
     def save_token_json(cls, token_json: str, server: str, user_email: str, realm: str):
@@ -300,7 +301,7 @@ class PlatformSettings:
     @classmethod
     def remove_settings(cls):
         key = "{settings_prefix}/{api_type}".format(
-            settings_prefix="xyz_qgis/settings",
+            settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
         )
         s = QSettings()
@@ -322,8 +323,8 @@ class PlatformSettings:
             settings_prefix=cls.SETTINGS_PREFIX,
             api_type=cls.API_TYPE.lower(),
             server=server,
-            user_email="None" if not user_email else user_email.lower(),
-            realm="None" if not realm else realm.lower(),
+            user_email=user_email.lower() if user_email else "user_email",
+            realm=realm.lower() if realm else "realm",
             key=key,
         )
 
