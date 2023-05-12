@@ -29,7 +29,7 @@ from qgis.PyQt.Qt import PYQT_VERSION_STR
 from qgis.core import Qgis
 import platform
 from ..common import config
-from ..models import API_TYPES
+from ..models import API_TYPES, SpaceConnectionInfo
 
 USER_AGENT = (
     "xyz-qgis-plugin/{plugin_version} QGIS/{qgis_version} Python/"
@@ -326,3 +326,42 @@ class PlatformSettings:
             realm="None" if not realm else realm.lower(),
             key=key,
         )
+
+    @classmethod
+    def _connected_conn_info_setting_key(cls, api_env: str):
+        return "{settings_prefix}/{api_type}/{api_env}/{key}".format(
+            settings_prefix="xyz_qgis/settings",
+            api_type=cls.API_TYPE.lower(),
+            api_env=api_env.lower(),
+            key="connected_conn_info",
+        )
+
+    @classmethod
+    def save_connected_conn_info(cls, conn_info: SpaceConnectionInfo):
+        api_env = cls.get_api_env(conn_info)
+        key = cls._connected_conn_info_setting_key(api_env)
+        json_str = json.dumps(conn_info.to_platform_dict(), ensure_ascii=False)
+        QSettings().setValue(key, json_str)
+
+    @classmethod
+    def load_connected_conn_info(cls, conn_info: SpaceConnectionInfo):
+        api_env = cls.get_api_env(conn_info)
+        key = cls._connected_conn_info_setting_key(api_env)
+        txt = QSettings().value(key)
+        try:
+            d = json.loads(txt)
+        except ValueError:
+            d = dict()
+        return SpaceConnectionInfo.from_dict(d)
+
+    @classmethod
+    def remove_connected_conn_info(cls, api_env: str):
+        s = QSettings()
+        key = cls._connected_conn_info_setting_key(api_env)
+        s.beginGroup(key)
+        s.remove("")
+        s.endGroup()
+
+    @classmethod
+    def get_api_env(cls, conn_info: SpaceConnectionInfo):
+        return cls.API_SIT if conn_info.is_platform_sit() else cls.API_PRD

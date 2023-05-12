@@ -30,6 +30,7 @@ class SpaceConnectionInfo(object):
     PLATFORM_PRD = "PLATFORM_PRD"
     PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT]
     PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
+    PLATFORM_KEYS = ["server"] + PLATFORM_AUTH_KEYS
 
     def __init__(self, conn_info=None):
         self._is_protected = False
@@ -101,6 +102,9 @@ class SpaceConnectionInfo(object):
         for ex in self.EXCLUDE_PROJECT_KEYS:
             d.pop(ex, "")
         return d
+
+    def to_platform_dict(self):
+        return {k: self.get_(k) for k in self.PLATFORM_KEYS}
 
     def is_livemap(self):
         packages = self.get_("packages", list())
