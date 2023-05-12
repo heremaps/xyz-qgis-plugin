@@ -10,6 +10,7 @@
 
 #### Improvements
 
+* Rename plugin, previously known as XYZ Hub Connector
 * Display formatted JSON attribute
 * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id
 * Remove non-mandatory field "Searchable properties" from "Manager layer" dialog
