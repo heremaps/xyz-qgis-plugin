@@ -13,7 +13,6 @@ import math
 
 from osgeo import ogr
 from qgis.PyQt.QtCore import QVariant
-
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCsException,
@@ -166,13 +165,7 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=Fal
             new_props[k] = props[t]
 
             # always handle json string in props
-            v = new_props[k]
-            if isinstance(v, str) and ("{" in v or "[" in v):
-                # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
-                try:
-                    new_props[k] = json.loads(v)
-                except json.JSONDecodeError:
-                    pass
+            new_props[k] = try_parse_json_string(new_props[k])
         return new_props
 
     def _livemap_props(props, xyz_id=None):
@@ -265,6 +258,21 @@ def make_field(k, val):
     qtype = val.type()
     f_typeName = valid_fieldTypes.get(qtype, "String")
     return QgsField(k, qtype, f_typeName)
+
+
+def try_parse_json_string(v):
+    if isinstance(v, str) and ("{" in v or "[" in v):
+        # print_qgis(json.dumps(dict(v=v), ensure_ascii=False))
+        try:
+            obj = json.loads(v)
+            return obj
+        except json.JSONDecodeError:
+            pass
+    return v
+
+
+def is_json_string(v):
+    return v != try_parse_json_string(v)
 
 
 def make_field_from_type_name(k, f_typeName):
