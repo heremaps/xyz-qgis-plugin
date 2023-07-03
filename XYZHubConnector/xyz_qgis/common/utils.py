@@ -9,9 +9,11 @@
 ###############################################################################
 
 import os
+import platform
 import time
 import shutil
 import gzip
+import sysconfig
 
 from qgis.PyQt.uic import loadUiType
 from . import config
@@ -43,9 +45,22 @@ def get_qml_full_path(qml_file):
     return os.path.join(config.PLUGIN_DIR, "xyz_qgis", "gui", "qml", qml_file)
 
 
-def add_qml_import_path(qml_engine, platform="macosx"):
-    qml_engine.addImportPath(os.path.join(config.get_external_os_lib(), platform, "qml"))
-    qml_engine.addImportPath(os.path.join(config.get_external_os_lib(), platform, "bin"))
+def add_qml_import_path(qml_engine):
+    # Setup for the MAC OS X platform:
+    # return
+    if platform.system() == "Darwin" or os.name == "mac":
+        install_qml_dependencies()
+        qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "qml"))
+        qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "bin"))
+    elif platform.system() == "Linux" or os.name == "posix":
+        install_qml_dependencies()
+        qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "qml"))
+        qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "bin"))
+    elif platform.system() == "Windows" or os.name == "nt":
+        pass  # import only for outdated QGIS
+
+    print(qml_engine.importPathList())
+    print(qml_engine.pluginPathList())
 
 
 def make_unique_full_path(ext="json"):
@@ -109,3 +124,76 @@ def read_properties_file(filepath, separator="=", commentcharacter="#") -> dict:
                 value = separator.join(key_value[1:]).strip()
                 credentials_properties[key] = value
     return credentials_properties
+
+
+def install_package(
+    package, module_name="", package_version="", target_path="", extra_packages=[]
+):
+    module_name = module_name or package
+    do_install = False
+
+    import importlib
+    import importlib.metadata
+
+    def _reload(module_name):
+        importlib.invalidate_caches()
+        base_module_name = module_name.split(".")[0]
+        base_module = importlib.import_module(base_module_name)
+        importlib.reload(base_module)
+
+    try:
+        # _reload(module_name)
+        # importlib.import_module(module_name)
+
+        installed_version = importlib.metadata.version(package)
+        print(package, installed_version)
+        if package_version and package_version != installed_version:
+            do_install = False
+    except Exception as e:
+        print(repr(e))
+        do_install = True
+    if do_install:
+        py_exec = os.path.join(sysconfig.get_path("scripts"), "python3")
+        args = (
+            [
+                "install",
+                "-U",
+                f"{package}=={package_version}" if package_version else package,
+            ]
+            + extra_packages
+            + (["-t", target_path] if target_path else [])
+        )
+
+        import pip
+
+        pip.main(args)
+        # import subprocess
+        #
+        # subprocess.check_call([py_exec, "-m", "pip"] + args)
+
+
+def install_qml_dependencies():
+    package_version = config.get_plugin_setting("PyQtWebEngine_version")
+    # install_package(
+    #     "PyQtWebEngine", "PyQt5.QtWebEngine", package_version, config.EXTERNAL_LIB_DIR
+    # )  # , "5.15.2")
+    install_package(
+        "PyQtWebEngine", "PyQt5.QtWebEngine", package_version, extra_packages=["PyQt5-Qt5"]
+    )
+
+
+def get_qml_import_base_path():
+    prefix = sysconfig.get_path("purelib")
+    lib_path = f"{prefix}/PyQt5/Qt5"
+    try:
+        import importlib.metadata
+
+        lib_path = os.path.join(
+            importlib.metadata.distribution("PyQtWebEngine").locate_file("PyQt5"), "Qt5"
+        )
+    except Exception as e:
+        print(repr(e))
+        # lib_path = config.get_external_os_lib()
+
+    print(lib_path)
+    return lib_path

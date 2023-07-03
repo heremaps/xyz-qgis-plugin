@@ -25,14 +25,19 @@ class Config:
     USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
     TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
     LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
+    EXTERNAL_LIB_DIR = os.path.join(PLUGIN_DIR, "external")
 
     def set_config(self, config):
         for k, v in config.items():
             setattr(self, k, v)
 
     def get_external_os_lib(self):
-        key = "xyz_qgis/settings/ext_lib"
-
-        txt = QSettings().value(key) or os.environ.get("HERE_QGIS_EXT_LIB")
+        txt = self.get_plugin_setting("ext_lib") or os.environ.get("HERE_QGIS_EXT_LIB")
         lib_path = os.path.abspath(txt) if txt else self.EXTERNAL_LIB_DIR
+
         return lib_path
+
+    def get_plugin_setting(self, key):
+        key_prefix = "xyz_qgis/settings"
+        key_ = f"{key_prefix}/{key}"
+        return QSettings().value(key_)

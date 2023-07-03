@@ -10,7 +10,6 @@
 
 import json
 import os
-import platform
 
 
 try:
@@ -118,21 +117,15 @@ class PlatformAuthLoginView:
 
     @classmethod
     def create_qml_view(cls, title="", cb_login_view_closed=None):
+
         view = QQuickView()
         engine = view.engine()
 
         # engine.setImportPathList([])  # test init qml engine
 
-        # Setup for the MAC OS X platform:
-        if os.name == "mac" or platform.system() == "Darwin":
-            add_qml_import_path(engine, "macos")
-        elif os.name == "posix" or platform.system() == "Linux":
-            add_qml_import_path(engine, "linux")
-        # elif os.name == "nt" or platform.system() == "Windows":
-        #     add_qml_import_path(engine, "windows")
-        print(engine.importPathList())
-        print(engine.pluginPathList())
+        add_qml_import_path(engine)
 
+        # QTWEBENGINE_REMOTE_DEBUGGING: port
         debugMode = os.environ.get("HERE_QML_DEBUG", "")
         if debugMode:
             view.setInitialProperties({"debugMode": debugMode})
