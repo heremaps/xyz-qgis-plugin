@@ -176,6 +176,7 @@ Item {
         width: initialWidth
         height: initialHeight
         title: webView.title
+        modality: parent.Window ? parent.Window.window.modality : Qt.ApplicationModal
 
         property WebEngineView webView: {
             webViewComponent.createObject(this)
