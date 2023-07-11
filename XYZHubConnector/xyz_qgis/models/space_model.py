@@ -36,7 +36,7 @@ class QJsonTableModel(QAbstractTableModel):
         v = row.get(k, "")
         if k == "copyright" and isinstance(v, list):
             v = "\n".join(parse_copyright(v))
-        return QVariant(str(v))
+        return QVariant(self._parse_string_or_number(v))
 
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:
@@ -79,6 +79,14 @@ class QJsonTableModel(QAbstractTableModel):
 
     def get_selected_index(self):
         return self.selected_index
+
+    def _parse_string_or_number(self, v):
+        v = str(v)
+        try:
+            v = int(v)
+        except Exception as e:
+            pass
+        return v
 
 
 class XYZSpaceModel(QJsonTableModel):
