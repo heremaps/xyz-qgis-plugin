@@ -591,8 +591,10 @@ class XYZHubConnector(object):
             con.signal.error.connect(self.cb_handle_error_msg)
 
             con = self.con_man.make_con("stat", api_type)
-            con.signal.results.connect(make_fun_args(dialog.cb_display_space_count))
-            con.signal.error.connect(self.cb_handle_error_msg)
+            con.signal.results.connect(
+                make_fun_args(dialog.cb_display_space_count), Qt.QueuedConnection
+            )
+            con.signal.error.connect(self.cb_handle_error_msg, Qt.QueuedConnection)
 
         # clear cache btn
         dialog.signal_clear_cache.connect(self.open_clear_cache_dialog)

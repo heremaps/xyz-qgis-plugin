@@ -8,8 +8,7 @@
 #
 ###############################################################################
 
-
-from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal
+from qgis.PyQt.QtCore import QSortFilterProxyModel, pyqtSignal, Qt
 
 from .token_server_ux import TokenWithServerUX
 from ...models import SpaceConnectionInfo, XYZSpaceModel, API_TYPES
@@ -38,7 +37,13 @@ class SpaceUX(TokenWithServerUX):
         self.tableView_space.setSortingEnabled(True)
 
         # connect gui
-        self.tableView_space.selectionModel().currentChanged.connect(self.cb_table_row_selected)
+
+        self.tableView_space.model().layoutAboutToBeChanged.connect(
+            self.cb_refresh_model
+        )  # cb for sort column
+        self.tableView_space.selectionModel().currentChanged.connect(
+            self.cb_table_row_selected, Qt.QueuedConnection
+        )
         self.lineEdit_space_filter.valueChanged.connect(self.cb_space_filter_changed)
         self.checkBox_case_sensitive.toggled.connect(self.cb_case_sensitive_toggled)
         self.checkBox_case_sensitive.setChecked(False)
@@ -100,10 +105,14 @@ class SpaceUX(TokenWithServerUX):
         self.ui_valid_input()
         super().cb_token_used(*a)
 
-    def cb_table_row_selected(self, *a):
+    def cb_table_row_selected(self, idx, *a):
         # pending token -> gui
+        # do not refresh model, otherwise make selected index invalid
         self.comboBox_token.setCurrentIndex(self.token_model.get_used_token_idx())
         self.ui_valid_input()
+
+    def cb_refresh_model(self, *a):
+        self._get_space_model().refresh()
 
     def cb_display_spaces(self, conn_info, obj, *a, **kw):
         # this function can be put into dialog
@@ -118,7 +127,7 @@ class SpaceUX(TokenWithServerUX):
             conn_info.set_(**meta)
             self._get_space_model().save_conn_info(conn_info)
             lst_conn_info.append(conn_info)
-        self._get_space_model().refresh()
+        self.cb_refresh_model()
         for conn_info in lst_conn_info:
             self.signal_space_count.emit(make_qt_args(conn_info))
 
@@ -146,10 +155,11 @@ class SpaceUX(TokenWithServerUX):
         else:
             cnt = obj["count"]
 
-        index = self.tableView_space.currentIndex()
         self._get_space_model().save_conn_info(conn_info, feat_cnt=cnt)
-        self._get_space_model().refresh()
-        self.tableView_space.selectRow(index.row())
+        # self.cb_refresh_model() # disable for smoother ux
+        index = self.tableView_space.currentIndex()
+        if index.row() > -1:
+            self.tableView_space.selectRow(index.row())
 
     def cb_comboBox_server_selected(self, index):
         super().cb_comboBox_server_selected(index)
