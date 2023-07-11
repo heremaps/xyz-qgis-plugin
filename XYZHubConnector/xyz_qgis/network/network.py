@@ -20,6 +20,7 @@ from .net_utils import (
     make_bytes_payload,
 )
 from .net_handler import NetworkHandler
+from ..models import SpaceConnectionInfo
 
 
 ##########
@@ -255,6 +256,9 @@ class NetManager(QObject):
         self._post_send_request(reply, conn_info, kw_prop=kw_prop)
 
         return reply
+
+    def apply_connected_conn_info(self, conn_info: SpaceConnectionInfo):
+        return conn_info
 
     #################
     # Network Handler

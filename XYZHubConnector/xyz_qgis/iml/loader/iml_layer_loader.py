@@ -78,6 +78,9 @@ class IMLAuthExtension:
         self._save_conn_info_to_layer(conn_info)
         self._run_loop()
 
+    def _refresh_loader(self):
+        self._reset_retry_cnt()
+
     def _save_conn_info_to_layer(self, conn_info):
         layer = self.layer
         if layer:
@@ -89,9 +92,15 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
         TileLayerLoader.__init__(self, network, *a, **kw)
         IMLAuthExtension.__init__(self, network, *a, **kw)
         self.params_queue = queue.SimpleRetryQueue(key="tile_id")
+        self.network = network
+
+    def _refresh_loader(self):
+        super()._refresh_loader()
+        conn_info = self.network.apply_connected_conn_info(self.get_conn_info())
+        self._save_conn_info_to_layer(conn_info)
 
     def _start(self, **kw):
-        self._reset_retry_cnt()
+        self._refresh_loader()
         super()._start(**kw)
 
 
@@ -100,18 +109,20 @@ class IMLLiveTileLayerLoader(IMLTileLayerLoader, LiveTileLayerLoader):
         # LiveTileLayerLoader init is same as TileLayerLoader, thus redundant here
         IMLTileLayerLoader.__init__(self, network, *a, **kw)
 
-    def _start(self, **kw):
-        self._reset_retry_cnt()
-        super()._start(**kw)
-
 
 class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
     def __init__(self, network, *a, **kw):
         LoadLayerController.__init__(self, network, *a, **kw)
         IMLAuthExtension.__init__(self, network, *a, **kw)
+        self.network = network
+
+    def _refresh_loader(self):
+        super()._refresh_loader()
+        conn_info = self.network.apply_connected_conn_info(self.get_conn_info())
+        self._save_conn_info_to_layer(conn_info)
 
     def _start(self, **kw):
-        self._reset_retry_cnt()
+        self._refresh_loader()
         super()._start(**kw)
 
     def _retry_with_auth(self, reply):

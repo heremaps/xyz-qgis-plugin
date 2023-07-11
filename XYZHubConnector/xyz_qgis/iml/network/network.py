@@ -270,7 +270,6 @@ class IMLNetworkManager(NetManager):
             return self.app_auth_project(conn_info, expires_in=expires_in)
 
     def auth(self, conn_info, expires_in=7200, project_hrn: str = None):
-        self.apply_connected_conn_info(conn_info)
         if conn_info.is_user_login():
             return self.user_auth_module.auth(conn_info)
         else:
@@ -324,8 +323,13 @@ class IMLNetworkManager(NetManager):
     def apply_connected_conn_info(self, conn_info: SpaceConnectionInfo):
         if not conn_info.is_protected():
             connected = self.get_connected_conn_info()
-            auth = connected.get_platform_auth() if connected and connected.is_valid() else dict()
-            conn_info.set_(**auth)
+            if (
+                connected
+                and connected.is_valid()
+                and connected.get_platform_auth() != conn_info.get_platform_auth()
+            ):
+                # print("auth", conn_info.get_platform_auth(), connected.get_platform_auth())
+                conn_info.set_(token="", **connected.get_platform_auth())
         return conn_info
 
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
