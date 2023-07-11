@@ -423,8 +423,8 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, net_handler.NetworkError):
             # error during list/spaces request
-            self.handle_net_err(e0)
-            self.show_err_msgbar(e0)
+            if not self.handle_net_err(e0):
+                self.show_err_msgbar(e0)
             return
         elif isinstance(e0, EmptyXYZSpaceError):
             ret = exec_warning_dialog("XYZ Hub", "Requested query returns no features")
@@ -454,7 +454,8 @@ class XYZHubConnector(object):
         status = err.get_response().get_status()
         conn_info = err.get_response().get_conn_info()
         reply_tag = err.get_response().get_reply_tag()
-        if reply_tag in ["count", "statistics"]:  # too many error
+        if reply_tag in ["count", "statistics"]:
+            # too many errors, handled by doing nothing
             return True
         # # do not reset auth
         # if status in [401, 403]:
