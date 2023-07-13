@@ -32,6 +32,7 @@ class IMLNetworkManager(NetManager):
 
     API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
     API_SIT_URL = "https://interactive-dev-eu-west-1.api-gateway.sit.ls.hereapi.com/interactive/v1"
+    API_KOREA_URL = "https://ap-northeast-2.interactive.data.api.platform.here.com/interactive/v1"
     API_CONFIG_PRD_URL = "https://config.data.api.platform.here.com/config/v1"
     API_CONFIG_SIT_URL = "https://config.data.api.platform.sit.here.com/config/v1"
     API_OAUTH_PRD_URL = "https://account.api.here.com/oauth2/token"
@@ -46,9 +47,11 @@ class IMLNetworkManager(NetManager):
 
     API_SIT = "SIT"
     API_PRD = "PRD"
+    API_KOREA = "KOREA"
 
     API_URL = {
         API_GROUP_INTERACTIVE: {
+            API_KOREA: API_KOREA_URL,
             API_PRD: API_PRD_URL,
             API_SIT: API_SIT_URL,
         },
@@ -170,25 +173,21 @@ class IMLNetworkManager(NetManager):
         self.platform_auth = PlatformAuthLoginView()
         self._connected_conn_info: SpaceConnectionInfo = None
 
-    @classmethod
-    def _get_api_env(cls, conn_info: SpaceConnectionInfo):
-        server: str = conn_info.get_("server")
-        if conn_info.is_platform_server():
-            return cls.API_SIT if conn_info.is_platform_sit() else cls.API_PRD
-        else:
-            raise Exception(
-                "Unrecognized Platform Server: {}. "
-                "Expecting place holder prefix 'PLATFORM_' ".format(server)
-            )
+    def _get_api_url(self, server: str, api_group):
+        api_env = server.replace("PLATFORM_", "").upper()
+        urls = self.API_URL[api_group]
+        return urls.get(api_env, urls[self.API_PRD])
 
-    def _pre_send_request(self, conn_info, endpoint_key: str, kw_path=dict(), kw_request=dict()):
+    def _pre_send_request(
+        self, conn_info: SpaceConnectionInfo, endpoint_key: str, kw_path=dict(), kw_request=dict()
+    ):
         token = conn_info.get_("token")
         catalog_hrn = conn_info.get_("catalog_hrn")
         layer_id = conn_info.get_id()
-        api_env = self._get_api_env(conn_info)
+        server = conn_info.get_server()
 
         api_group = self.API_GROUP.get(endpoint_key, self.API_GROUP_INTERACTIVE)
-        api_url = self.API_URL[api_group][api_env]
+        api_url = self._get_api_url(server, api_group)
         # api_url = conn_info.get_("server", api_url).rstrip("/")
 
         endpoint = self.ENDPOINTS[endpoint_key]
@@ -283,12 +282,13 @@ class IMLNetworkManager(NetManager):
         project_hrn = conn_info.get_("project_hrn")
         return self.app_auth(conn_info, expires_in=expires_in, project_hrn=project_hrn)
 
-    def app_auth(self, conn_info, expires_in=7200, project_hrn: str = None):
+    def app_auth(self, conn_info: SpaceConnectionInfo, expires_in=7200, project_hrn: str = None):
         reply_tag = "oauth"
 
         conn_info.load_here_credentials()
-        api_env = self._get_api_env(conn_info)
-        url = self.API_URL[self.API_GROUP_OAUTH][api_env]
+        server = conn_info.get_server()
+
+        url = self._get_api_url(server, self.API_GROUP_OAUTH)
 
         request = make_conn_request(url, token=None, req_type="json")
         payload = {

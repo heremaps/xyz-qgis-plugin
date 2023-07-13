@@ -12,7 +12,7 @@ from qgis.PyQt.QtWidgets import QDialog
 
 from .. import get_ui_class
 from ..token_info_dialog import ServerInfoDialog
-from ...models import API_TYPES
+from ...models import API_TYPES, SpaceConnectionInfo
 from ...iml.models.iml_token_model import get_api_type
 
 IMLTokenEditUI = get_ui_class("edit_iml_token_dialog.ui")
@@ -89,7 +89,7 @@ class EditIMLTokenInfoDialog(IMLTokenInfoDialog):
 
 
 class IMLServerInfoDialog(ServerInfoDialog):
-    PLATFORM_SERVERS = ["PLATFORM_PRD", "PLATFORM_SIT"]
+    PLATFORM_SERVERS = SpaceConnectionInfo.PLATFORM_SERVERS
 
     def __init__(self, parent=None):
         """init window"""
