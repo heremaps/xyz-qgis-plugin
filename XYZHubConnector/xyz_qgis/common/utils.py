@@ -160,6 +160,10 @@ def install_package(
                 "-U",
                 "--log",
                 config.PYTHON_LOG_FILE,
+                "--trusted-host",
+                "pypi.org",
+                "--trusted-host",
+                "files.pythonhosted.org",
                 f"{package}=={package_version}" if package_version else package,
             ]
             + extra_packages
