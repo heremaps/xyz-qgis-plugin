@@ -26,6 +26,7 @@ USER_PLUGIN_DIR = os.path.join(USER_DIR, PLUGIN_NAME)
 TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
 LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
 EXTERNAL_LIB_DIR = os.path.join(PLUGIN_DIR, "external")
+PYTHON_LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "python.log")
 
 os.makedirs(TMP_DIR, exist_ok=True)
 

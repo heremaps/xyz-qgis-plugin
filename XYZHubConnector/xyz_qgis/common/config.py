@@ -26,6 +26,7 @@ class Config:
     TMP_DIR = os.path.join(USER_DIR, PLUGIN_NAME, "tmp")
     LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "qgis.log")
     EXTERNAL_LIB_DIR = os.path.join(PLUGIN_DIR, "external")
+    PYTHON_LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "python.log")
 
     def set_config(self, config):
         for k, v in config.items():

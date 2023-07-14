@@ -158,18 +158,29 @@ def install_package(
             [
                 "install",
                 "-U",
+                "--log",
+                config.PYTHON_LOG_FILE,
                 f"{package}=={package_version}" if package_version else package,
             ]
             + extra_packages
             + (["-t", target_path] if target_path else [])
         )
 
+        with open(config.PYTHON_LOG_FILE, "w") as f:
+            pass
         import pip
 
-        pip.main(args)
+        ret = pip.main(args)
+
         # import subprocess
         #
-        # subprocess.check_call([py_exec, "-m", "pip"] + args)
+        # ret = subprocess.run([py_exec, "-m", "pip"] + args).returncode
+
+        print(ret)
+        if ret > 0:
+            with open(config.PYTHON_LOG_FILE, "r") as f:
+                txt = f.read()
+            raise Exception(txt)
 
 
 def install_qml_dependencies():
