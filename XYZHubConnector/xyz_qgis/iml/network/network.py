@@ -333,7 +333,7 @@ class IMLNetworkManager(NetManager):
         return conn_info
 
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
-        self.platform_auth.apply_token(conn_info)
+        conn_info = self.platform_auth.apply_token(conn_info)
         if not conn_info.has_token():
             try:
                 self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
@@ -348,11 +348,14 @@ class IMLNetworkManager(NetManager):
     def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
         self._connected_conn_info = conn_info
 
-    def clear_auth(self, conn_info: SpaceConnectionInfo = None):
-        conn_info = conn_info or self.get_connected_conn_info()
-        self._connected_conn_info = None
-        if not conn_info:
-            return
+    def clear_auth(self, conn_info: SpaceConnectionInfo):
+        connected = self.get_connected_conn_info()
+        if (
+            connected
+            and connected.is_valid()
+            and connected.get_platform_auth() == conn_info.get_platform_auth()
+        ):
+            self.set_connected_conn_info(None)
         if conn_info.is_user_login():
             self.user_auth_module.reset_auth(conn_info)
 

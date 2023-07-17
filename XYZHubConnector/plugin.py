@@ -416,10 +416,12 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, net_handler.NetworkUnauthorized):
             # error during list/spaces request
-            self.show_err_msgbar(
-                e0,
-                "Credential expired or not authorized. Please try again or use a valid credential",
-            )
+            if not self.handle_net_err(e0):
+                self.show_err_msgbar(
+                    e0,
+                    "Credential expired or not authorized. "
+                    "Please try again or use a valid credential.",
+                )
             return
         elif isinstance(e0, net_handler.NetworkError):
             # error during list/spaces request
@@ -437,8 +439,7 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, AuthenticationError):
             if isinstance(e0.error, net_handler.NetworkError):
-                # error during layer loader
-                self.handle_net_err(e0.error)
+                # network error during layer loader, handled by loader, do not handle here
                 self.show_err_msgbar(
                     e0, "Please select valid HERE Platform credential and try again"
                 )
@@ -457,10 +458,10 @@ class XYZHubConnector(object):
         if reply_tag in ["count", "statistics"]:
             # too many errors, handled by doing nothing
             return True
-        # # do not reset auth
-        # if status in [401, 403]:
-        #     if conn_info.is_platform_server() and conn_info.is_user_login():
-        #         self.user_auth_iml.reset_auth(conn_info)
+        # clear auth
+        if status in [401, 403]:
+            if conn_info.is_platform_server() and conn_info.is_user_login():
+                self.network_iml.clear_auth(conn_info)
         return
 
     def show_net_err(self, err):
@@ -581,7 +582,6 @@ class XYZHubConnector(object):
             # platform iml, connected auth logic to be applied across iml requests
             if api_type == API_TYPES.PLATFORM:
                 con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
-                con.signal.error.connect(lambda e: self.network_iml.clear_auth())
 
             con = self.con_man.make_con("edit", api_type)
             con.signal.finished.connect(dialog.btn_use.clicked.emit)
@@ -1058,7 +1058,7 @@ class XYZHubConnector(object):
         con.signal.results.connect(make_fun_args(self.network_iml.set_connected_conn_info))
         con.signal.error.connect(self.cb_handle_error_msg)
         con.signal.error.connect(lambda e: dialog.cb_login_fail())
-        con.signal.error.connect(lambda e: self.network_iml.clear_auth())
+        con.signal.error.connect(self.cb_handle_error_msg)
 
         dialog.signal_login_view_closed.connect(con.start_args)
 
