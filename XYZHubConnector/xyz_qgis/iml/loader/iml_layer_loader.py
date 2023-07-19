@@ -57,9 +57,10 @@ class IMLAuthExtension:
             if status in (401, 403):
                 if self._retry_cnt < self.MAX_RETRY_COUNT:
                     self._retry_with_auth(reply)
+                    return
             else:
                 self._retry(reply)
-            return
+                return
         # otherwise emit error
         self._release()  # release active dispatch
         self.signal.error.emit(err)
