@@ -57,6 +57,8 @@ class PlatformAuthLoginView:
         if not self.view:
             return
         token_json = self.view.rootObject().getToken()
+        token2 = self.view.rootObject().getTokenAgain()
+        token_json = token_json or token2
         if not token_json:
             return
         PlatformSettings.save_token_json(
@@ -90,9 +92,15 @@ class PlatformAuthLoginView:
     def _handle_error(self):
         if not self.view:
             return
+        lst_err = []
         error = self.view.rootObject().getError()
         if error:
-            raise QmlError(error)
+            lst_err.append(error)
+        errors = [e.toString() for e in self.view.errors()]
+        if len(errors):
+            lst_err.append(errors)
+        if lst_err:
+            raise QmlError(lst_err)
 
     # static
 

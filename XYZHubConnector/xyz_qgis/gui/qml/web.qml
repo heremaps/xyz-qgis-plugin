@@ -107,6 +107,13 @@ Item {
                               handleOutputAndClose)
     }
 
+    function getTokenAgain() {
+        webView.runJavaScript('let url="' + loginUrl + '"; hasTokenSync(url);',
+                              handleOutput)
+        return tokenJson
+    }
+
+
     property WebEngineView webView: webViewComponent.createObject(windowParent,
                                                                   {
                                                                       "url": loginUrl,
