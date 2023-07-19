@@ -63,7 +63,7 @@ class ParallelWrapper:
             print_qgis("try_finish con emit")
             self._emit_finish()
 
-    def dispatch_parallel(self, delay=0.1, delay_offset=0.001, n_parallel=1):
+    def dispatch_parallel(self, delay=100, delay_offset=1, n_parallel=1):
         for i in range(n_parallel):
             d = delay * i + delay_offset
             QTimer.singleShot(d, self._dispatch)
@@ -95,7 +95,7 @@ class ParallelLoop(LoopController, ParallelWrapper):
     def _emit_finish(self):
         self.signal.finished.emit()
 
-    def dispatch_parallel(self, delay=0.1, delay_offset=0.001, n_parallel=1):
+    def dispatch_parallel(self, delay=100, delay_offset=1, n_parallel=1):
         for i in range(n_parallel):
             if not self.count_active() < self.n_parallel:
                 return
