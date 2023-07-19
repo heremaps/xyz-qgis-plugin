@@ -8,7 +8,7 @@
 #
 ###############################################################################
 
-from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError, HomeProjectNotFound
+from .iml_auth_loader import IMLProjectScopedAuthLoader, AuthenticationError
 from ...layer import queue
 from ...loader.layer_loader import (
     TileLayerLoader,
@@ -76,16 +76,14 @@ class IMLAuthExtension:
         self.con_auth.start(self.get_conn_info())
 
     def _after_retry_with_auth(self, conn_info=None):
-        self._save_conn_info_to_layer(conn_info)
         self._run_loop()
 
-    def _refresh_loader(self):
+    def _refresh_loader(self, network, loader: LoadLayerController):
         self._reset_retry_cnt()
+        conn_info = network.apply_connected_conn_info(loader.get_conn_info())
 
-    def _save_conn_info_to_layer(self, conn_info):
-        layer = self.layer
-        if layer:
-            layer.update_conn_info(conn_info)
+    def _save_conn_info_to_layer(self, loader: LoadLayerController):
+        loader.layer.update_conn_info(loader.get_conn_info())
 
 
 class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
@@ -95,14 +93,13 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
         self.params_queue = queue.SimpleRetryQueue(key="tile_id")
         self.network = network
 
-    def _refresh_loader(self):
-        super()._refresh_loader()
-        conn_info = self.network.apply_connected_conn_info(self.get_conn_info())
-        self._save_conn_info_to_layer(conn_info)
-
     def _start(self, **kw):
-        self._refresh_loader()
+        self._refresh_loader(self.network, self)
         super()._start(**kw)
+
+    def post_render(self, *a, **kw):
+        super().post_render(*a, **kw)
+        self._save_conn_info_to_layer(self)
 
 
 class IMLLiveTileLayerLoader(IMLTileLayerLoader, LiveTileLayerLoader):
@@ -117,14 +114,13 @@ class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
         IMLAuthExtension.__init__(self, network, *a, **kw)
         self.network = network
 
-    def _refresh_loader(self):
-        super()._refresh_loader()
-        conn_info = self.network.apply_connected_conn_info(self.get_conn_info())
-        self._save_conn_info_to_layer(conn_info)
-
     def _start(self, **kw):
-        self._refresh_loader()
+        self._refresh_loader(self.network, self)
         super()._start(**kw)
+
+    def post_render(self, *a, **kw):
+        super().post_render(*a, **kw)
+        self._save_conn_info_to_layer(self)
 
     def _retry_with_auth(self, reply):
         # retried params
