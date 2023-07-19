@@ -330,6 +330,20 @@ class PlatformSettings:
         )
 
     @classmethod
+    def save_default_token_from_conn_info(cls, conn_info: SpaceConnectionInfo):
+        token_json = cls.load_token_json(
+            conn_info.get_server(),
+            conn_info.get_user_email(),
+            conn_info.get_realm(),
+        )
+        cls.save_token_json(
+            token_json,
+            conn_info.get_server(),
+            conn_info.get_default_user_email(),
+            conn_info.get_realm(),
+        )
+
+    @classmethod
     def _connected_conn_info_setting_key(cls, server: str):
         return "{settings_prefix}/{api_type}/{key}/{server}".format(
             settings_prefix=cls.SETTINGS_PREFIX,

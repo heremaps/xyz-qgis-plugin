@@ -32,6 +32,7 @@ class SpaceConnectionInfo(object):
     PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT, PLATFORM_KOREA]
     PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
     PLATFORM_KEYS = ["server"] + PLATFORM_AUTH_KEYS
+    PLATFORM_DEFAULT_USER_LOGIN = "email"
 
     def __init__(self, conn_info=None):
         self._is_protected = False
@@ -96,10 +97,13 @@ class SpaceConnectionInfo(object):
     def get_id(self):
         return self.get_("id") or self.get_("space_id")
 
+    def get_default_user_email(self):
+        return self.PLATFORM_DEFAULT_USER_LOGIN
+
     def to_project_dict(self):
         d = self.to_dict()
         if self.get_("user_login"):
-            d["user_login"] = "email"
+            d["user_login"] = self.get_default_user_email()
             d["token"] = ""
         for ex in self.EXCLUDE_PROJECT_KEYS:
             d.pop(ex, "")

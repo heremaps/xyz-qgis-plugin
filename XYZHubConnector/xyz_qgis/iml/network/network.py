@@ -21,6 +21,7 @@ from ...network.net_utils import (
     make_conn_request,
     make_payload,
     make_bytes_payload,
+    PlatformSettings,
 )
 from ...common.signal import make_print_qgis
 
@@ -347,6 +348,7 @@ class IMLNetworkManager(NetManager):
 
     def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
         self._connected_conn_info[conn_info.get_server()] = conn_info
+        PlatformSettings.save_default_token_from_conn_info(conn_info)
 
     def clear_auth(self, conn_info: SpaceConnectionInfo):
         connected = self.get_connected_conn_info(conn_info.get_server())
