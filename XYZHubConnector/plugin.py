@@ -1045,11 +1045,9 @@ class XYZHubConnector(object):
 
         dialog.config(
             self.token_model,
-            self.network_iml.get_connected_conn_info()
-            or SpaceConnectionInfo.from_dict(dict(server="PLATFORM_PRD")),
+            self.server_model,
+            self.network_iml.get_all_connected_conn_info(),
         )
-
-        self.network_iml.set_connected_conn_info(dialog.get_connected_conn_info())
 
         dialog.signal_open_login_view.connect(make_fun_args(self.network_iml.open_login_view))
 

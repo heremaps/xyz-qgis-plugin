@@ -65,7 +65,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="label_auth_status">
      <property name="styleSheet">
       <string notr="true">QLabel { color : red; font-weight: 600;}</string>
@@ -75,16 +75,29 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QLabel" name="label_auth_name">
-     <property name="text">
-      <string/>
+   <item row="0" column="0" colspan="2">
+    <widget class="QComboBox" name="comboBox_server_url">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="visible">
+      <bool>true</bool>
+     </property>
+     <property name="toolTip">
+      <string>HERE Server</string>
+     </property>
+     <property name="editable">
+      <bool>false</bool>
      </property>
     </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>comboBox_server_url</tabstop>
   <tabstop>comboBox_token</tabstop>
   <tabstop>btn_use</tabstop>
  </tabstops>

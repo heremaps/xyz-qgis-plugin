@@ -8,19 +8,33 @@
 #
 ###############################################################################
 
-from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtCore import pyqtSignal, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtGui import QStandardItem
 
 from . import get_ui_class
-from .ux import TokenUX
+from .ux.token_server_ux import TokenWithServerUX
 from ..common.signal import make_qt_args
 from ..models import SpaceConnectionInfo
-from ..models.token_model import TokenModel
+from ..models.token_model import TokenModel, ServerModel
 
 PlatformAuthUI = get_ui_class("platform_auth_dialog.ui")
 
 
-class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
+class FilterServerModel(QSortFilterProxyModel):
+    def setSourceModel(self, server_model):
+        super().setSourceModel(server_model)
+        self.setFilterKeyColumn(server_model.get_info_keys().index(server_model.TOKEN_KEY))
+
+        self.INFO_KEYS = server_model.INFO_KEYS
+        self.submit_cache = server_model.submit_cache
+        self.refresh_model = server_model.refresh_model
+
+    def item(self, row, col):
+        return QStandardItem(self.data(self.index(row, col)))
+
+
+class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenWithServerUX):
     title = "HERE Platform Credentials"
     message = ""
 
@@ -37,11 +51,25 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
             self.label_msg.setVisible(True)
         self._connected_conn_info = None
 
-    def config(self, token_model: TokenModel, conn_info: SpaceConnectionInfo):
-        TokenUX.config(self, token_model)
-        token_model.set_server(conn_info.get_server())
+    def config(
+        self,
+        token_model: TokenModel,
+        server_model: ServerModel,
+        map_conn_info: dict[str, SpaceConnectionInfo],
+    ):
+        self._set_connected_conn_info(map_conn_info)
+
+        proxy_server_model = FilterServerModel()
+        proxy_server_model.setSourceModel(server_model)
+        proxy_server_model.setFilterRegExp("^PLATFORM_.+")
+        TokenWithServerUX.config(self, token_model, proxy_server_model)
+
         self.btn_use.clicked.connect(self._do_auth)
-        self._set_connected_conn_info(conn_info)
+        self.comboBox_server_url.currentIndexChanged[int].connect(self._cb_server_changed)
+        self.comboBox_token.currentIndexChanged[int].connect(self._cb_token_changed)
+
+        self.comboBox_server_url.setCurrentIndex(-1)
+        self.comboBox_server_url.setCurrentIndex(0)
 
     # methods
 
@@ -59,7 +87,7 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
             self.signal_login_view_closed.emit(make_qt_args(conn_info))
 
     def get_connected_conn_info(self):
-        return self._connected_conn_info
+        return self._connected_conn_info.get(self.get_input_server())
 
     # callback
 
@@ -78,7 +106,6 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
         self.ui_valid_token()
         # ui status
         self._change_status_success()
-        self._change_auth()
 
     def cb_login_fail(self):
         # ui token
@@ -86,45 +113,54 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenUX):
         self.ui_valid_token()
         # ui status
         self._change_status_fail()
-        self._clear_auth()
 
     # ui
 
-    def _set_connected_conn_info(self, conn_info: SpaceConnectionInfo):
-        if conn_info.is_valid():
-            self._connected_conn_info = conn_info
+    def _set_connected_conn_info(
+        self,
+        map_conn_info: dict[str, SpaceConnectionInfo],
+    ):
+        self._connected_conn_info = map_conn_info
+
+    def _cb_server_changed(self):
+        connected = self.get_connected_conn_info()
+        if not (connected and connected.is_valid()):
+            return
+
+        # if connected and connected.is_valid():
+        #     self._connected_conn_info = connected
 
         proxy_model = self.comboBox_token.model()
         token_model = proxy_model.sourceModel()
         for row in range(proxy_model.rowCount()):
-            if row == 0 or (
-                conn_info.get_("here_credentials", "") == proxy_model.get_here_credentials(row)
-                and conn_info.get_("user_login", "") == proxy_model.get_user_login(row)
-                and conn_info.get_("realm", "") == proxy_model.get_realm(row)
-            ):
+            if self._ui_connected_conn_info(connected, row):
                 self.comboBox_token.setCurrentIndex(row)
                 # token_model.set_used_token_idx(row) # show success button
+                break
 
-                self._change_auth()
-                if conn_info.has_valid_here_credentials() or conn_info.has_token():
-                    self._change_status_success()
-                else:
-                    self._change_status_fail()
+                # if not connected.is_valid():
+                #     self._connected_conn_info = self._get_input_conn_info_without_id()
 
-                if not conn_info.is_valid():
-                    self._connected_conn_info = self._get_input_conn_info_without_id()
+    def _cb_token_changed(self, row):
+        connected = self.get_connected_conn_info()
+        return self._ui_connected_conn_info(connected, row)
 
-    def _get_auth_name(self):
-
+    def _ui_connected_conn_info(self, connected: SpaceConnectionInfo, row):
         proxy_model = self.comboBox_token.model()
-        return proxy_model.get_name(self.comboBox_token.currentIndex())
-
-    def _change_auth(self):
-        name = self._get_auth_name()
-        self.label_auth_name.setText(name)
-
-    def _clear_auth(self):
-        self.label_auth_name.setText("")
+        if (
+            connected
+            and connected.get_("here_credentials", "") == proxy_model.get_here_credentials(row)
+            and connected.get_("user_login", "") == proxy_model.get_user_login(row)
+            and connected.get_("realm", "") == proxy_model.get_realm(row)
+        ):
+            if connected.has_valid_here_credentials() or connected.has_token():
+                self._change_status_success()
+            else:
+                self._change_status_fail()
+            return True
+        else:
+            self._change_status_fail()
+        return False
 
     def _change_status_success(self):
         self._change_status(text="Connected", color="green")

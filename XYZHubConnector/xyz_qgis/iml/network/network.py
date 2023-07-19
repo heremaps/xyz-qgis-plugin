@@ -171,7 +171,7 @@ class IMLNetworkManager(NetManager):
         super().__init__(parent)
         self.user_auth_module = PlatformUserAuthentication(self.network)
         self.platform_auth = PlatformAuthLoginView()
-        self._connected_conn_info: SpaceConnectionInfo = None
+        self._connected_conn_info: dict[str, SpaceConnectionInfo] = dict()
 
     def _get_api_url(self, server: str, api_group):
         api_env = server.replace("PLATFORM_", "").upper()
@@ -322,7 +322,7 @@ class IMLNetworkManager(NetManager):
 
     def apply_connected_conn_info(self, conn_info: SpaceConnectionInfo):
         if not conn_info.is_protected():
-            connected = self.get_connected_conn_info()
+            connected = self.get_connected_conn_info(conn_info.get_server())
             if (
                 connected
                 and connected.is_valid()
@@ -346,20 +346,24 @@ class IMLNetworkManager(NetManager):
                 callback()
 
     def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
-        self._connected_conn_info = conn_info
+        self._connected_conn_info[conn_info.get_server()] = conn_info
 
     def clear_auth(self, conn_info: SpaceConnectionInfo):
-        connected = self.get_connected_conn_info()
+        connected = self.get_connected_conn_info(conn_info.get_server())
+
         if (
             connected
             and connected.is_valid()
             and connected.get_platform_auth() == conn_info.get_platform_auth()
         ):
-            self.set_connected_conn_info(None)
+            self._connected_conn_info.pop(conn_info.get_server(), None)
         if conn_info.is_user_login():
             self.user_auth_module.reset_auth(conn_info)
 
-    def get_connected_conn_info(self):
+    def get_connected_conn_info(self, server):
+        return self._connected_conn_info.get(server)
+
+    def get_all_connected_conn_info(self):
         return self._connected_conn_info
 
 
