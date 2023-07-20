@@ -173,6 +173,7 @@ class IMLNetworkManager(NetManager):
         self.user_auth_module = PlatformUserAuthentication(self.network)
         self.platform_auth = PlatformAuthLoginView()
         self._connected_conn_info: dict[str, SpaceConnectionInfo] = dict()
+        self.load_all_connected_conn_info_from_settings()
 
     def _get_api_url(self, server: str, api_group):
         api_env = server.replace("PLATFORM_", "").upper()
@@ -348,17 +349,14 @@ class IMLNetworkManager(NetManager):
 
     def set_connected_conn_info(self, conn_info: SpaceConnectionInfo, *a):
         self._connected_conn_info[conn_info.get_server()] = conn_info
-        PlatformSettings.save_default_token_from_conn_info(conn_info)
+        # PlatformSettings.save_default_token_from_conn_info(conn_info)
+        PlatformSettings.save_connected_conn_info(conn_info)
 
     def clear_auth(self, conn_info: SpaceConnectionInfo):
         connected = self.get_connected_conn_info(conn_info.get_server())
-
-        if (
-            connected
-            and connected.is_valid()
-            and connected.get_platform_auth() == conn_info.get_platform_auth()
-        ):
+        if connected and connected.is_valid() and connected.get_server() == conn_info.get_server():
             self._connected_conn_info.pop(conn_info.get_server(), None)
+            PlatformSettings.remove_connected_conn_info(conn_info.get_server())
         if conn_info.is_user_login():
             self.user_auth_module.reset_auth(conn_info)
 
@@ -367,6 +365,9 @@ class IMLNetworkManager(NetManager):
 
     def get_all_connected_conn_info(self):
         return self._connected_conn_info
+
+    def load_all_connected_conn_info_from_settings(self):
+        self._connected_conn_info = PlatformSettings.load_all_connected_conn_info()
 
 
 def generate_oauth_header(url, conn_info):

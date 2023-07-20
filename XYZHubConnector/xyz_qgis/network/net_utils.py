@@ -376,3 +376,23 @@ class PlatformSettings:
         s.beginGroup(key)
         s.remove("")
         s.endGroup()
+
+    @classmethod
+    def load_all_connected_conn_info(cls):
+        key = cls._connected_conn_info_setting_key("")
+        s = QSettings()
+        s.beginGroup(key)
+        servers = s.allKeys()
+        results = {
+            k: v
+            for k, v in (
+                [
+                    server,
+                    cls.load_connected_conn_info(server),
+                ]
+                for server in servers
+            )
+            if v
+        }
+        s.endGroup()
+        return results
