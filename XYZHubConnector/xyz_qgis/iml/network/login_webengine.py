@@ -84,8 +84,8 @@ class PlatformAuthLoginView:
         return self.view
 
     def cb_login_view_closed(self, conn_info: SpaceConnectionInfo, callback, *a):
-        self._handle_error()
         self.save_access_token(conn_info)
+        self._handle_error()
         if callback:
             callback()
 

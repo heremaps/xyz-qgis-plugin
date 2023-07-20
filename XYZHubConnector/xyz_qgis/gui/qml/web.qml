@@ -64,6 +64,10 @@ Item {
         }
     }
 
+    function getLogging() {
+        return loggingText
+    }
+
     function getToken() {
         return tokenJson
     }
@@ -74,9 +78,9 @@ Item {
 
     function handleOutput(output) {
         function saveToken(response) {
-            logText(response)
-            logText(JSON.parse(response).accessToken)
             tokenJson = response
+            logText(response)
+            // logText(JSON.parse(response).accessToken)
         }
         function saveError(err) {
             logText(err)
@@ -103,12 +107,12 @@ Item {
         }
 
         // close window after get token
-        webView.runJavaScript('let url="' + loginUrl + '"; hasTokenSync(url);',
+        webView.runJavaScript('url="' + loginUrl + '"; hasTokenSync(url);',
                               handleOutputAndClose)
     }
 
     function getTokenAgain() {
-        webView.runJavaScript('let url="' + loginUrl + '"; hasTokenSync(url);',
+        webView.runJavaScript('url="' + loginUrl + '"; hasTokenSync(url);',
                               handleOutput)
         return tokenJson
     }
@@ -158,14 +162,14 @@ Item {
                     + " errorString: " + loadRequest.errorString + " status: "
                     + loadRequest.status + "<br/> >> " + loadRequest.url)
 
-            if (loadRequest.status == WebEngineView.LoadStartedStatus) {
-                return
-            }
+            //if (loadRequest.status == WebEngineView.LoadStartedStatus) {
+            //    return
+            //}
 
             let url1 = loadRequest.url.toString().replace(/\/$/, "")
             let url2 = loginUrl.replace(/\/$/, "")
 
-            if (url1 === url2) {
+            if (url1 == url2 || url1 == url2 + "/portal") {
                 runCheckToken()
             }
         }
