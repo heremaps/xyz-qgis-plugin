@@ -9,7 +9,7 @@
 ###############################################################################
 
 
-from ...models import API_TYPES
+from ...models import API_TYPES, SpaceConnectionInfo
 from ...models.token_model import TokenModel, ServerTokenConfig, ComboBoxProxyModel
 
 
@@ -32,6 +32,31 @@ class IMLTokenModel(TokenModel):
 
     def _validate_data(self, data):
         return data and (data.get(self.TOKEN_KEY) or data.get("user_login"))
+
+    # default user login
+
+    def set_server(self, *a, **kw):
+        super().set_server(*a, **kw)
+        cfg = self.to_dict()
+        server = self.get_server()
+        self._init_default_user_login(cfg, server)
+        self.parser.update_config({server: cfg.get(server)})
+        self.parser.write_to_file()
+        self._refresh_model()
+
+    def _init_default_user_login(self, cfg: dict, server_url):
+        # server_url = server_info.get("token", "")
+        if not server_url.startswith("PLATFORM"):
+            return
+        lst_data = cfg.setdefault(server_url, list())
+        existing_user_logins = [data for data in lst_data if data.get("user_login")]
+        if not existing_user_logins:
+            server_name = SpaceConnectionInfo.platform_server_name(server_url)
+            default_user_login = dict(
+                name="{server} User Login".format(server=server_name),
+                user_login="user_login",
+            )
+            lst_data.insert(0, default_user_login)
 
 
 class IMLServerTokenConfig(ServerTokenConfig):

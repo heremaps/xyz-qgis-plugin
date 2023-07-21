@@ -33,6 +33,11 @@ class SpaceConnectionInfo(object):
     PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
     PLATFORM_KEYS = ["server"] + PLATFORM_AUTH_KEYS
     PLATFORM_DEFAULT_USER_LOGIN = "email"
+    PLATFORM_SERVER_NAMES = {
+        PLATFORM_PRD: "HERE Platform",
+        PLATFORM_SIT: "HERE Platform SIT",
+        PLATFORM_KOREA: "HERE Platform Korea",
+    }
 
     def __init__(self, conn_info=None):
         self._is_protected = False
@@ -111,6 +116,16 @@ class SpaceConnectionInfo(object):
 
     def to_platform_dict(self):
         return {k: self.get_(k) for k in self.PLATFORM_KEYS}
+
+    @classmethod
+    def platform_server_name(cls, server):
+        return cls.PLATFORM_SERVER_NAMES.get(
+            server,
+            "HERE Platform {suffix}".format(suffix=server.replace("PLATFORM_", "").capitalize()),
+        )
+
+    def get_platform_server_name(self):
+        self.platform_server_name(self.get_server())
 
     def is_livemap(self):
         packages = self.get_("packages", list())
