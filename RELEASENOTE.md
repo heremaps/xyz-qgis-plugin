@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 1.9.8 (2023-07-24)
+
+🐛 FIXES 🐛
+* Supports Here Platform login for MacOS
+* Fixes issues with login and expired token
+* Do not store Here Platform email and token into project files
+* Fixes issue that some features are not displayed
+* Improves UX and stability
+
 ## Version 1.9.7 (2023-05-12)
 
 🐛 FIXES 🐛

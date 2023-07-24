@@ -11,7 +11,7 @@
 name=HERE Maps for QGIS
 qgisMinimumVersion=3.0
 description=Connect QGIS to Interactive Map Layers in the HERE Platform (https://platform.here.com) and your personal spaces in HERE Data Hub.
-version=1.9.7
+version=1.9.8
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,16 +42,13 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.7 (2023-05-12)
+changelog=Version 1.9.8 (2023-07-24)
 
     🐛 FIXES 🐛
-    * Fixed credential issues with Here Platform
-    * Used QtWebEngine and QML window instead of QtWebKit
-    * Applied one Here Platform credential to all layers, enabling easy switch between User and App credentials
-
-    ⚡️ IMPROVEMENTS ⚡️
-    * Rename plugin, previously known as XYZ Hub Connector
-    * Display formatted JSON attribute
-    * Rename group/layer name in Layers panel, including Catalog and Layer name instead of layer id
+    * Supports Here Platform login for MacOS
+    * Fixes issues with login and expired token
+    * Do not store Here Platform email and token into project files
+    * Fixes issue that some features are not displayed
+    * Improves UX and stability
 
     * .. more details on Github repos
