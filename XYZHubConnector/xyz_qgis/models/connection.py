@@ -29,7 +29,8 @@ class SpaceConnectionInfo(object):
     PLATFORM_SIT = "PLATFORM_SIT"
     PLATFORM_PRD = "PLATFORM_PRD"
     PLATFORM_KOREA = "PLATFORM_KOREA"
-    PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT, PLATFORM_KOREA]
+    PLATFORM_CHINA = "PLATFORM_CHINA"
+    PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT, PLATFORM_KOREA, PLATFORM_CHINA]
     PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
     PLATFORM_KEYS = ["server"] + PLATFORM_AUTH_KEYS
     PLATFORM_DEFAULT_USER_LOGIN = "email"
@@ -37,6 +38,7 @@ class SpaceConnectionInfo(object):
         PLATFORM_PRD: "HERE Platform",
         PLATFORM_SIT: "HERE Platform SIT",
         PLATFORM_KOREA: "HERE Platform Korea",
+        PLATFORM_CHINA: "HERE Platform China",
     }
 
     def __init__(self, conn_info=None):

@@ -14,6 +14,8 @@ import json
 
 from .login_webengine import PlatformUserAuthentication, PlatformAuthLoginView
 from .net_handler import IMLNetworkHandler
+from .platform_server import PlatformServer
+from ...common.crypter import decrypt_text
 from ...models import SpaceConnectionInfo
 from ...network.network import NetManager
 from ...network.net_utils import (
@@ -31,42 +33,37 @@ print_qgis = make_print_qgis("iml.network")
 class IMLNetworkManager(NetManager):
     TIMEOUT_COUNT = 10000
 
-    API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
-    API_SIT_URL = "https://interactive-dev-eu-west-1.api-gateway.sit.ls.hereapi.com/interactive/v1"
-    API_KOREA_URL = "https://ap-northeast-2.interactive.data.api.platform.here.com/interactive/v1"
-    API_CONFIG_PRD_URL = "https://config.data.api.platform.here.com/config/v1"
-    API_CONFIG_SIT_URL = "https://config.data.api.platform.sit.here.com/config/v1"
-    API_OAUTH_PRD_URL = "https://account.api.here.com/oauth2/token"
-    API_OAUTH_SIT_URL = "https://stg.account.api.here.com/oauth2/token"
-    API_AUTH_PRD_URL = "https://account.api.here.com/authorization/v1.1"
-    API_AUTH_SIT_URL = "https://stg.account.api.here.com/authorization/v1.1"
-
     API_GROUP_INTERACTIVE = "interactive"
     API_GROUP_CONFIG = "config"
-    API_GROUP_OAUTH = "oauth"
     API_GROUP_AUTH = "auth"
+    API_GROUP_OAUTH = "oauth"
 
     API_SIT = "SIT"
     API_PRD = "PRD"
     API_KOREA = "KOREA"
+    API_CHINA = "CHINA"
 
     API_URL = {
         API_GROUP_INTERACTIVE: {
-            API_KOREA: API_KOREA_URL,
-            API_PRD: API_PRD_URL,
-            API_SIT: API_SIT_URL,
+            API_PRD: PlatformServer.API_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_SIT_URL),
+            API_KOREA: decrypt_text(PlatformServer.API_KOREA_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_CHINA_URL),
         },
         API_GROUP_CONFIG: {
-            API_PRD: API_CONFIG_PRD_URL,
-            API_SIT: API_CONFIG_SIT_URL,
-        },
-        API_GROUP_OAUTH: {
-            API_PRD: API_OAUTH_PRD_URL,
-            API_SIT: API_OAUTH_SIT_URL,
+            API_PRD: PlatformServer.API_CONFIG_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_CONFIG_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_CONFIG_CHINA_URL),
         },
         API_GROUP_AUTH: {
-            API_PRD: API_AUTH_PRD_URL,
-            API_SIT: API_AUTH_SIT_URL,
+            API_PRD: PlatformServer.API_AUTH_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_AUTH_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_AUTH_CHINA_URL),
+        },
+        API_GROUP_OAUTH: {
+            API_PRD: PlatformServer.API_OAUTH_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_OAUTH_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_OAUTH_CHINA_URL),
         },
     }
 

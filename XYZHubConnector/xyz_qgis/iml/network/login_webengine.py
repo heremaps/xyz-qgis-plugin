@@ -11,7 +11,6 @@
 import json
 import os
 
-
 try:
     from PyQt5.Qt import PYQT_VERSION_STR
 
@@ -28,6 +27,9 @@ from qgis.PyQt.QtNetwork import (
     QNetworkAccessManager,
 )
 
+
+from .platform_server import PlatformServer, PlatformEndpoint
+from ...common.crypter import decrypt_text
 from ...common.signal import BasicSignal
 from ...common.utils import get_qml_full_path, add_qml_import_path
 from ...models import SpaceConnectionInfo
@@ -72,8 +74,9 @@ class PlatformAuthLoginView:
     def open_login_view(
         self, conn_info: SpaceConnectionInfo, parent=None, cb_login_view_closed=None
     ):
-        # TODO: show qml dialog
+        login_url = PlatformLoginServer.get_login_url(conn_info.get_server())
         self.view = self.create_qml_view(
+            login_url=login_url,
             title=self._dialog_title(conn_info),
             cb_login_view_closed=lambda *a: self.cb_login_view_closed(
                 conn_info, cb_login_view_closed, *a
@@ -124,7 +127,7 @@ class PlatformAuthLoginView:
         return conn_info
 
     @classmethod
-    def create_qml_view(cls, title="", cb_login_view_closed=None):
+    def create_qml_view(cls, login_url: str, title="", cb_login_view_closed=None):
 
         view = QQuickView()
         engine = view.engine()
@@ -135,10 +138,13 @@ class PlatformAuthLoginView:
 
         # QTWEBENGINE_REMOTE_DEBUGGING: port
         debugMode = os.environ.get("HERE_QML_DEBUG", "")
+        view_props = {"loginUrl": login_url}
         if debugMode:
-            view.setInitialProperties({"debugMode": debugMode})
+            title = title + " debug"
+            view.setInitialProperties(dict(view_props, debugMode=debugMode))
             view.setSource(QUrl.fromLocalFile(get_qml_full_path("web_debug.qml")))
         else:
+            view.setInitialProperties(dict(view_props))
             view.setSource(QUrl.fromLocalFile(get_qml_full_path("web.qml")))
 
         errors = [e.toString() for e in view.errors()]
@@ -173,13 +179,23 @@ class PlatformAuthLoginView:
         return conn_info
 
 
-class PlatformUserAuthentication:
-    PLATFORM_URL_SIT = "https://platform.in.here.com"
-    PLATFORM_URL_PRD = "https://platform.here.com"
-    ENDPOINT_ACCESS_TOKEN = "/api/portal/accessToken"
-    ENDPOINT_TOKEN_EXCHANGE = "/api/portal/authTokenExchange"
-    ENDPOINT_SCOPED_TOKEN = "/api/portal/scopedTokenExchange"
+class PlatformLoginServer:
+    PLATFORM_URL_PRD = PlatformServer.PLATFORM_URL_PRD
+    PLATFORM_SERVERS = {
+        SpaceConnectionInfo.PLATFORM_PRD: PLATFORM_URL_PRD,
+        SpaceConnectionInfo.PLATFORM_SIT: decrypt_text(PlatformServer.PLATFORM_URL_SIT),
+        SpaceConnectionInfo.PLATFORM_KOREA: PLATFORM_URL_PRD,
+        SpaceConnectionInfo.PLATFORM_CHINA: decrypt_text(PlatformServer.PLATFORM_URL_CHINA),
+    }
 
+    ENDPOINT_SCOPED_TOKEN = decrypt_text(PlatformEndpoint.ENDPOINT_SCOPED_TOKEN)
+
+    @classmethod
+    def get_login_url(cls, server):
+        return cls.PLATFORM_SERVERS.get(server, cls.PLATFORM_URL_PRD)
+
+
+class PlatformUserAuthentication:
     def __init__(self, network: QNetworkAccessManager):
         self.signal = BasicSignal()
         self.network = network
@@ -190,11 +206,9 @@ class PlatformUserAuthentication:
         reply_tag = "oauth_project"
 
         project_hrn = conn_info.get_("project_hrn")
-        platform_server = (
-            self.PLATFORM_URL_SIT if conn_info.is_platform_sit() else self.PLATFORM_URL_PRD
-        )
+        platform_server = PlatformLoginServer.get_login_url(conn_info.get_server())
         url = "{platform_server}{endpoint}".format(
-            platform_server=platform_server, endpoint=self.ENDPOINT_SCOPED_TOKEN
+            platform_server=platform_server, endpoint=PlatformLoginServer.ENDPOINT_SCOPED_TOKEN
         )
         payload = {"scope": project_hrn}
         kw_prop = dict(reply_tag=reply_tag, req_payload=payload)
@@ -207,7 +221,6 @@ class PlatformUserAuthentication:
         return reply
 
     def auth(self, conn_info: SpaceConnectionInfo):
-
         reply_tag = "oauth"
         kw_prop = dict(reply_tag=reply_tag)
 

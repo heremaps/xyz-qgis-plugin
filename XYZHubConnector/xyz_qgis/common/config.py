@@ -10,8 +10,6 @@
 
 import os
 
-from qgis.PyQt.QtCore import QSettings
-
 from ... import __version__ as version
 
 
@@ -39,6 +37,8 @@ class Config:
         return lib_path
 
     def get_plugin_setting(self, key):
+        from qgis.PyQt.QtCore import QSettings
+
         key_prefix = "xyz_qgis/settings"
         key_ = f"{key_prefix}/{key}"
         return QSettings().value(key_)
