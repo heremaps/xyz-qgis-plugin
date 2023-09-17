@@ -75,7 +75,7 @@ from .xyz_qgis.iml.loader import (
     IMLEditSyncController,
 )
 from .xyz_qgis.iml.loader.iml_auth_loader import HomeProjectNotFound, AuthenticationError
-from .xyz_qgis.iml.network import IMLNetworkManager
+from .xyz_qgis.iml.network.network import IMLNetworkManager
 from .xyz_qgis.iml.models import IMLServerTokenConfig
 
 from .xyz_qgis import basemap

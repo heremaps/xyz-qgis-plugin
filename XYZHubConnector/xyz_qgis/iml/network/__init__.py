@@ -7,5 +7,3 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
-
-from .network import IMLNetworkManager, check_oauth2_token

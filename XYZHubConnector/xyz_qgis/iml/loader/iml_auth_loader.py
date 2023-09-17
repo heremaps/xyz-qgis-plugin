@@ -21,7 +21,7 @@ from ...controller import (
 )
 
 from ...network.net_handler import NetworkError
-from ...iml.network import IMLNetworkManager
+from ...iml.network.network import IMLNetworkManager
 
 from ...common.signal import make_print_qgis
 
