@@ -40,6 +40,7 @@ ALL_SPECIAL_KEYS = set(QGS_SPECIAL_KEYS).union(XYZ_SPECIAL_KEYS)
 PAYLOAD_LIMIT = int(1e7)  # Amazon API limit: 10485760
 URL_LIMIT = 2000  # max url length: 2000
 URL_BASE_LEN = 60  # https://xyz.api.here.com/hub/spaces/12345678/features/
+DEFAULT_SIMILARITY_THRESHOLD = 0  # single: 0, balnced: 80
 
 
 def make_lst_removed_ids(removed_ids):
@@ -314,9 +315,9 @@ def filter_props_names(fields_names):
     return [s for s in fields_names if not is_special_key(s)]
 
 
-def fields_similarity(ref_names, orig_names, names):
+def fields_similarity(ref_names, orig_names, names) -> int:
     """
-    compute fields similarity [0..1].
+    compute fields similarity [0..100].
 
     High score means 2 given fields are similar and should be merged
     """
@@ -327,8 +328,8 @@ def fields_similarity(ref_names, orig_names, names):
     x = len(same_names)
     # if n1 == 0 or n2 == 0: return 1 # handle empty, variant 1
     if n1 == 0 and n2 == 0:
-        return 1  # handle empty, variant 2
-    return max((1.0 * x / n) if n > 0 else 0 for n in [n1, n2])
+        return 100  # handle empty, variant 2
+    return int(max((100 * x / n) if n > 0 else 0 for n in [n1, n2]))
 
 
 def new_fields_gpkg():
@@ -462,7 +463,7 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields):
     return ft
 
 
-def prepare_fields(feat_json, lst_fields, threshold=0.8):
+def prepare_fields(feat_json, lst_fields, threshold=DEFAULT_SIMILARITY_THRESHOLD):
     """
     Decide to merge fields or create new fields based on fields similarity score [0..1].
     Score lower than threshold will result in creating new fields instead of merging fields
@@ -483,21 +484,20 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
             props_names,
         )
         if fields.size() > 1
-        else -1
+        else -1  # mark empty fields
         for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
     idx_min, score_min = min(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
 
-    if score < threshold or not idx < len(lst_fields):  # new fields
-        if score_min >= 0:  # new fields
-            idx = len(lst_fields)
-            fields = new_fields_gpkg()
-            lst_fields.append(fields)
-        else:  # select empty fields
-            idx = idx_min
-            fields = lst_fields[idx]
-    else:
+    if len(lst_fields) == 0 or (score < threshold and score_min > -1):  # new fields
+        idx = len(lst_fields)
+        fields = new_fields_gpkg()
+        lst_fields.append(fields)
+    elif score_min == -1:  # select empty fields
+        idx = idx_min
+        fields = lst_fields[idx]
+    else:  # select fields with highest score
         fields = lst_fields[idx]
     # print("len prop", len(props_names), idx, "score", lst_score, "lst_fields", len(lst_fields))
     # print("len fields", [f.size() for f in lst_fields])
@@ -505,7 +505,9 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
     return fields, idx
 
 
-def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
+def xyz_json_to_feature_map(
+    obj, map_fields=None, similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD
+):
     """
     xyz json to feature, organize in to map of geometry,
     then to list of list of features.
@@ -525,10 +527,7 @@ def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
         # if g is not None and not g.startswith("Multi"): g = "Multi" + g
 
         lst_fields = map_fields.setdefault(g, list())
-        if similarity_threshold is None:
-            fields, idx = prepare_fields(feat_json, lst_fields)
-        else:
-            fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold / 100)
+        fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold)
 
         ft = xyz_json_to_feature(feat_json, fields)
 
