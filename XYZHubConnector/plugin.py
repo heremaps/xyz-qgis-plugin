@@ -459,7 +459,7 @@ class XYZHubConnector(object):
             # too many errors, handled by doing nothing
             return True
         # clear auth
-        if status in [401, 403]:
+        if status in [401]:
             if conn_info.is_platform_server() and conn_info.is_user_login():
                 self.network_iml.clear_auth(conn_info)
         return
