@@ -78,7 +78,13 @@ class IMLNetworkHandler(NetworkHandler):
             items = obj["results"]["items"]
             # aggregate layers from different catalog
             lst_layer_meta = [
-                dict(catalog=it.get("id", ""), catalog_hrn=it.get("hrn", ""), **layer)
+                dict(
+                    catalog=it.get("id", ""),
+                    catalog_hrn=it.get("hrn", ""),
+                    catalog_name=it.get("name", ""),
+                    owner=it.get("owner", ""),
+                    **layer
+                )
                 for it in items
                 for layer in it.get("layers", tuple())
                 if not layerType

@@ -130,10 +130,13 @@ class SpaceConnectionInfo(object):
         self.platform_server_name(self.get_server())
 
     def is_livemap(self):
-        packages = self.get_("packages", list())
-        check_pkg = any(p for p in packages if self.LIVEMAP in p)
-        check_cid = self.get_("cid") == self.LIVEMAP_CID
-        return check_pkg or check_cid
+        if self.is_platform_server():
+            return True
+        else:
+            packages = self.get_("packages", list())
+            check_pkg = any(p for p in packages if self.LIVEMAP in p)
+            check_cid = self.get_("cid") == self.LIVEMAP_CID
+            return check_pkg or check_cid
 
     def is_platform_server(self):
         return (self.get_("server") or "").strip().upper() in self.PLATFORM_SERVERS
