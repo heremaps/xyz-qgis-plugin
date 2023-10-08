@@ -236,7 +236,7 @@ class XYZLayer(object):
             pass
 
     def destroy(self):
-        self.qgroups.pop("main", None)
+        # self.qgroups.pop("main", None) # handle destroy gracefully
 
         # Delete vlayer in case a it is moved out of the group
         # thus will not be implicitly deleted

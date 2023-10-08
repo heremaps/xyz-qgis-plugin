@@ -97,8 +97,8 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
         self._refresh_loader(self.network, self)
         super()._start(**kw)
 
-    def post_render(self, *a, **kw):
-        super().post_render(*a, **kw)
+    def _post_render(self):
+        super()._post_render()
         self._save_conn_info_to_layer(self)
 
 
@@ -118,8 +118,8 @@ class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
         self._refresh_loader(self.network, self)
         super()._start(**kw)
 
-    def post_render(self, *a, **kw):
-        super().post_render(*a, **kw)
+    def _post_render(self):
+        super()._post_render()
         self._save_conn_info_to_layer(self)
 
     def _retry_with_auth(self, reply):
