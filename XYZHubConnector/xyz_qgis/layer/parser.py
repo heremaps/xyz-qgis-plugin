@@ -451,7 +451,9 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields):
     try:
         assert set(fields.names()).issuperset(
             set(old_fields.names())
-        ), "new fields must be a super set of existing fields of feature"
+        ), "new fields must be a super set of existing fields of feature.\nnew: {}\nold: {}".format(
+            fields.names(), old_fields.names()
+        )
     except AssertionError as e:
         print_error(e)
         return
