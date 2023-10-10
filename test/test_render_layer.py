@@ -9,7 +9,6 @@
 
 import json
 import random
-import numpy as np
 import pprint
 
 from test.utils import (
@@ -30,6 +29,8 @@ from XYZHubConnector.xyz_qgis.models import SpaceConnectionInfo
 
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
+
+
 class TestRenderLayer(BaseTestAsync):
     _assert_len_map_fields = test_parser.TestParser._assert_len_map_fields
 
@@ -72,7 +73,7 @@ class TestRenderLayer(BaseTestAsync):
     def subtest_render_mixed_json_to_layer_multi_chunk(self, obj, ref, lst_chunk_size=None):
         if not lst_chunk_size:
             p10 = 1 + len(str(len(obj["features"])))
-            lst_chunk_size = [10 ** i for i in range(p10)]
+            lst_chunk_size = [10**i for i in range(p10)]
         with self.subTest(lst_chunk_size=lst_chunk_size):
             lst_map_fields = list()
             for chunk_size in lst_chunk_size:
@@ -91,11 +92,12 @@ class TestRenderLayer(BaseTestAsync):
             lst_map_fields = list()
             random.seed(0.5)
             for i in range(n_shuffle):
-                random.shuffle(o["features"])
-                map_fields = self.subtest_render_mixed_json_to_layer_chunk(o, chunk_size)
-                if map_fields is None:
-                    continue
-                lst_map_fields.append(map_fields)
+                with self.subTest(shuffle=i):
+                    random.shuffle(o["features"])
+                    map_fields = self.subtest_render_mixed_json_to_layer_chunk(o, chunk_size)
+                    if map_fields is None:
+                        continue
+                    lst_map_fields.append(map_fields)
 
             for i, map_fields in enumerate(lst_map_fields):
                 with self.subTest(shuffle=i):
@@ -127,7 +129,7 @@ class TestRenderLayer(BaseTestAsync):
                     lst_chunk.insert(i, list())
             for chunk in lst_chunk:
                 o["features"] = chunk
-                map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields)
+                map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields, similarity_threshold=0)
                 test_parser.TestParser()._assert_parsed_map(chunk, map_feat, map_fields)
                 lst_map_feat.append(map_feat)
                 self._render_layer(layer, map_feat, map_fields)

@@ -7,6 +7,7 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
+from typing import List
 
 from qgis.core import (
     QgsWkbTypes,
@@ -48,7 +49,7 @@ class RenderFieldsError(RenderError):
 
 
 class RenderFeaturesError(RenderError):
-    def __init__(self, vlayer_name: str, features: list[QgsFeature], *a, **kw):
+    def __init__(self, vlayer_name: str, features: List[QgsFeature], *a, **kw):
         super().__init__(vlayer_name, features, *a, **kw)
 
     def get_vlayer_name(self):
