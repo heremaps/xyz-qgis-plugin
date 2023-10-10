@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 1.9.9 (2023-10-10)
+
+🐛 FIXES 🐛
+* Updated Platform IML server
+* Set single layering mode as default
+* Improved stability
+
 ## Version 1.9.8 (2023-07-24)
 
 🐛 FIXES 🐛
