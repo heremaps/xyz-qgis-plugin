@@ -144,7 +144,9 @@ def add_feature_render(vlayer, feat, new_fields):
     # assert parser.check_same_fields(new_fields, pr.fields()) # validate addAttributes
 
     # always update feature fields according to provider fields
-    feat = filter(None, (parser.update_feature_fields(ft, pr.fields()) for ft in feat if ft))
+    feat = filter(
+        None, (parser.update_feature_fields(ft, pr.fields(), new_fields) for ft in feat if ft)
+    )
 
     ok, out_feat = pr.addFeatures(feat)
     if not ok:

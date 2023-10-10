@@ -439,7 +439,7 @@ def check_same_fields(fields1: QgsFields, fields2: QgsFields):
     return len_ok and name_ok and field_origin_ok
 
 
-def update_feature_fields(feat: QgsFeature, fields: QgsFields):
+def update_feature_fields(feat: QgsFeature, fields: QgsFields, ref: QgsFields):
     """
     Update fields of feature and its data (QgsAttributes)
 
@@ -448,11 +448,13 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields):
     :return: new QgsFeature with updated fields
     """
     old_fields = feat.fields()
+    names, old_names = fields.names(), old_fields.names()
     try:
-        assert set(fields.names()).issuperset(
-            set(old_fields.names())
-        ), "new fields must be a super set of existing fields of feature.\nnew: {}\nold: {}".format(
-            fields.names(), old_fields.names()
+        assert set(names).issuperset(set(old_names)), (
+            "new fields must be a super set of existing fields of feature.\n"
+            + "new: {} {}\nold: {} {}\nref: {} {}".format(
+                len(names), names, len(old_names), old_names, len(ref.names()), ref.names()
+            )
         )
     except AssertionError as e:
         print_error(e)
