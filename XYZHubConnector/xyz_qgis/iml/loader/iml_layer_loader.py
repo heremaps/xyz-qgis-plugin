@@ -25,7 +25,7 @@ from ...common.signal import make_fun_args
 
 
 class IMLAuthExtension:
-    MAX_RETRY_COUNT = 1
+    MAX_RETRY_COUNT = 2
 
     def __init__(self, network, *a, **kw):
         # setup retry with reauth
@@ -51,6 +51,7 @@ class IMLAuthExtension:
         else:
             e = chain_err
         if isinstance(e, NetworkError):  # retry only when network error, not timeout
+            # print(e, self._retry_cnt)
             response = e.get_response()
             status = response.get_status()
             reply = response.get_reply()

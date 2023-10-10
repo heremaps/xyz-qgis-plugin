@@ -416,6 +416,7 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, net_handler.NetworkUnauthorized):
             # error during list/spaces request
+            # error during tile request when max retry reached (should not occured)
             if not self.handle_net_err(e0):
                 self.show_err_msgbar(
                     e0,
@@ -440,6 +441,7 @@ class XYZHubConnector(object):
         elif isinstance(e0, AuthenticationError):
             if isinstance(e0.error, net_handler.NetworkError):
                 # network error during layer loader, handled by loader, do not handle here
+                # e.g. 403 get_project
                 self.show_err_msgbar(
                     e0, "Please select valid HERE Platform credential and try again"
                 )
