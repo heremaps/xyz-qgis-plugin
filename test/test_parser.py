@@ -29,10 +29,12 @@ from XYZHubConnector.xyz_qgis.layer import parser
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
 class TestParser(BaseTestAsync):
-    def __init__(self, *a, **kw):
+    def __init__(self, *a, test_parser_kw=None, **kw):
         super().__init__(*a, **kw)
-        self.similarity_threshold = 0
-        self.mixed_case_duplicate = False
+        test_parser_kw = test_parser_kw or dict()
+        self.similarity_threshold = test_parser_kw.get("similarity_threshold", 80)
+        self.mixed_case_duplicate = test_parser_kw.get("mixed_case_duplicate", False)
+        self.has_many_fields = test_parser_kw.get("has_many_fields", False)
 
     # util for debug
     def assertEqual(self, first, second, msg=None):
@@ -466,13 +468,16 @@ class TestParser(BaseTestAsync):
             ]
             feat_by_geom = sum(map_feat[geom_str], [])
             self._assert_parsed_feat(obj_feat_by_geom, feat_by_geom)
-            for feat, fields in zip(map_feat[geom_str], map_fields[geom_str]):
-                self._assert_parsed_geom_unorder(obj_feat_by_geom, feat, fields, geom_str)
-                self._assert_parsed_fields_unorder(obj_feat_by_geom, feat, fields)
+            self._assert_parsed_geom_unorder(obj_feat_by_geom, feat_by_geom, None, geom_str)
 
-                if not self.mixed_case_duplicate:
+            if not self.has_many_fields:
+                # element-wise assert
+                self._assert_parsed_geom(obj_feat_by_geom, feat_by_geom, None, geom_str)
+
+            for feat, fields in zip(map_feat[geom_str], map_fields[geom_str]):
+                self._assert_parsed_fields_unorder(obj_feat_by_geom, feat, fields)
+                if not self.mixed_case_duplicate and not self.has_many_fields:
                     # element-wise assert
-                    self._assert_parsed_geom(obj_feat_by_geom, feat, fields, geom_str)
                     self._assert_parsed_fields(obj_feat_by_geom, feat, fields)
 
     def _assert_len_map_feat_fields(self, map_feat, map_fields):

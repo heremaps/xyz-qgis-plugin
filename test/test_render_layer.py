@@ -19,6 +19,7 @@ from test.utils import (
     len_of_struct_sorted,
     flatten,
     format_map_fields,
+    add_test_fn_params,
 )
 from test import test_parser
 from qgis.testing import unittest
@@ -38,6 +39,24 @@ class TestRenderLayer(BaseTestAsync):
         super().__init__(*a, **kw)
         test_parser.TestParser._id = lambda x: self._id()
 
+    def get_test_parser_kw(self):
+        kw = dict()
+        params = self._subtest and self._subtest.params
+        if "similarity_threshold" in params:
+            similarity_threshold = params["similarity_threshold"]
+            kw["similarity_threshold"] = similarity_threshold
+        if "shuffle" in self._id() or similarity_threshold > 0:
+            return dict(has_many_fields=True)
+        return kw
+
+    def get_similarity_threshold_kw(self):
+        kw = self.get_test_parser_kw()
+        return (
+            dict(similarity_threshold=kw["similarity_threshold"])
+            if "similarity_threshold" in kw
+            else dict()
+        )
+
     def test_render_mixed_json_to_layer_chunk(self):
         folder = "xyzjson-small"
         fnames = [
@@ -47,11 +66,20 @@ class TestRenderLayer(BaseTestAsync):
             self.subtest_render_mixed_json_to_layer(
                 folder,
                 fname,
+                ref_len_fields={None: [4], "MultiPoint": [20], "MultiPolygon": [27]},
+                similarity_threshold=0,
+            )
+            self.subtest_render_mixed_json_to_layer(
+                folder,
+                fname,
                 ref_len_fields={"MultiPoint": [3, 6, 18], "MultiPolygon": [27], None: [4]},
+                similarity_threshold=80,
             )
 
-    def subtest_render_mixed_json_to_layer(self, folder, fname, ref_len_fields=None):
-        with self.subTest(folder=folder, fname=fname):
+    def subtest_render_mixed_json_to_layer(
+        self, folder, fname, ref_len_fields=None, similarity_threshold=0
+    ):
+        with self.subTest(folder=folder, fname=fname, similarity_threshold=similarity_threshold):
             resource = TestFolder(folder)
             txt = resource.load(fname)
             obj = json.loads(txt)
@@ -117,7 +145,7 @@ class TestRenderLayer(BaseTestAsync):
         with self.subTest(chunk_size=chunk_size):
             layer = self.new_layer()
             o = dict(obj)
-            obj_feat = obj["features"]
+            obj_feat = list(obj["features"])
             lst_map_feat = list()
             map_fields = dict()
             lst_chunk: list = [
@@ -129,8 +157,14 @@ class TestRenderLayer(BaseTestAsync):
                     lst_chunk.insert(i, list())
             for chunk in lst_chunk:
                 o["features"] = chunk
-                map_feat, _ = parser.xyz_json_to_feature_map(o, map_fields, similarity_threshold=0)
-                test_parser.TestParser()._assert_parsed_map(chunk, map_feat, map_fields)
+                map_feat, _ = parser.xyz_json_to_feature_map(
+                    o,
+                    map_fields,
+                    **self.get_similarity_threshold_kw(),
+                )
+                test_parser.TestParser(
+                    test_parser_kw=self.get_test_parser_kw()
+                )._assert_parsed_map(chunk, map_feat, map_fields)
                 lst_map_feat.append(map_feat)
                 self._render_layer(layer, map_feat, map_fields)
 
@@ -160,7 +194,9 @@ class TestRenderLayer(BaseTestAsync):
     def _test_render_mixed_json_to_layer(self, obj):
         layer = self.new_layer()
         # map_feat, map_fields = parser.xyz_json_to_feature_map(obj)
-        map_feat, map_fields = test_parser.TestParser().do_test_parse_xyzjson_map(obj)
+        map_feat, map_fields = test_parser.TestParser(
+            test_parser_kw=self.get_test_parser_kw()
+        ).do_test_parse_xyzjson_map(obj)
         self._render_layer(layer, map_feat, map_fields)
         self.assert_layer(layer, obj, map_fields)
         return map_feat, map_fields
@@ -189,17 +225,14 @@ class TestRenderLayer(BaseTestAsync):
 
     def _assert_len_fields(self, map_fields, ref, strict=False):
         len_ = len_of_struct if strict else len_of_struct_sorted
-        self.assertEqual(
-            len_(map_fields),
-            ref,
-            "\n".join(
-                [
-                    "len of map_fields is not correct (vs. ref). "
-                    + "Please revised parser, similarity threshold.",
-                    format_map_fields(map_fields),
-                ]
-            ),
+        msg = "\n".join(
+            [
+                "len of map_fields is not correct (vs. ref). "
+                + "Please revised parser, similarity threshold.",
+                format_map_fields(map_fields),
+            ]
         )
+        self.assertEqual(len_(map_fields), ref, msg)
 
     def assert_layer(self, layer, obj, map_fields):
         lst_vlayer = list(layer.iter_layer())
