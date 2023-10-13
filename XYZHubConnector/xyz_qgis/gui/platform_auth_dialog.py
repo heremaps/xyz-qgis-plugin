@@ -8,6 +8,8 @@
 #
 ###############################################################################
 
+from typing import Dict
+
 from qgis.PyQt.QtCore import pyqtSignal, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.PyQt.QtGui import QStandardItem
@@ -55,7 +57,7 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenWithServerUX):
         self,
         token_model: TokenModel,
         server_model: ServerModel,
-        map_conn_info: dict[str, SpaceConnectionInfo],
+        map_conn_info: Dict[str, SpaceConnectionInfo],
     ):
         self._set_connected_conn_info(map_conn_info)
 
@@ -118,7 +120,7 @@ class PlatformAuthDialog(QDialog, PlatformAuthUI, TokenWithServerUX):
 
     def _set_connected_conn_info(
         self,
-        map_conn_info: dict[str, SpaceConnectionInfo],
+        map_conn_info: Dict[str, SpaceConnectionInfo],
     ):
         self._connected_conn_info = map_conn_info
 

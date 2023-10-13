@@ -11,6 +11,7 @@
 import time
 import base64
 import json
+from typing import Dict
 
 from .login_webengine import PlatformUserAuthentication, PlatformAuthLoginView
 from .net_handler import IMLNetworkHandler
@@ -169,7 +170,7 @@ class IMLNetworkManager(NetManager):
         super().__init__(parent)
         self.user_auth_module = PlatformUserAuthentication(self.network)
         self.platform_auth = PlatformAuthLoginView()
-        self._connected_conn_info: dict[str, SpaceConnectionInfo] = dict()
+        self._connected_conn_info: Dict[str, SpaceConnectionInfo] = dict()
         self.load_all_connected_conn_info_from_settings()
 
     def _get_api_url(self, server: str, api_group):
