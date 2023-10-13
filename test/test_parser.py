@@ -69,12 +69,19 @@ class TestParser(BaseTestAsync):
             o1 = obj_feat[0] if len(obj_feat) else None
             geom_str = o1 and o1["geometry"] and o1["geometry"]["type"]
 
-            self._assert_parsed_id(obj_feat, feat, fields)
+            self._assert_parsed_feat(obj_feat, feat)
             self._assert_parsed_fields_unorder(obj_feat, feat, fields)
             self._assert_parsed_fields(obj_feat, feat, fields)
             self._assert_parsed_geom_unorder(obj_feat, feat, fields, geom_str)
             self._assert_parsed_geom(obj_feat, feat, fields, geom_str)
         return feat
+
+    def _assert_parsed_feat(self, obj_feat, feat):
+        self.assertEqual(len(obj_feat), len(feat))
+        for o, ft in zip(obj_feat, feat):
+            id_ = ft.attribute(parser.QGS_XYZ_ID)
+            obj_id_ = o["id"]
+            self.assertEqual(id_, obj_id_)
 
     def _assert_parsed_fields_unorder(self, obj_feat, feat, fields):
         # self._log_debug(fields.names())
@@ -84,7 +91,6 @@ class TestParser(BaseTestAsync):
 
         names = fields.names()
         self.assertTrue(parser.QGS_XYZ_ID in names, "%s %s" % (len(names), names))
-        self.assertEqual(len(obj_feat), len(feat))
 
     def _assert_parsed_fields(self, obj_feat, feat, fields):
         def msg_fields(obj):
@@ -195,12 +201,6 @@ class TestParser(BaseTestAsync):
                 self.assertLess(
                     np.max(np.abs(c1_flatten - c2_flatten)), 1e-13, "parsed geometry error > 1e-13"
                 )
-
-    def _assert_parsed_id(self, obj_feat, feat, fields):
-        for o, ft in zip(obj_feat, feat):
-            id_ = ft.attribute(parser.QGS_XYZ_ID)
-            obj_id_ = o["id"]
-            self.assertEqual(id_, obj_id_)
 
     # @unittest.skip("large")
     def test_parse_xyzjson_large(self):
@@ -461,20 +461,19 @@ class TestParser(BaseTestAsync):
         # -> use unorder assert
         # NOTE: group obj_feat by geom_str for element-wise assert
         for geom_str in map_feat:
+            obj_feat_by_geom = [
+                o for o in obj_feat if (o["geometry"] and o["geometry"]["type"]) == geom_str
+            ]
+            feat_by_geom = sum(map_feat[geom_str], [])
+            self._assert_parsed_feat(obj_feat_by_geom, feat_by_geom)
             for feat, fields in zip(map_feat[geom_str], map_fields[geom_str]):
-                o = [
-                    o1
-                    for o1 in obj_feat
-                    if (o1["geometry"] and o1["geometry"]["type"]) == geom_str
-                ]
-                self._assert_parsed_id(o, feat, fields)
-                self._assert_parsed_geom_unorder(o, feat, fields, geom_str)
-                self._assert_parsed_fields_unorder(o, feat, fields)
+                self._assert_parsed_geom_unorder(obj_feat_by_geom, feat, fields, geom_str)
+                self._assert_parsed_fields_unorder(obj_feat_by_geom, feat, fields)
 
                 if not self.mixed_case_duplicate:
                     # element-wise assert
-                    self._assert_parsed_geom(o, feat, fields, geom_str)
-                    self._assert_parsed_fields(o, feat, fields)
+                    self._assert_parsed_geom(obj_feat_by_geom, feat, fields, geom_str)
+                    self._assert_parsed_fields(obj_feat_by_geom, feat, fields)
 
     def _assert_len_map_feat_fields(self, map_feat, map_fields):
         self.assertEqual(map_feat.keys(), map_fields.keys())
