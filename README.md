@@ -1,7 +1,7 @@
 # HERE Maps for QGIS Plugin
 
 
-HERE Maps for QGIS is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [Interactive Map Layers](https://developer.here.com/documentation/data-api/data_dev_guide/rest/layers.html#interactive-map-layers) (IML) on [HERE Platform](https://platform.here.com/) and from [HERE Data Hub](https://github.com/heremaps/xyz-hub) spaces directly on a map.
+HERE Maps for QGIS is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [Interactive Map Layers](https://www.here.com/docs/bundle/data-api-developer-guide/page/rest/layers.html#interactive-map-layers) (IML) on [HERE Platform](https://platform.here.com/) and from [xyz-hub](https://github.com/heremaps/xyz-hub) spaces directly on a map.
 
 ![new connection](res/new-connection.png)
 
@@ -46,8 +46,8 @@ Once user have installed and enabled the plugin HERE Maps for QGIS, it can be ac
 2. Click on `Add` to add your credential.
 3. Enter "My App credential" as the name.
 4. Select a `credentials.properties` containing your HERE Platform app credential (typically location in `{$HOME}/.here/credentials.properties`)
-5. If user don't already have an app or a `credentials.properties` file then user can create one, following [the instructions here](https://developer.here.com/documentation/identity-access-management/dev_guide/topics/plat-token.html).
-6. Grant access on the data to the HERE platform app so that it can access your project, following [the instructions here](https://developer.here.com/documentation/identity-access-management/dev_guide/topics/manage-projects.html).
+5. If user don't already have an app or a `credentials.properties` file then user can create one, following [the instructions here](https://www.here.com/docs/bundle/identity-and-access-management-developer-guide/page/topics/plat-token.html).
+6. Grant access on the data to the HERE platform app so that it can access your project, following [the instructions here](https://www.here.com/docs/bundle/identity-and-access-management-developer-guide/page/topics/manage-projects.html).
 7. Click on OK to save the credential, and close the connection window.
 8. Click `Connect` to show the list of available IML layers.
 
@@ -70,12 +70,12 @@ The main dialog contains 5 tabs:
 
     + `Chunk size` indicates the number of features per tile or iteration. Default: 100. For large layer of point, lines features, value of 10000 is recommended. For large layer of polygon features, value of 1000 is recommended.
 
-    + `Layering` controls the organization of data in XYZ space into different QGIS layers based on fields similarity, with 3 levels:
+    + `Layering` controls the organization of data in one layer into different QGIS layers based on fields similarity, with 3 levels:
         + `single`: merge data into 1 layer per geometry type
         + `maximal`: do not merge data, as many layers per geometry type
         + `balanced`: merge only similar data into 1 layer, balanced number of layers per geometry type
 
-+ `Upload` : upload current Vector Layer to a new XYZ Hub space. For this to work, make sure that your token also has write-level permissions.
++ `Upload` : upload local QGIS Vector Layer to the server. For this to work, make sure that your token also has write-level permissions.
 
 + `Manage` : create new space, edit or delete existing space.
 
@@ -86,9 +86,9 @@ The main dialog contains 5 tabs:
     + `Clear cache` : empty the temporary cache folder. Active layers will be invalid after clearing cache.
     + `Clear cookies` : clear the login cookies. This could be helpful when login or loading show Authorization error
 
-When the user make some edits to the loaded layer, the changes can be pushed to XYZ Hub via the button `Push changes` in the toolbar.
+When the user make some edits to the loaded layer, the changes can be pushed to the server via the button `Push changes` in the toolbar.
 
-**Note:** User can also add background map tiles via the "Map Tile" tab. User will need to use your credential from https://developer.here.com/.
+**Note:** User can also add background map tiles via the "Map Tile" tab. User will need to use your API key following [the instructions here](https://www.here.com/docs/bundle/identity-and-access-management-developer-guide/page/topics/plat-using-apikeys.html).
 
 ## Testing
 
@@ -113,6 +113,6 @@ e.g. `sh makeBuild.sh 1.5.5`.
 
 ## License
 
-Copyright (C) 2019-2023 HERE Europe B.V.
+Copyright (C) 2019-2024 HERE Europe B.V.
 
 This project is licensed under the MIT license - see the [LICENSE](./LICENSE) file in the root of this project for license details.
