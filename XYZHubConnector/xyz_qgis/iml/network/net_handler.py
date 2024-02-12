@@ -45,7 +45,7 @@ class IMLNetworkHandler(NetworkHandler):
 
         if err == response.get_reply().OperationCanceledError:  # operation canceled
             raise NetworkTimeout(response)
-        elif status in (401, 403):
+        elif status in (401,):
             raise IMLNetworkUnauthorized(response)
         elif err > 0 or not status:
             if reply_tag == "oauth_project":
