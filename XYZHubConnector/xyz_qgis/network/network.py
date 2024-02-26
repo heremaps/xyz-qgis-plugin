@@ -12,6 +12,8 @@
 from qgis.PyQt.QtCore import QObject, QTimer
 from qgis.PyQt.QtNetwork import QNetworkAccessManager
 
+from . import datahub_servers
+from .net_handler import NetworkHandler
 from .net_utils import (
     make_conn_request,
     set_qt_property,
@@ -19,7 +21,6 @@ from .net_utils import (
     make_payload,
     make_bytes_payload,
 )
-from .net_handler import NetworkHandler
 from ..models import SpaceConnectionInfo
 
 
@@ -29,10 +30,7 @@ from ..models import SpaceConnectionInfo
 class NetManager(QObject):
     TIMEOUT_COUNT = 1000
 
-    API_CIT_URL = "https://xyz.cit.api.here.com/hub"
-    API_PRD_URL = "https://xyz.api.here.com/hub"
-    API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
-    API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)
+    API_URL = datahub_servers.API_URL
 
     ENDPOINTS = {
         "space_meta": "/spaces/{space_id}",

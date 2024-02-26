@@ -16,7 +16,7 @@ from XYZHubConnector.xyz_qgis.layer import tile_utils
 from XYZHubConnector.xyz_qgis.network import net_handler
 from test.make_point_layer import step_from_level, iter_lon_lat
 
-from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from qgis.PyQt.QtCore import QEventLoop
 from XYZHubConnector.xyz_qgis.models.connection import SpaceConnectionInfo
 
@@ -45,7 +45,7 @@ def get_row_col_bounds_here(level):
     level 2: 0,0; 0,1; 1,0; 1,1; 2,0; 2,1; 3,0; 3,1
     """
     nrow = 2 ** (level - 1) if level else 1
-    ncol = 2 ** level
+    ncol = 2**level
     return nrow, ncol
 
 
@@ -54,7 +54,7 @@ def get_row_col_bounds_web(level):
     coord [x,y]
     """
     nrow = 2 ** (level) if level else 1
-    ncol = 2 ** level
+    ncol = 2**level
     return nrow, ncol
 
 
@@ -63,7 +63,7 @@ def get_row_col_bounds_tms(level):
     coord [x,y]
     """
     nrow = 2 ** (level) if level else 1
-    ncol = 2 ** level
+    ncol = 2**level
     return nrow, ncol
 
 

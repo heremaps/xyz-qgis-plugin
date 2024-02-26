@@ -31,7 +31,8 @@ from ..layer.edit_buffer import LayeredEditBuffer
 from ..layer.layer_utils import update_vlayer_editorWidgetSetup
 from ..models import SpaceConnectionInfo
 from ..models.connection import mask_token
-from ..network import NetManager, net_handler
+from ..network import net_handler
+from ..network.network import NetManager
 
 from ..common.signal import make_print_qgis
 
@@ -39,6 +40,7 @@ print_qgis = make_print_qgis("layer_loader")
 
 Meta = Dict[str, str]
 Geojson = Dict
+
 
 ########################
 # Load

@@ -19,7 +19,7 @@ from test.utils import (
     AllErrorsDuringTest,
     slow_test,
 )
-from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from XYZHubConnector.xyz_qgis.loader import LoadLayerController, ManualInterrupt
 
 from qgis.core import QgsProject

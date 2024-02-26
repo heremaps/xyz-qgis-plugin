@@ -63,7 +63,8 @@ from .xyz_qgis.layer.layer_utils import (
 from .xyz_qgis.layer import tile_utils, XYZLayer
 from .xyz_qgis.layer.layer_props import QProps
 
-from .xyz_qgis.network import NetManager, net_handler
+from .xyz_qgis.network import net_handler
+from .xyz_qgis.network.network import NetManager
 from .xyz_qgis.network.net_utils import CookieUtils, PlatformSettings
 from .xyz_qgis.iml.loader import (
     IMLTileLayerLoader,

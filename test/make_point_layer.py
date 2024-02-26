@@ -16,7 +16,7 @@ print(sys.path)
 
 from XYZHubConnector.xyz_qgis.layer import parser
 
-from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from qgis.PyQt.QtCore import QEventLoop
 from XYZHubConnector.xyz_qgis.models.connection import SpaceConnectionInfo
 from qgis.testing import start_app

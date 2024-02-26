@@ -31,7 +31,7 @@ from ..iml.loader import (
 from ..models.loading_mode import API_TYPES
 
 from ..common.signal import make_print_qgis
-from ..network import NetManager
+from ..network.network import NetManager
 
 print_qgis = make_print_qgis("controller_manager")
 
