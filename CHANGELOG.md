@@ -1,12 +1,14 @@
 # Changelog 
 
-## Version 1.9.9 (2023-10-10)
+## Version 1.9.9 (2024-02-27)
 
 #### Bug Fixes
 
-* Updated Platform IML server
+* Updated Platform IML servers
 * Set single layering mode as default
+* Improved authorization
 * Improved stability
+* Deprecated Datahub servers
 
 ## Version 1.9.8 (2023-07-24)
 

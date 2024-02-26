@@ -42,11 +42,13 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.9 (2023-10-10)
+changelog=Version 1.9.9 (2024-02-27)
 
     🐛 FIXES 🐛
-    * Updated Platform IML server
+    * Updated Platform IML servers
     * Set single layering mode as default
+    * Improved authorization
     * Improved stability
+    * Deprecated Datahub servers
 
     * .. more details on Github repos
