@@ -357,6 +357,7 @@ class IMLNetworkManager(NetManager):
             PlatformSettings.remove_connected_conn_info(conn_info.get_server())
         if conn_info.is_user_login():
             self.user_auth_module.reset_auth(conn_info)
+        conn_info.unmark_protected()
 
     def get_connected_conn_info(self, server):
         return self._connected_conn_info.get(server)

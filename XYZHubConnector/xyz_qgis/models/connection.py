@@ -185,6 +185,9 @@ class SpaceConnectionInfo(object):
     def mark_protected(self):
         self._is_protected = True
 
+    def unmark_protected(self):
+        self._is_protected = False
+
     def is_protected(self):
         """Returns True if the connection auth should not be overriden by default connected auth"""
         return self._is_protected
