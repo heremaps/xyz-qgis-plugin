@@ -15,6 +15,8 @@ from typing import List, Mapping
 from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 
+from ..network import datahub_servers
+
 GroupedData = Mapping[str, List[Mapping]]
 
 
@@ -349,6 +351,7 @@ class ServerModel(WritableItemModel, UsedToken):
     INFO_KEYS = ["name", "server"]
     SERIALIZE_KEYS = ["server", "name"]
     TOKEN_KEY = "server"
+    DEPRECATED_SERVERS = set(datahub_servers.API_URL.values())
 
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
         super().__init__(ini, parser, parent)
@@ -366,7 +369,6 @@ class ServerModel(WritableItemModel, UsedToken):
                 lambda m: m.get("server"),
                 [
                     dict(name="HERE Platform", server=default_api_urls.get("PLATFORM_PRD")),
-                    dict(name="HERE Server", server=default_api_urls.get("PRD")),
                 ],
             )
         )
@@ -395,6 +397,13 @@ class ServerModel(WritableItemModel, UsedToken):
                 continue
             self.insertRow(i, self.qitems_from_data(server_info))
         self.submit_cache()
+
+    def _validate_data(self, data):
+        has_server = data and data.get(self.TOKEN_KEY)
+        has_deprecated_server = (
+            data and data.get("server") and data.get("server") in self.DEPRECATED_SERVERS
+        )
+        return has_server and not has_deprecated_server
 
 
 class ServerTokenConfig:

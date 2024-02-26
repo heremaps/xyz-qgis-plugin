@@ -103,6 +103,9 @@ class IMLServerInfoDialog(ServerInfoDialog):
         if is_here_system():
             self.comboBox_token.setEnabled(True)
 
+        self.comboBox_api_type.setCurrentIndex(0)
+        self.cb_change_api_type(0)
+
         self.comboBox_api_type.currentIndexChanged.connect(self.cb_change_api_type)
         self.comboBox_api_type.currentIndexChanged.connect(self.ui_enable_btn)
 

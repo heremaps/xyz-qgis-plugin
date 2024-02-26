@@ -63,7 +63,6 @@ from .xyz_qgis.layer.layer_utils import (
 from .xyz_qgis.layer import tile_utils, XYZLayer
 from .xyz_qgis.layer.layer_props import QProps
 
-
 from .xyz_qgis.network import NetManager, net_handler
 from .xyz_qgis.network.net_utils import CookieUtils, PlatformSettings
 from .xyz_qgis.iml.loader import (
@@ -250,9 +249,7 @@ class XYZHubConnector(object):
 
         # token
         self.token_config = IMLServerTokenConfig(config.USER_PLUGIN_DIR + "/token.ini", parent)
-        self.token_config.set_default_servers(
-            dict(NetManager.API_URL, PLATFORM_PRD="PLATFORM_PRD")
-        )
+        self.token_config.set_default_servers(dict(PLATFORM_PRD="PLATFORM_PRD"))
         self.token_model = self.token_config.get_token_model()
         self.server_model = self.token_config.get_server_model()
 

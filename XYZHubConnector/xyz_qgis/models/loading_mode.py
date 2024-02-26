@@ -34,7 +34,7 @@ class ApiType(list):
     PLATFORM = "platform"
 
     def __init__(self):
-        super().__init__([self.DATAHUB, self.PLATFORM])
+        super().__init__([self.PLATFORM, self.DATAHUB])
 
 
 API_TYPES = ApiType()  # datahub, platform
