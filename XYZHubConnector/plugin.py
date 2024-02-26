@@ -11,7 +11,7 @@
 from qgis.core import QgsProject, QgsApplication
 from qgis.core import Qgis, QgsMessageLog
 
-from qgis.PyQt.QtCore import QCoreApplication, Qt
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QThreadPool
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtWidgets import QProgressBar
@@ -36,6 +36,7 @@ from .xyz_qgis.controller import (
     make_fun_args,
     parse_exception_obj,
     ChainInterrupt,
+    WorkerFun,
 )
 
 from .xyz_qgis.loader import (
@@ -112,7 +113,13 @@ class XYZHubConnector(object):
         self.web_menu = "&{name}".format(name=config.PLUGIN_FULL_NAME)
         self.hasGuiInitialized = False
         self.init_modules()
+        self.init_in_thread()
         self.obj = self
+
+    def init_in_thread(self):
+        self.pool = QThreadPool()
+        fn = WorkerFun(utils.is_here_system, self.pool)
+        fn.call(make_qt_args())
 
     def initGui(self):
         """startup"""

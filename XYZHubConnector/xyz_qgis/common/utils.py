@@ -215,8 +215,4 @@ def get_qml_import_base_path():
 
 
 def is_here_system():
-    import socket
-    from .crypter import decrypt_text
-
-    is_here_domain = decrypt_text("Vi5tWQcgFl88Wzg=") in socket.getfqdn()
-    return is_here_domain
+    return config.is_here_system()

@@ -26,6 +26,9 @@ class Config:
     EXTERNAL_LIB_DIR = os.path.join(PLUGIN_DIR, "external")
     PYTHON_LOG_FILE = os.path.join(USER_DIR, PLUGIN_NAME, "python.log")
 
+    def __init__(self):
+        self._is_here_system = None
+
     def set_config(self, config):
         for k, v in config.items():
             setattr(self, k, v)
@@ -42,3 +45,19 @@ class Config:
         key_prefix = "xyz_qgis/settings"
         key_ = f"{key_prefix}/{key}"
         return QSettings().value(key_)
+
+    def _check_here_system(self):
+        import socket
+        from .crypter import decrypt_text
+
+        socket.setdefaulttimeout(1)
+        is_here_domain = decrypt_text("Vi5tWQcgFl88Wzg=") in socket.getfqdn()
+        return is_here_domain
+
+    def is_here_system(self):
+        if self._is_here_system is None:
+            try:
+                self._is_here_system = self._check_here_system()
+            except Exception as e:
+                print(e)
+        return self._is_here_system
