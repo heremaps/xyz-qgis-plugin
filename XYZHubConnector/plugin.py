@@ -494,24 +494,14 @@ class XYZHubConnector(object):
         pair = (status, reason) if status else (err, err_str)
         status_msg = "{0!s}: {1!s}\n".format(*pair)
         msg = status_msg + "There was a problem connecting to the server"
-        if status in [401, 403]:
-            instruction_msg = (
-                (
-                    "Please input valid token with correct permissions."
-                    "\n"
-                    "Token is generated via "
-                    "<a href='https://xyz.api.here.com/token-ui/'>"
-                    "https://xyz.api.here.com/token-ui/"
-                    "</a> "
-                )
-                if not conn_info.is_platform_server()
-                else (
-                    "Please input valid Platform app credentials."
-                    if not conn_info.is_user_login()
-                    else "Please retry to login with valid Platform user credentials."
-                )
-            )
-            msg = status_msg + "Authentication failed" "\n\n" + instruction_msg
+        if status == 401:
+            stats_final_msg = "Authentication failed"
+            instruction_msg = "Please use valid credentials"
+            msg = status_msg + stats_final_msg + "\n\n" + instruction_msg
+        elif status == 403:
+            stats_final_msg = "No access"
+            instruction_msg = "Please request access to the layer"
+            msg = status_msg + stats_final_msg + "\n\n" + instruction_msg
         ret = exec_warning_dialog("Network Error", msg, detail)
         return True
 
