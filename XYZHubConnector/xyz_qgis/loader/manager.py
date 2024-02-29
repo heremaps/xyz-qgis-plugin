@@ -154,7 +154,7 @@ class LayerControllerManager(ControllerManager):
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
             # assert con.layer is not None
-            self._layer_ptr[con.layer.get_id()] = ptr
+            self._layer_ptr[con.layer.get_iid()] = ptr
 
         return _register_xyz_layer
 

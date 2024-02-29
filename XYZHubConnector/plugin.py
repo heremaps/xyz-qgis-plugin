@@ -822,10 +822,10 @@ class XYZHubConnector(object):
         for qnode in self.iter_visible_xyz_node():
             if qnode.nodeType() == qnode.NodeLayer:
                 layer = qnode.layer()
-                xlayer_id = get_customProperty_str(layer, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(layer)
                 is_editable = layer.isEditable()
             else:
-                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(qnode)
                 is_editable = None
             if xlayer_id in editing_xid:
                 continue
@@ -987,7 +987,7 @@ class XYZHubConnector(object):
     def init_all_layer_loader(self):
         cnt = 0
         for qnode in self.iter_update_all_xyz_node():
-            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+            xlayer_id = QProps.get_iid(qnode)
             con = self.con_man.get_loader(xlayer_id)
             if con:
                 continue
@@ -1010,7 +1010,7 @@ class XYZHubConnector(object):
                 if is_xyz_supported_layer(vlayer):
                     vlayer.reload()
             return
-        xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        xlayer_id = QProps.get_iid(qnode)
         con = self.con_man.get_interactive_loader(xlayer_id)
         if con:
             con.stop_loading()
@@ -1022,7 +1022,7 @@ class XYZHubConnector(object):
         for i in range(i0, i1 + 1):
             qnode = lst[i]
             if is_parent_root and is_xyz_supported_node(qnode):
-                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(qnode)
                 self.pending_delete_qnodes.setdefault(key, list()).append(xlayer_id)
                 self.con_man.remove_persistent_loader(xlayer_id)
             # is possible to handle vlayer delete here

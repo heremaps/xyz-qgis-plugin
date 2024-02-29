@@ -33,6 +33,11 @@ class QProps:
         return val
 
     @classmethod
+    def get_iid(cls, qnode):
+        val = cls.getProperty(qnode, QProps.UNIQUE_ID)
+        return val
+
+    @classmethod
     def updatePropsVersion(cls, qnode):
         cls._removeProperty(qnode, cls.EDIT_FLAG)  # deprecated props
         for key in cls.v0.keys():
