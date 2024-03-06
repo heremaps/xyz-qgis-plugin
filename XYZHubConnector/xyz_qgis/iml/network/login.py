@@ -8,10 +8,9 @@
 #
 ###############################################################################
 
-# from PyQt5.QtWebEngineWidgets import QWebEngineView # import error
 import json
 import re
-from typing import Optional, Dict
+from typing import Optional, Dict, Callable
 
 from qgis.PyQt.QtCore import QUrl, QObject
 from qgis.PyQt.QtCore import Qt
@@ -19,8 +18,19 @@ from qgis.PyQt.QtNetwork import (
     QNetworkAccessManager,
     QNetworkReply,
 )
-from qgis.PyQt.QtWebKit import QWebSettings
-from qgis.PyQt.QtWebKitWidgets import QWebPage, QWebView, QWebInspector
+
+USE_WEBKIT = False
+
+if USE_WEBKIT:
+    from qgis.PyQt.QtWebKit import QWebSettings as _WebSettings
+    from qgis.PyQt.QtWebKitWidgets import QWebPage as _WebPage, QWebView as _WebView
+else:
+    from PyQt5.QtWebEngineWidgets import (
+        QWebEngineView as _WebView,
+        QWebEnginePage as _WebPage,
+        QWebEngineSettings as _WebSettings,
+    )  # import error
+
 from qgis.PyQt.QtWidgets import QDialog, QGridLayout
 
 from .net_handler import IMLNetworkHandler
@@ -35,24 +45,24 @@ from ...network.net_utils import (
 )
 
 
-class WebPage(QWebPage):
+class WebPage(_WebPage):
     def __init__(self, parent, *a, **kw):
         super().__init__(*a, **kw)
         self.parent_widget = parent
 
         settings = self.settings()
-        settings.setAttribute(QWebSettings.JavascriptEnabled, True)
-        settings.setAttribute(QWebSettings.LocalStorageEnabled, True)
-        settings.setAttribute(QWebSettings.JavascriptCanOpenWindows, True)
-        settings.setAttribute(QWebSettings.JavascriptCanCloseWindows, True)
-        # settings.setAttribute(QWebSettings.PrivateBrowsingEnabled, True)
-        settings.setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
-        settings.setAttribute(QWebSettings.WebGLEnabled, True)
-        settings.setAttribute(QWebSettings.PluginsEnabled, True)
+        settings.setAttribute(_WebSettings.JavascriptEnabled, True)
+        settings.setAttribute(_WebSettings.LocalStorageEnabled, True)
+        settings.setAttribute(_WebSettings.JavascriptCanOpenWindows, True)
+        settings.setAttribute(_WebSettings.JavascriptCanCloseWindows, True)
+        # settings.setAttribute(_WebSettings.PrivateBrowsingEnabled, True)
+        settings.setAttribute(_WebSettings.DeveloperExtrasEnabled, True)
+        settings.setAttribute(_WebSettings.WebGLEnabled, True)
+        settings.setAttribute(_WebSettings.PluginsEnabled, True)
         settings.setThirdPartyCookiePolicy(settings.AlwaysAllowThirdPartyCookies)
 
     def createWindow(self, window_type):
-        # WindowDialog is just a simple QDialog with a QWebView
+        # WindowDialog is just a simple QDialog with a web view
 
         parent = self.parent_widget
         dialog = QDialog(parent)
@@ -70,7 +80,7 @@ class WebPage(QWebPage):
 
         page = WebPage(parent)
 
-        view = QWebView(parent)
+        view = _WebView(parent)
         view.setPage(page)
 
         mainLayout = QGridLayout(parent)
@@ -84,6 +94,8 @@ class WebPage(QWebPage):
 
     @classmethod
     def attach_inspector(cls, dialog: QDialog, page: "WebPage"):
+        from qgis.PyQt.QtWebKitWidgets import QWebInspector
+
         parent = page.parent_widget
         inspector = QWebInspector(parent)
         inspector.setPage(page)
@@ -176,17 +188,9 @@ class PlatformUserAuthentication:
             conn_info.get_user_email(),
             conn_info.get_realm(),
         )
-        token = self.get_access_token()
-        if token:
-            conn_info.set_(token=token)
-        else:
-            dialog = self.open_login_dialog(conn_info)
-            dialog.exec_()
-            token = self.get_access_token()
-            if token:
-                conn_info.set_(token=token)
-            else:
-                self.reset_auth(conn_info)
+
+        conn_info = self.apply_token(conn_info)
+
         return self.make_dummy_reply(parent, conn_info, **kw_prop)
 
     def reset_auth(self, conn_info: SpaceConnectionInfo):
@@ -198,6 +202,12 @@ class PlatformUserAuthentication:
         email = conn_info.get_user_email()
         realm = conn_info.get_realm()
         CookieUtils.remove_cookies_from_settings(API_TYPES.PLATFORM, api_env, email, realm)
+
+    @classmethod
+    def apply_token(self, conn_info: SpaceConnectionInfo) -> SpaceConnectionInfo:
+        token = self.get_access_token(conn_info)
+        conn_info.set_(token=token)
+        return token
 
     # private
 
@@ -242,6 +252,11 @@ class PlatformUserAuthentication:
                 dialog.close()
             # TODO: reset only auth of the input email
             self._reset_auth(conn_info)
+        if "/api/account/realm" in url.toString():
+            m = self.REGEX_REALM.search(url)
+            if m and len(m.groups()):
+                realm = m.group(1)
+                self._update_conn_info(conn_info, realm=realm)
 
     def cb_auth_handler(self, reply, conn_info: SpaceConnectionInfo):
         try:
@@ -285,7 +300,9 @@ class PlatformUserAuthentication:
         # reply.waitForReadyRead(1000)
         # self.cb_auth_handler(reply)
 
-    def open_login_dialog(self, conn_info: SpaceConnectionInfo, parent=None):
+    def open_login_dialog(
+        self, conn_info: SpaceConnectionInfo, parent=None, cb_login_view_closed: Callable = None
+    ):
         api_env = self.get_api_env(conn_info)
         email = conn_info.get_user_email()
         realm = conn_info.get_realm()
@@ -312,11 +329,14 @@ class PlatformUserAuthentication:
                     ]
                 )
 
-            page.networkAccessManager().finished.connect(
-                lambda reply: self.cb_response_handler(reply, conn_info)
-            )
-            page.currentFrame().urlChanged.connect(lambda url: self.cb_url_changed(url, conn_info))
+            # page.networkAccessManager().finished.connect(
+            #     lambda reply: self.cb_response_handler(reply, conn_info)
+            # )
+            page.urlChanged.connect(lambda url: self.cb_url_changed(url, conn_info))
             dialog.finished.connect(lambda *a: self.cb_dialog_closed(conn_info))
+
+            if cb_login_view_closed:
+                dialog.finished.connect(cb_login_view_closed)
 
             dialog.open()
             view.load(QUrl(url))

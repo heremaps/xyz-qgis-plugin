@@ -13,7 +13,7 @@ import base64
 import json
 from typing import Dict
 
-from .login_webengine import PlatformUserAuthentication, PlatformAuthLoginView
+from .login import PlatformUserAuthentication
 from .net_handler import IMLNetworkHandler
 from .platform_server import PlatformServer
 from ...common.crypter import decrypt_text
@@ -169,7 +169,6 @@ class IMLNetworkManager(NetManager):
     def __init__(self, parent):
         super().__init__(parent)
         self.user_auth_module = PlatformUserAuthentication(self.network)
-        self.platform_auth = PlatformAuthLoginView()
         self._connected_conn_info: Dict[str, SpaceConnectionInfo] = dict()
         self.load_all_connected_conn_info_from_settings()
 
@@ -333,10 +332,10 @@ class IMLNetworkManager(NetManager):
         return conn_info
 
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
-        conn_info = self.platform_auth.apply_token(conn_info)
+        conn_info = self.user_auth_module.apply_token(conn_info)
         if not conn_info.has_token():
             try:
-                self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
+                self.user_auth_module.open_login_dialog(conn_info, cb_login_view_closed=callback)
             except Exception as e:
                 if callback:
                     callback()

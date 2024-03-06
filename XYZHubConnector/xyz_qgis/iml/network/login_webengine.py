@@ -10,6 +10,7 @@
 
 import json
 import os
+from typing import Callable
 
 try:
     from PyQt5.Qt import PYQT_VERSION_STR
@@ -121,12 +122,6 @@ class PlatformAuthLoginView:
         return token_obj.get("accessToken", "") if isinstance(token_obj, dict) else ""
 
     @classmethod
-    def apply_token(cls, conn_info: SpaceConnectionInfo) -> str:
-        token = cls.get_access_token(conn_info)
-        conn_info.set_(token=token)
-        return conn_info
-
-    @classmethod
     def create_qml_view(cls, login_url: str, title="", cb_login_view_closed=None):
 
         view = QQuickView()
@@ -199,6 +194,7 @@ class PlatformUserAuthentication:
     def __init__(self, network: QNetworkAccessManager):
         self.signal = BasicSignal()
         self.network = network
+        self.platform_auth_view = PlatformAuthLoginView()
 
     # public
 
@@ -238,3 +234,15 @@ class PlatformUserAuthentication:
         qobj = QObject(parent)
         set_qt_property(qobj, conn_info=conn_info, **kw_prop)
         return qobj
+
+    # dialog, token
+
+    def open_login_dialog(
+        self, conn_info: SpaceConnectionInfo, parent=None, cb_login_view_closed: Callable = None
+    ):
+        return self.platform_auth_view.open_login_view(conn_info, parent, cb_login_view_closed)
+
+    def apply_token(self, conn_info: SpaceConnectionInfo) -> SpaceConnectionInfo:
+        token = self.platform_auth_view.get_access_token(conn_info)
+        conn_info.set_(token=token)
+        return conn_info

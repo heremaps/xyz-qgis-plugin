@@ -21,8 +21,11 @@ __status__ = "Development"
 def classFactory(iface):
     """invoke plugin"""
     from . import config
+    from .xyz_qgis.common.utils import install_qml_dependencies
 
     config.load_external_lib()
+    install_qml_dependencies()
+
     from .plugin import XYZHubConnector
 
     return XYZHubConnector(iface)
