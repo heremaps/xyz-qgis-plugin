@@ -37,7 +37,7 @@ fi
 (
 cd build
 if $( echo $ver | grep -q alpha ); then
-  sed -i "" -e "s/name=.*/name=HERE Maps for QGIS alpha/" \
+  sed -i"" -e "s/name=.*/name=HERE Maps for QGIS alpha/" \
     -e "s/version=.*/version=$ver/" \
     ./$folder/metadata.txt
 fi
