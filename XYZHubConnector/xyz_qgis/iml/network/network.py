@@ -13,7 +13,7 @@ import base64
 import json
 from typing import Dict
 
-from .login import PlatformUserAuthentication
+from .login_webengine import PlatformUserAuthentication
 from .net_handler import IMLNetworkHandler
 from .platform_server import PlatformServer
 from ...common.crypter import decrypt_text

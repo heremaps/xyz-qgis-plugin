@@ -239,7 +239,7 @@ def install_qml_dependencies():
     # )  # , "5.15.2")
     install_package(
         "PyQtWebEngine",
-        "PyQt5.QtWebEngineWidgets",
+        "PyQt5.QtWebEngine",  # "PyQt5.QtWebEngineWidgets"
         package_version,
         config.EXTERNAL_LIB_DIR,
         extra_packages=["PyQt5-Qt5"],
