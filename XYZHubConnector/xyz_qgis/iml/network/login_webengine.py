@@ -20,7 +20,9 @@ try:
 except Exception as e:
     PYQT_STR = "PyQt (unknown){error}".format(error=" - " + repr(e))
 
+from PyQt5.QtGui import QSurfaceFormat
 from PyQt5.QtQuick import QQuickView
+
 
 from qgis.PyQt.QtCore import QUrl, QObject
 from qgis.PyQt.QtCore import Qt
@@ -123,6 +125,7 @@ class PlatformAuthLoginView:
 
     @classmethod
     def create_qml_view(cls, login_url: str, title="", cb_login_view_closed=None):
+        QSurfaceFormat.setDefaultFormat(QSurfaceFormat())
 
         view = QQuickView()
         engine = view.engine()
