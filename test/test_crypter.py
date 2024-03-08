@@ -77,10 +77,13 @@ class TestCrypter(TestCase):
             encoded = encrypt_text(endpoint)
             print(name, encoded)
 
-    @debug_test_function
     def test_encrypt_string(self):
-        for text in []:
+        for text in os.environ.get("TEXT_TO_ENCRYPT", "example").split(","):
             print(text, encrypt_text(text))
+
+    def test_decrypt_string(self):
+        for text in os.environ.get("TEXT_TO_DECRYPT", "UjIiXBI+Fg==").split(","):
+            print(text, decrypt_text(text))
 
 
 if __name__ == "__main__":
