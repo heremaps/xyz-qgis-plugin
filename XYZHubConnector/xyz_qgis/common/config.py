@@ -9,6 +9,7 @@
 ###############################################################################
 
 import os
+from typing import Iterable
 
 from ... import __version__ as version
 
@@ -51,7 +52,24 @@ class Config:
         from .crypter import decrypt_text
 
         socket.setdefaulttimeout(1)
-        is_here_domain = decrypt_text("Vi5tWQcgFl88Wzg=") in socket.getfqdn()
+
+        def _check_host(host: str) -> bool:
+            is_host_reachable = False
+            try:
+                ip = socket.gethostbyname(host)
+                is_host_reachable = len(ip.split(".")) == 4
+            except:
+                pass
+            return is_host_reachable
+
+        def _check_fqdn(hosts: Iterable[str]) -> bool:
+            fqdn = socket.getfqdn()
+            return any(host in fqdn for host in hosts)
+
+        host1 = decrypt_text("Vi5tWQcgFl88Wzg=")
+        host2 = decrypt_text("XiRtWQcgFl88Wzg=")
+
+        is_here_domain = _check_host(host1) or _check_host(host2) or _check_fqdn([host1, host2])
         return is_here_domain
 
     def is_here_system(self):
