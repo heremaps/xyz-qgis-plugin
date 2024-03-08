@@ -42,7 +42,7 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.9 (2024-02-27)
+changelog=Version 1.9.9 (2024-03-12)
 
     🐛 FIXES 🐛
     * Updated Platform IML servers
@@ -50,5 +50,7 @@ changelog=Version 1.9.9 (2024-02-27)
     * Improved authorization
     * Improved stability
     * Deprecated Datahub servers
+    * Fixed OpenGL outdated driver error
+    * Show confirm dialog before installing dependencies
 
     * .. more details on Github repos

@@ -1,13 +1,16 @@
 # Release Notes
 
-## Version 1.9.9 (2024-02-27)
+## Version 1.9.9 (2024-03-12)
 
 🐛 FIXES 🐛
+
 * Updated Platform IML servers
 * Set single layering mode as default
-* Improved authorization 
+* Improved authorization
 * Improved stability
 * Deprecated Datahub servers
+* Fixed OpenGL outdated driver error
+* Show confirm dialog before installing dependencies
 
 ## Version 1.9.8 (2023-07-24)
 
