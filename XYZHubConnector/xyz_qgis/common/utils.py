@@ -50,7 +50,9 @@ def add_qml_import_path(qml_engine):
     # Setup for the MAC OS X platform:
     # return
     if platform.system() == "Darwin" or os.name == "mac":
-        install_qml_dependencies()
+        install_qml_dependencies(
+            isolated=False
+        )  # non-isolated to avoid errors: icu data, sip, qml
         qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "qml"))
         qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "bin"))
     elif platform.system() == "Linux" or os.name == "posix":
@@ -204,6 +206,7 @@ def install_package(
             pass
 
         installed = False
+        ret = 0
         try:
             cmd = f'"{pip_exec}" {" ".join(args)}'
             # cmd = f'"{py_exec}" {" ".join(py_args)}'
@@ -219,8 +222,10 @@ def install_package(
             try:
                 import subprocess
 
-                subprocess.check_call([pip_exec, *args])
-                # subprocess.check_call([py_exec, *py_args])
+                ret = subprocess.check_call([pip_exec, *args])
+                # ret = subprocess.check_call([py_exec, *py_args])
+                print(ret)
+
             except Exception as e:
                 print(e)
 
@@ -232,7 +237,7 @@ def install_package(
         # _reload(module_name)
 
 
-def install_qml_dependencies():
+def install_qml_dependencies(isolated=True):
     package_version = config.get_plugin_setting("PyQtWebEngine_version")
     # install_package(
     #     "PyQtWebEngine", "PyQt5.QtWebEngine", package_version, config.EXTERNAL_LIB_DIR
@@ -241,7 +246,7 @@ def install_qml_dependencies():
         "PyQtWebEngine",
         "PyQt5.QtWebEngine",  # "PyQt5.QtWebEngineWidgets"
         package_version,
-        config.EXTERNAL_LIB_DIR,
+        config.EXTERNAL_LIB_DIR if isolated else "",
         extra_packages=["PyQt5-Qt5"],
     )
 
