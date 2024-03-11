@@ -225,7 +225,7 @@ class PlatformUserAuthentication:
 
         # parent = self.network
         parent = None
-        PlatformAuthLoginView.apply_token(conn_info)
+        self.apply_token(conn_info)
         return self.make_dummy_reply(parent, conn_info, **kw_prop)
 
     def reset_auth(self, conn_info: SpaceConnectionInfo):
