@@ -10,14 +10,14 @@
 
 
 import configparser
-from typing import List, Mapping
+from typing import List, Dict
 
 from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 
 from ..network import datahub_servers
 
-GroupedData = Mapping[str, List[Mapping]]
+GroupedData = Dict[str, List[Dict]]
 
 
 class UsedToken:

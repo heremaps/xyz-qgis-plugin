@@ -9,9 +9,7 @@
 ###############################################################################
 
 
-from qgis.PyQt.QtGui import QStandardItemModel, QStandardItem
-from qgis.PyQt.QtCore import QIdentityProxyModel, Qt, QVariant
-from .token_model import EditableItemModel, UsedToken
+from .token_model import EditableItemModel
 
 
 class FilterModel(EditableItemModel):

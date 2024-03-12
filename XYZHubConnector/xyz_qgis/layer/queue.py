@@ -10,7 +10,7 @@
 
 from collections import deque
 from . import bbox_utils
-from typing import Iterable
+from typing import Dict, List
 from ..common.utils import get_current_millis_time
 
 
@@ -23,7 +23,7 @@ class ParamsQueue(object):
     if response error, retry with smaller limit from h0 to h1
     """
 
-    def __init__(self, params: Iterable, **kw):
+    def __init__(self, params: Dict, **kw):
         raise NotImplementedError()
 
     def has_next(self) -> bool:
@@ -45,7 +45,7 @@ class ParamsQueue(object):
 class SimpleQueue(ParamsQueue):
     """Simple params queue with setter, getter"""
 
-    def __init__(self, params: list = None, key=None, **kw):
+    def __init__(self, params: List = None, key=None, **kw):
         self._queue = list()
         self.idx = 0
         if params:
@@ -151,7 +151,7 @@ class ParamsQueue_deque_v1(ParamsQueue):
     If response error, retry with smaller limit from h0 to h1.
     """
 
-    def __init__(self, params, buffer_size=1):
+    def __init__(self, params: Dict, buffer_size=1):
         self._buffer_size = buffer_size
         self.retries = 0
         self.limit = params.get("limit", 1)
