@@ -10,6 +10,7 @@
 
 import json
 import os
+import platform
 from typing import Callable
 
 try:
@@ -125,7 +126,10 @@ class PlatformAuthLoginView:
 
     @classmethod
     def create_qml_view(cls, login_url: str, title="", cb_login_view_closed=None):
-        QSurfaceFormat.setDefaultFormat(QSurfaceFormat())
+        os.environ["QML_USE_GLYPHCACHE_WORKAROUND"] = "1"
+
+        if not (platform.system() == "Darwin" or os.name == "mac"):
+            QSurfaceFormat.setDefaultFormat(QSurfaceFormat())  # fix fot windows rdp, break mac
 
         view = QQuickView()
         engine = view.engine()
