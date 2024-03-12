@@ -11,7 +11,7 @@
 from qgis.core import QgsProject, QgsApplication
 from qgis.core import Qgis, QgsMessageLog
 
-from qgis.PyQt.QtCore import QCoreApplication, Qt
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QThreadPool
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtWidgets import QProgressBar
@@ -36,6 +36,7 @@ from .xyz_qgis.controller import (
     make_fun_args,
     parse_exception_obj,
     ChainInterrupt,
+    WorkerFun,
 )
 
 from .xyz_qgis.loader import (
@@ -63,8 +64,8 @@ from .xyz_qgis.layer.layer_utils import (
 from .xyz_qgis.layer import tile_utils, XYZLayer
 from .xyz_qgis.layer.layer_props import QProps
 
-
-from .xyz_qgis.network import NetManager, net_handler
+from .xyz_qgis.network import net_handler
+from .xyz_qgis.network.network import NetManager
 from .xyz_qgis.network.net_utils import CookieUtils, PlatformSettings
 from .xyz_qgis.iml.loader import (
     IMLTileLayerLoader,
@@ -75,7 +76,7 @@ from .xyz_qgis.iml.loader import (
     IMLEditSyncController,
 )
 from .xyz_qgis.iml.loader.iml_auth_loader import HomeProjectNotFound, AuthenticationError
-from .xyz_qgis.iml.network import IMLNetworkManager
+from .xyz_qgis.iml.network.network import IMLNetworkManager
 from .xyz_qgis.iml.models import IMLServerTokenConfig
 
 from .xyz_qgis import basemap
@@ -112,7 +113,13 @@ class XYZHubConnector(object):
         self.web_menu = "&{name}".format(name=config.PLUGIN_FULL_NAME)
         self.hasGuiInitialized = False
         self.init_modules()
+        self.init_in_thread()
         self.obj = self
+
+    def init_in_thread(self):
+        self.pool = QThreadPool()
+        fn = WorkerFun(utils.is_here_system, self.pool)
+        fn.call(make_qt_args())
 
     def initGui(self):
         """startup"""
@@ -250,9 +257,7 @@ class XYZHubConnector(object):
 
         # token
         self.token_config = IMLServerTokenConfig(config.USER_PLUGIN_DIR + "/token.ini", parent)
-        self.token_config.set_default_servers(
-            dict(NetManager.API_URL, PLATFORM_PRD="PLATFORM_PRD")
-        )
+        self.token_config.set_default_servers(dict(PLATFORM_PRD="PLATFORM_PRD"))
         self.token_model = self.token_config.get_token_model()
         self.server_model = self.token_config.get_server_model()
 
@@ -416,6 +421,7 @@ class XYZHubConnector(object):
             return
         elif isinstance(e0, net_handler.NetworkUnauthorized):
             # error during list/spaces request
+            # error during tile request when max retry reached (should not occured)
             if not self.handle_net_err(e0):
                 self.show_err_msgbar(
                     e0,
@@ -440,6 +446,7 @@ class XYZHubConnector(object):
         elif isinstance(e0, AuthenticationError):
             if isinstance(e0.error, net_handler.NetworkError):
                 # network error during layer loader, handled by loader, do not handle here
+                # e.g. 403 get_project
                 self.show_err_msgbar(
                     e0, "Please select valid HERE Platform credential and try again"
                 )
@@ -459,7 +466,7 @@ class XYZHubConnector(object):
             # too many errors, handled by doing nothing
             return True
         # clear auth
-        if status in [401, 403]:
+        if status in [401]:
             if conn_info.is_platform_server() and conn_info.is_user_login():
                 self.network_iml.clear_auth(conn_info)
         return
@@ -487,24 +494,14 @@ class XYZHubConnector(object):
         pair = (status, reason) if status else (err, err_str)
         status_msg = "{0!s}: {1!s}\n".format(*pair)
         msg = status_msg + "There was a problem connecting to the server"
-        if status in [401, 403]:
-            instruction_msg = (
-                (
-                    "Please input valid token with correct permissions."
-                    "\n"
-                    "Token is generated via "
-                    "<a href='https://xyz.api.here.com/token-ui/'>"
-                    "https://xyz.api.here.com/token-ui/"
-                    "</a> "
-                )
-                if not conn_info.is_platform_server()
-                else (
-                    "Please input valid Platform app credentials."
-                    if not conn_info.is_user_login()
-                    else "Please retry to login with valid Platform user credentials."
-                )
-            )
-            msg = status_msg + "Authentication failed" "\n\n" + instruction_msg
+        if status == 401:
+            stats_final_msg = "Authentication failed"
+            instruction_msg = "Please use valid credentials"
+            msg = status_msg + stats_final_msg + "\n\n" + instruction_msg
+        elif status == 403:
+            stats_final_msg = "No access"
+            instruction_msg = "Please request access to the layer"
+            msg = status_msg + stats_final_msg + "\n\n" + instruction_msg
         ret = exec_warning_dialog("Network Error", msg, detail)
         return True
 
@@ -825,10 +822,10 @@ class XYZHubConnector(object):
         for qnode in self.iter_visible_xyz_node():
             if qnode.nodeType() == qnode.NodeLayer:
                 layer = qnode.layer()
-                xlayer_id = get_customProperty_str(layer, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(layer)
                 is_editable = layer.isEditable()
             else:
-                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(qnode)
                 is_editable = None
             if xlayer_id in editing_xid:
                 continue
@@ -990,7 +987,7 @@ class XYZHubConnector(object):
     def init_all_layer_loader(self):
         cnt = 0
         for qnode in self.iter_update_all_xyz_node():
-            xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+            xlayer_id = QProps.get_iid(qnode)
             con = self.con_man.get_loader(xlayer_id)
             if con:
                 continue
@@ -1013,7 +1010,7 @@ class XYZHubConnector(object):
                 if is_xyz_supported_layer(vlayer):
                     vlayer.reload()
             return
-        xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        xlayer_id = QProps.get_iid(qnode)
         con = self.con_man.get_interactive_loader(xlayer_id)
         if con:
             con.stop_loading()
@@ -1025,7 +1022,7 @@ class XYZHubConnector(object):
         for i in range(i0, i1 + 1):
             qnode = lst[i]
             if is_parent_root and is_xyz_supported_node(qnode):
-                xlayer_id = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+                xlayer_id = QProps.get_iid(qnode)
                 self.pending_delete_qnodes.setdefault(key, list()).append(xlayer_id)
                 self.con_man.remove_persistent_loader(xlayer_id)
             # is possible to handle vlayer delete here

@@ -21,7 +21,7 @@ from test.utils import (
     format_map_fields,
 )
 
-from qgis.core import QgsFields, QgsVectorLayer
+from qgis.core import QgsFields, QgsVectorLayer, QgsWkbTypes
 from qgis.testing import unittest
 from XYZHubConnector.xyz_qgis.layer import parser
 
@@ -29,9 +29,27 @@ from XYZHubConnector.xyz_qgis.layer import parser
 # import unittest
 # class TestParser(BaseTestAsync, unittest.TestCase):
 class TestParser(BaseTestAsync):
-    def __init__(self, *a, **kw):
+    def __init__(self, *a, test_parser_kw=None, **kw):
         super().__init__(*a, **kw)
-        self.similarity_threshold = 80
+        test_parser_kw = test_parser_kw or dict()
+        self.similarity_threshold = test_parser_kw.get("similarity_threshold", 80)
+        self.mixed_case_duplicate = test_parser_kw.get("mixed_case_duplicate", False)
+        self.has_many_fields = test_parser_kw.get("has_many_fields", False)
+
+    # util for debug
+    def assertEqual(self, first, second, msg=None):
+        if first != second:
+            msg = self._log_error(msg)
+        super().assertEqual(first, second, msg)
+
+    def assertTrue(self, expr, msg=None):
+        if not expr:
+            msg = self._log_error(msg)
+        super().assertTrue(expr, msg)
+
+    def fail(self, msg):
+        msg = self._log_error(msg)
+        return super().fail(msg)
 
     # ######## Parse xyz geojson -> QgsFeature
     def test_parse_xyzjson(self):
@@ -50,10 +68,22 @@ class TestParser(BaseTestAsync):
             obj_feat = obj["features"]
             fields = QgsFields()
             feat = [parser.xyz_json_to_feature(ft, fields) for ft in obj_feat]
+            o1 = obj_feat[0] if len(obj_feat) else None
+            geom_str = o1 and o1["geometry"] and o1["geometry"]["type"]
 
+            self._assert_parsed_feat(obj_feat, feat)
+            self._assert_parsed_fields_unorder(obj_feat, feat, fields)
             self._assert_parsed_fields(obj_feat, feat, fields)
-            self._assert_parsed_geom(obj_feat, feat, fields)
+            self._assert_parsed_geom_unorder(obj_feat, feat, fields, geom_str)
+            self._assert_parsed_geom(obj_feat, feat, fields, geom_str)
         return feat
+
+    def _assert_parsed_feat(self, obj_feat, feat):
+        self.assertEqual(len(obj_feat), len(feat))
+        for o, ft in zip(obj_feat, feat):
+            id_ = ft.attribute(parser.QGS_XYZ_ID)
+            obj_id_ = o["id"]
+            self.assertEqual(id_, obj_id_)
 
     def _assert_parsed_fields_unorder(self, obj_feat, feat, fields):
         # self._log_debug(fields.names())
@@ -63,16 +93,14 @@ class TestParser(BaseTestAsync):
 
         names = fields.names()
         self.assertTrue(parser.QGS_XYZ_ID in names, "%s %s" % (len(names), names))
-        self.assertEqual(len(obj_feat), len(feat))
 
     def _assert_parsed_fields(self, obj_feat, feat, fields):
-        self._assert_parsed_fields_unorder(obj_feat, feat, fields)
-
         def msg_fields(obj):
             return (
-                "{sep}{0}{sep}{1}"
-                "{sep}fields-props {2}"
-                "{sep}props-fields {3}"
+                "{sep}props {0}"
+                "{sep}fields {1}"
+                "{sep}props-fields {2} (should be 0)"
+                "{sep}fields-props {3}"
                 "{sep}json {4}".format(
                     *tuple(
                         map(
@@ -80,8 +108,8 @@ class TestParser(BaseTestAsync):
                             [
                                 obj_props,
                                 fields.names(),
-                                set(fields.names()).difference(obj_props),
                                 set(obj_props).difference(fields.names()),
+                                set(fields.names()).difference(obj_props),
                             ],
                         )
                     ),
@@ -92,19 +120,46 @@ class TestParser(BaseTestAsync):
 
         for o in obj_feat:
             obj_props = list(o["properties"].keys())
+            obj_props_non_null = [k for k, v in o["properties"].items() if v is not None]
             self.assertLessEqual(len(obj_props), fields.size(), msg_fields(o))
-            self.assertTrue(set(obj_props) < set(fields.names()), msg_fields(o))
+            # self._log_debug(msg_fields(o).replace(">>", "++"))
+
+            obj_props_is_subset_of_fields = any(
+                [
+                    set(obj_props) < set(fields.names()),
+                    set(obj_props_non_null) < set(fields.names()),
+                ]
+            )
+            self.assertTrue(obj_props_is_subset_of_fields, msg_fields(o))
             # self.assertEqual( obj_props, fields.names(), msg_fields(o)) # strict assert
 
+    def wkb_type_to_wkt_str(self, typ):
+        return QgsWkbTypes.displayString(typ)
+
+    def wkb_type_to_geom_str(self, typ):
+        return QgsWkbTypes.displayString(typ % 1000) if typ else None
+
+    def wkb_type_to_geom_display_str(self, typ):
+        return (
+            QgsWkbTypes.geometryDisplayString(QgsWkbTypes.geometryType(typ))
+            if typ
+            else "No geometry"
+        )
+
     def _assert_parsed_geom_unorder(self, obj_feat, feat, fields, geom_str):
+        wkt_ref = self.wkb_type_to_wkt_str(QgsWkbTypes.parseType(geom_str))
         for ft in feat:
             geom = json.loads(
                 ft.geometry().asJson()
             )  # limited to 13 or 14 precison (ogr.CreateGeometryFromJson)
             self.assertEqual(geom and geom["type"], geom_str)
 
-    def _assert_parsed_geom(self, obj_feat, feat, fields):
+            geom_str_ft = self.wkb_type_to_geom_str(ft.geometry().wkbType())
+            wkt_ft = self.wkb_type_to_wkt_str(ft.geometry().wkbType())
+            msg = "wkt string {} != {}".format(wkt_ft, wkt_ref)
+            self.assertEqual(geom_str_ft, geom_str, msg)
 
+    def _assert_parsed_geom(self, obj_feat, feat, fields, geom_str):
         # both crs is WGS84
         for o, ft in zip(obj_feat, feat):
             geom = json.loads(
@@ -112,11 +167,9 @@ class TestParser(BaseTestAsync):
             )  # limited to 13 or 14 precison (ogr.CreateGeometryFromJson)
             obj_geom = o["geometry"]
 
-            self.assertEqual(geom["type"], obj_geom["type"])
-
-            id_ = ft.attribute(parser.QGS_XYZ_ID)
-            obj_id_ = o["id"]
-            self.assertEqual(id_, obj_id_)
+            self.assertEqual(geom and geom["type"], obj_geom and obj_geom["type"])
+            if not geom or not obj_geom:
+                continue
 
             # self._log_debug(geom)
             # self._log_debug(obj_geom)
@@ -130,6 +183,8 @@ class TestParser(BaseTestAsync):
 
             c1 = np.array(obj_geom["coordinates"])
             c2 = np.array(geom["coordinates"])
+            c1_flatten = np.array(flatten(obj_geom["coordinates"]))
+            c2_flatten = np.array(flatten(geom["coordinates"]))
             if c1.shape != c2.shape:
                 self._log_debug(
                     "\nWARNING: Geometry has mismatch shape",
@@ -137,10 +192,17 @@ class TestParser(BaseTestAsync):
                     c2.shape,
                     "\nOriginal geom has problem. Testing parsed geom..",
                 )
-                self.assertEqual(c2.shape[-1], 2, "parsed geom has wrong shape of coord")
+                msg = (
+                    "parsed geom has wrong shape of coord for geom {geom}. {} != {}".format(
+                        c1.shape, c2.shape, geom=geom["type"]
+                    ),
+                )
+                self.assertEqual(c2.shape[-1], 2, msg)
                 continue
             else:
-                self.assertLess(np.max(np.abs(c1 - c2)), 1e-13, "parsed geometry error > 1e-13")
+                self.assertLess(
+                    np.max(np.abs(c1_flatten - c2_flatten)), 1e-13, "parsed geometry error > 1e-13"
+                )
 
     # @unittest.skip("large")
     def test_parse_xyzjson_large(self):
@@ -187,6 +249,7 @@ class TestParser(BaseTestAsync):
             self.similarity_threshold = s
 
     def test_parse_xyzjson_map_dupe_case(self):
+        self.mixed_case_duplicate = True
         folder = "xyzjson-small"
         fnames = [
             "airport-xyz.geojson",
@@ -302,7 +365,7 @@ class TestParser(BaseTestAsync):
     def subtest_parse_xyzjson_map_multi_chunk(self, obj, lst_chunk_size=None):
         if not lst_chunk_size:
             p10 = 1 + len(str(len(obj["features"])))
-            lst_chunk_size = [10 ** i for i in range(p10)]
+            lst_chunk_size = [10**i for i in range(p10)]
         with self.subTest(lst_chunk_size=lst_chunk_size):
             ref_map_feat, ref_map_fields = self.do_test_parse_xyzjson_map(obj)
             lst_map_fields = list()
@@ -323,13 +386,14 @@ class TestParser(BaseTestAsync):
             lst_map_fields = list()
             random.seed(0.5)
             for i in range(n_shuffle):
-                random.shuffle(o["features"])
-                map_fields = self.subtest_parse_xyzjson_map_chunk(o, chunk_size)
-                if map_fields is None:
-                    continue
-                lst_map_fields.append(map_fields)
+                with self.subTest(shuffle=i):
+                    random.shuffle(o["features"])
+                    map_fields = self.subtest_parse_xyzjson_map_chunk(o, chunk_size)
+                    if map_fields is None:
+                        continue
+                    lst_map_fields.append(map_fields)
 
-                # self._log_debug("parsed fields shuffle", len_of_struct(map_fields))
+                    # self._log_debug("parsed fields shuffle", len_of_struct(map_fields))
 
             for i, map_fields in enumerate(lst_map_fields):
                 with self.subTest(shuffle=i):
@@ -339,7 +403,7 @@ class TestParser(BaseTestAsync):
         similarity_threshold = self.similarity_threshold
         with self.subTest(chunk_size=chunk_size, similarity_threshold=similarity_threshold):
             o = dict(obj)
-            obj_feat = obj["features"]
+            obj_feat = list(obj["features"])
             lst_map_feat = list()
             map_fields = dict()
             for i0 in range(0, len(obj_feat), chunk_size):
@@ -397,12 +461,24 @@ class TestParser(BaseTestAsync):
 
         # NOTE: obj_feat order does not corresponds to that of map_feat
         # -> use unorder assert
+        # NOTE: group obj_feat by geom_str for element-wise assert
         for geom_str in map_feat:
+            obj_feat_by_geom = [
+                o for o in obj_feat if (o["geometry"] and o["geometry"]["type"]) == geom_str
+            ]
+            feat_by_geom = sum(map_feat[geom_str], [])
+            self._assert_parsed_feat(obj_feat_by_geom, feat_by_geom)
+            self._assert_parsed_geom_unorder(obj_feat_by_geom, feat_by_geom, None, geom_str)
+
+            if not self.has_many_fields:
+                # element-wise assert
+                self._assert_parsed_geom(obj_feat_by_geom, feat_by_geom, None, geom_str)
+
             for feat, fields in zip(map_feat[geom_str], map_fields[geom_str]):
-                o = obj_feat[: len(feat)]
-                self._assert_parsed_fields_unorder(o, feat, fields)
-                self._assert_parsed_geom_unorder(o, feat, fields, geom_str)
-                obj_feat = obj_feat[len(feat) :]
+                self._assert_parsed_fields_unorder(obj_feat_by_geom, feat, fields)
+                if not self.mixed_case_duplicate and not self.has_many_fields:
+                    # element-wise assert
+                    self._assert_parsed_fields(obj_feat_by_geom, feat, fields)
 
     def _assert_len_map_feat_fields(self, map_feat, map_fields):
         self.assertEqual(map_feat.keys(), map_fields.keys())

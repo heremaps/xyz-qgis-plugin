@@ -128,7 +128,7 @@ class NetworkResponse:
                 space_id,
                 url,
             )
-            QgsMessageLog.logMessage("Network Ok! : %s" % msg, config.TAG_PLUGIN, Qgis.Success)
+            # QgsMessageLog.logMessage("Network Ok! : %s" % msg, config.TAG_PLUGIN, Qgis.Success)
 
 
 def on_received(reply):

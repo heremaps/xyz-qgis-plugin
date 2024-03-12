@@ -9,7 +9,7 @@
 ###############################################################################
 
 from .iml_auth_loader import IMLAuthLoader, IMLProjectScopedSemiAuthLoader
-from ..network import IMLNetworkManager
+from ..network.network import IMLNetworkManager
 from ...common.signal import make_fun_args, make_qt_args
 from ...controller import NetworkFun, WorkerFun, AsyncFun, ChainController, DelayedIdentityFun
 

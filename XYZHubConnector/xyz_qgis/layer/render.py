@@ -7,11 +7,14 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
+from typing import List
 
 from qgis.core import (
     QgsWkbTypes,
     QgsFeatureRequest,
     QgsCoordinateReferenceSystem,
+    QgsFields,
+    QgsFeature,
 )
 from qgis.utils import iface
 
@@ -19,6 +22,56 @@ from . import parser
 from ..common.signal import make_print_qgis
 
 print_qgis = make_print_qgis("render")
+
+
+class RenderError(Exception):
+    pass
+
+
+class RenderFieldsError(RenderError):
+    def __init__(self, vlayer_name: str, fields: QgsFields, *a, **kw):
+        super().__init__(vlayer_name, fields, *a, **kw)
+
+    def get_vlayer_name(self):
+        return self.args[0]
+
+    def get_fields(self):
+        return self.args[1]
+
+    def __repr__(self):
+        fields = self.get_fields()
+        return "{classname}(vlayer={vlayer_name}, cnt={cnt}, field_names={field_names})".format(
+            classname=self.__class__.__name__,
+            vlayer_name=self.get_vlayer_name(),
+            cnt=len(fields),
+            field_names=fields.names(),
+        )
+
+
+class RenderFeaturesError(RenderError):
+    def __init__(self, vlayer_name: str, features: List[QgsFeature], *a, **kw):
+        super().__init__(vlayer_name, features, *a, **kw)
+
+    def get_vlayer_name(self):
+        return self.args[0]
+
+    def get_features(self):
+        return self.args[1]
+
+    def __repr__(self):
+        features = self.get_features()
+        field_names = features[0].fields().names() if len(features) else list()
+
+        return (
+            "{classname}(vlayer={vlayer_name}, cnt={cnt}, field_cnt={field_cnt}, "
+            "field_names={field_names})".format(
+                classname=self.__class__.__name__,
+                vlayer_name=self.get_vlayer_name(),
+                cnt=len(features),
+                field_cnt=len(field_names),
+                field_names=field_names,
+            )
+        )
 
 
 # mixed-geom
@@ -70,7 +123,7 @@ def add_feature_render(vlayer, feat, new_fields):
         feat = filter(None, (parser.transform_geom(ft, transformer) for ft in feat if ft))
 
     names = set(pr.fields().names())
-    assert parser.check_non_expression_fields(new_fields)
+    assert parser.check_non_expression_fields(new_fields)  # precondition
     diff_fields = [f for f in new_fields if not f.name() in names]
 
     # print_qgis(len(names), names)
@@ -83,14 +136,23 @@ def add_feature_render(vlayer, feat, new_fields):
     # reset fid value (deprecated thanks to unique field name)
     # for i,f in enumerate(feat): f.setAttribute(parser.QGS_ID,None)
 
-    pr.addAttributes(diff_fields)
+    attribute_ok = pr.addAttributes(diff_fields)
+    if not attribute_ok:
+        raise RenderFieldsError(vlayer.name(), diff_fields)
+
     vlayer.updateFields()
 
-    # update feature fields according to provider fields
-    if not parser.check_same_fields(new_fields, pr.fields()):
-        feat = filter(None, (parser.update_feature_fields(ft, pr.fields()) for ft in feat if ft))
+    # assert parser.check_same_fields(new_fields, pr.fields()) # validate addAttributes
+
+    # always update feature fields according to provider fields
+    feat = filter(
+        None, (parser.update_feature_fields(ft, pr.fields(), new_fields) for ft in feat if ft)
+    )
 
     ok, out_feat = pr.addFeatures(feat)
+    if not ok:
+        raise RenderFeaturesError(vlayer.name(), out_feat)
+
     vlayer.updateExtents()  # will hide default progress bar
     # post_render(vlayer) # disable in order to keep default progress bar running
     # vlayer.reload() # comment out to have less crash when loading large geometries

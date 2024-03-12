@@ -11,7 +11,7 @@
 name=HERE Maps for QGIS
 qgisMinimumVersion=3.0
 description=Connect QGIS to Interactive Map Layers in the HERE Platform (https://platform.here.com) and your personal spaces in HERE Data Hub.
-version=1.9.8
+version=1.9.9
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
@@ -42,13 +42,15 @@ experimental=False
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
 
-changelog=Version 1.9.8 (2023-07-24)
+changelog=Version 1.9.9 (2024-03-12)
 
     🐛 FIXES 🐛
-    * Supports Here Platform login for MacOS
-    * Fixes issues with login and expired token
-    * Do not store Here Platform email and token into project files
-    * Fixes issue that some features are not displayed
-    * Improves UX and stability
+    * Updated Platform IML servers
+    * Set single layering mode as default
+    * Improved authorization
+    * Improved stability
+    * Deprecated Datahub servers
+    * Fixed OpenGL outdated driver error
+    * Show confirm dialog before installing dependencies
 
     * .. more details on Github repos

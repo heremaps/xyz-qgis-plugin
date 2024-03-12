@@ -8,11 +8,8 @@
 #
 ###############################################################################
 
-__author__ = "Minh Nguyen"
-__copyright__ = "Copyright 2019, HERE Europe B.V."
 
-__license__ = "MIT"
-__version__ = "1.9.9"
-__maintainer__ = "Minh Nguyen"
-__email__ = "huyminh.nguyen@here.com"
-__status__ = "Development"
+API_CIT_URL = "https://xyz.cit.api.here.com/hub"
+API_PRD_URL = "https://xyz.api.here.com/hub"
+API_SIT_URL = "https://xyz.sit.cpdev.aws.in.here.com/hub"
+API_URL = dict(PRD=API_PRD_URL, CIT=API_CIT_URL, SIT=API_SIT_URL)

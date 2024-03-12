@@ -10,6 +10,7 @@
 
 import os
 import sys
+import site
 
 from qgis.core import QgsApplication
 
@@ -34,8 +35,9 @@ override_config(dict(filter(lambda kv: kv[0].isupper(), locals().items())))
 
 
 def load_external_lib():
-    if EXTERNAL_LIB_DIR not in sys.path:
-        sys.path.insert(0, EXTERNAL_LIB_DIR)
+    site.addsitedir(EXTERNAL_LIB_DIR)
+    # if EXTERNAL_LIB_DIR not in sys.path:
+    #     sys.path.insert(0, EXTERNAL_LIB_DIR)
 
 
 def unload_external_lib():

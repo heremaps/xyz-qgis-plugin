@@ -19,7 +19,7 @@ from test.utils import (
     AllErrorsDuringTest,
 )
 from test.test_layer_loader import TestReLoader, TestLoader
-from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from XYZHubConnector.xyz_qgis.loader import TileLayerLoader, EmptyXYZSpaceError
 from XYZHubConnector.xyz_qgis.layer import bbox_utils, tile_utils, layer_utils
 

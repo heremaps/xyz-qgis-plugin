@@ -12,6 +12,7 @@ from qgis.PyQt.QtWidgets import QDialog
 
 from .. import get_ui_class
 from ..token_info_dialog import ServerInfoDialog
+from ...common.utils import is_here_system
 from ...models import API_TYPES, SpaceConnectionInfo
 from ...iml.models.iml_token_model import get_api_type
 
@@ -99,6 +100,11 @@ class IMLServerInfoDialog(ServerInfoDialog):
         self.comboBox_api_type.addItems([s.upper() for s in API_TYPES])
         self.comboBox_token.addItems(self.PLATFORM_SERVERS)
         self.comboBox_token.setEnabled(False)
+        if is_here_system():
+            self.comboBox_token.setEnabled(True)
+
+        self.comboBox_api_type.setCurrentIndex(0)
+        self.cb_change_api_type(0)
 
         self.comboBox_api_type.currentIndexChanged.connect(self.cb_change_api_type)
         self.comboBox_api_type.currentIndexChanged.connect(self.ui_enable_btn)

@@ -40,6 +40,7 @@ ALL_SPECIAL_KEYS = set(QGS_SPECIAL_KEYS).union(XYZ_SPECIAL_KEYS)
 PAYLOAD_LIMIT = int(1e7)  # Amazon API limit: 10485760
 URL_LIMIT = 2000  # max url length: 2000
 URL_BASE_LEN = 60  # https://xyz.api.here.com/hub/spaces/12345678/features/
+DEFAULT_SIMILARITY_THRESHOLD = 0  # single: 0, balnced: 80
 
 
 def make_lst_removed_ids(removed_ids):
@@ -314,9 +315,9 @@ def filter_props_names(fields_names):
     return [s for s in fields_names if not is_special_key(s)]
 
 
-def fields_similarity(ref_names, orig_names, names):
+def fields_similarity(ref_names, orig_names, names) -> int:
     """
-    compute fields similarity [0..1].
+    compute fields similarity [0..100].
 
     High score means 2 given fields are similar and should be merged
     """
@@ -327,8 +328,8 @@ def fields_similarity(ref_names, orig_names, names):
     x = len(same_names)
     # if n1 == 0 or n2 == 0: return 1 # handle empty, variant 1
     if n1 == 0 and n2 == 0:
-        return 1  # handle empty, variant 2
-    return max((1.0 * x / n) if n > 0 else 0 for n in [n1, n2])
+        return 100  # handle empty, variant 2
+    return int(max((100 * x / n) if n > 0 else 0 for n in [n1, n2]))
 
 
 def new_fields_gpkg():
@@ -438,7 +439,7 @@ def check_same_fields(fields1: QgsFields, fields2: QgsFields):
     return len_ok and name_ok and field_origin_ok
 
 
-def update_feature_fields(feat: QgsFeature, fields: QgsFields):
+def update_feature_fields(feat: QgsFeature, fields: QgsFields, ref: QgsFields):
     """
     Update fields of feature and its data (QgsAttributes)
 
@@ -447,10 +448,14 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields):
     :return: new QgsFeature with updated fields
     """
     old_fields = feat.fields()
+    names, old_names = fields.names(), old_fields.names()
     try:
-        assert set(fields.names()).issuperset(
-            set(old_fields.names())
-        ), "new fields must be a super set of existing fields of feature"
+        assert set(names).issuperset(set(old_names)), (
+            "new fields must be a super set of existing fields of feature.\n"
+            + "new: {} {}\nold: {} {}\nref: {} {}".format(
+                len(names), names, len(old_names), old_names, len(ref.names()), ref.names()
+            )
+        )
     except AssertionError as e:
         print_error(e)
         return
@@ -462,7 +467,7 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields):
     return ft
 
 
-def prepare_fields(feat_json, lst_fields, threshold=0.8):
+def prepare_fields(feat_json, lst_fields, threshold=DEFAULT_SIMILARITY_THRESHOLD):
     """
     Decide to merge fields or create new fields based on fields similarity score [0..1].
     Score lower than threshold will result in creating new fields instead of merging fields
@@ -483,21 +488,20 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
             props_names,
         )
         if fields.size() > 1
-        else -1
+        else -1  # mark empty fields
         for fields in lst_fields
     ]
     idx, score = max(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
     idx_min, score_min = min(enumerate(lst_score), key=lambda x: x[1], default=[0, 0])
 
-    if score < threshold or not idx < len(lst_fields):  # new fields
-        if score_min >= 0:  # new fields
-            idx = len(lst_fields)
-            fields = new_fields_gpkg()
-            lst_fields.append(fields)
-        else:  # select empty fields
-            idx = idx_min
-            fields = lst_fields[idx]
-    else:
+    if len(lst_fields) == 0 or (score < threshold and score_min > -1):  # new fields
+        idx = len(lst_fields)
+        fields = new_fields_gpkg()
+        lst_fields.append(fields)
+    elif score_min == -1:  # select empty fields
+        idx = idx_min
+        fields = lst_fields[idx]
+    else:  # select fields with highest score
         fields = lst_fields[idx]
     # print("len prop", len(props_names), idx, "score", lst_score, "lst_fields", len(lst_fields))
     # print("len fields", [f.size() for f in lst_fields])
@@ -505,7 +509,9 @@ def prepare_fields(feat_json, lst_fields, threshold=0.8):
     return fields, idx
 
 
-def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
+def xyz_json_to_feature_map(
+    obj, map_fields=None, similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD
+):
     """
     xyz json to feature, organize in to map of geometry,
     then to list of list of features.
@@ -517,34 +523,32 @@ def xyz_json_to_feature_map(obj, map_fields=None, similarity_threshold=None):
             100: map_fields should have as many as possible fields/geom
     """
 
-    def _single_feature_map(feat_json, map_feat, map_fields):
+    def _single_feature_map(feat_json, map_feat_, map_fields_):
         geom = feat_json.get("geometry")
         g = geom["type"] if geom is not None else None
 
         # # promote to multi geom
         # if g is not None and not g.startswith("Multi"): g = "Multi" + g
 
-        lst_fields = map_fields.setdefault(g, list())
-        if similarity_threshold is None:
-            fields, idx = prepare_fields(feat_json, lst_fields)
-        else:
-            fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold / 100)
+        lst_fields = map_fields_.setdefault(g, list())
+        fields, idx = prepare_fields(feat_json, lst_fields, similarity_threshold)
 
-        ft = xyz_json_to_feature(feat_json, fields)
+        feat = xyz_json_to_feature(feat_json, fields)
+        lst_fields[idx] = feat.fields()
+        # FIX: as fields is modified during processing, reassign it to lst_fields
 
-        lst = map_feat.setdefault(g, list())
+        lst_feat = map_feat_.setdefault(g, list())
+        while len(lst_feat) < len(lst_fields):
+            lst_feat.append(list())
+        lst_feat[idx].append(feat)
 
-        while len(lst) < len(lst_fields):
-            lst.append(list())
-        lst[idx].append(ft)
-
-    lst_feat = obj["features"]
+    lst_all_feat = obj["features"]
     if map_fields is None:
         map_fields = dict()
     # map_feat = dict()
     map_feat = dict((k, [list() for _ in enumerate(v)]) for k, v in map_fields.items())
 
-    for ft in lst_feat:
+    for ft in lst_all_feat:
         _single_feature_map(ft, map_feat, map_fields)
 
     return map_feat, map_fields

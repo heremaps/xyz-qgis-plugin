@@ -65,11 +65,11 @@ class ConnectUX(SpaceUX):
 
         for text, data in [
             ("single", 0),
-            ("maximal", 100),
             ("balanced", 80),
+            ("maximal", 100),
         ]:
             self.comboBox_similarity_threshold.addItem(text, data)
-        self.comboBox_similarity_threshold.setCurrentIndex(2)
+        self.comboBox_similarity_threshold.setCurrentIndex(0)
         self.comboBox_similarity_threshold.setToolTip(
             "\n".join(
                 [

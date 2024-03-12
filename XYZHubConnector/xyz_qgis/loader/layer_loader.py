@@ -31,7 +31,8 @@ from ..layer.edit_buffer import LayeredEditBuffer
 from ..layer.layer_utils import update_vlayer_editorWidgetSetup
 from ..models import SpaceConnectionInfo
 from ..models.connection import mask_token
-from ..network import NetManager, net_handler
+from ..network import net_handler
+from ..network.network import NetManager
 
 from ..common.signal import make_print_qgis
 
@@ -39,6 +40,7 @@ print_qgis = make_print_qgis("layer_loader")
 
 Meta = Dict[str, str]
 Geojson = Dict
+
 
 ########################
 # Load
@@ -87,6 +89,11 @@ class LoadLayerController(BaseLoader):
             self._config_layer_callback(layer)
 
     def post_render(self, *a, **kw):
+        if self.is_not_running():
+            return
+        self._post_render()
+
+    def _post_render(self):
         for v in self.layer.iter_layer():
             update_vlayer_editorWidgetSetup(v)
             v.triggerRepaint()
@@ -264,6 +271,8 @@ class LoadLayerController(BaseLoader):
     def _render_single(self, geom, idx, feat, fields, kw_params):
         if not feat:
             return
+        if self.is_not_running():
+            return
         vlayer = self._create_or_get_vlayer(geom, idx)
         render.add_feature_render(vlayer, feat, fields)
 
@@ -278,9 +287,12 @@ class LoadLayerController(BaseLoader):
         self.stop_loading()
         self.layer.destroy()
 
+    def is_not_running(self):
+        return self.status in [self.FINISHED, self.STOPPED]
+
     def stop_loading(self):
         """Stop loading immediately"""
-        if self.status in [self.FINISHED, self.STOPPED]:
+        if self.is_not_running():
             return
         try:
             self.status = self.STOPPED
@@ -421,13 +433,16 @@ class LiveTileLayerLoader(TileLayerLoader):
         self.params_queue = queue.SimpleQueue(key="tile_id")  # dont have retry logic
 
     def _render_single(self, geom, idx, feat, fields, kw_params):
-        vlayer = self._create_or_get_vlayer(geom, idx)
+        if self.is_not_running():
+            return
         tile_id = kw_params.get("tile_id")
         tile_schema = kw_params.get("tile_schema")
         lrc = tile_utils.parse_tile_id(tile_id, schema=tile_schema)
         rcl = [lrc[k] for k in ["row", "col", "level"]]
         extent = tile_utils.extent_from_row_col(*rcl, schema=tile_schema)
+        vlayer = self._create_or_get_vlayer(geom, idx)
         render.clear_features_in_extent(vlayer, QgsRectangle(*extent))
+        # if no feat received, only clear the current extent
         if not feat:
             return
         render.add_feature_render(vlayer, feat, fields)

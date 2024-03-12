@@ -7,19 +7,30 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
+import logging
+import random
+import string
 
 from qgis.PyQt.QtCore import QEventLoop, QThreadPool
 from qgis.testing import unittest, start_app
 
 from XYZHubConnector.xyz_qgis.controller import AsyncFun, WorkerFun
 from XYZHubConnector.xyz_qgis.common.error import pretty_print_error
-from XYZHubConnector.xyz_qgis.network import NetManager, net_utils
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from XYZHubConnector.xyz_qgis.models import SpaceConnectionInfo
 
 import time
 import sys
-import os
 import pprint
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[
+        logging.StreamHandler(stream=sys.stdout),
+        # logging.FileHandler(os.path.join("err-log", f"log-{__name__}.log")),
+    ],
+)
+logger = logging.getLogger("TEST")
 
 
 def get_env(scope, keys):
@@ -105,7 +116,14 @@ class BaseTestAsync(unittest.TestCase):
         return AsyncFun(fun)
 
     def _log_error(self, *a, **kw):
-        print(*a, file=sys.stderr, **kw)
+        # print(*a, file=sys.stderr, **kw)
+        errorId = random_id(8)
+        errorIdMsg = "errorId: {}".format(errorId)
+        fullMsg = " ".join(filter(None, [errorIdMsg, *a]))
+        fn_name = "{}:".format(self._id())
+        msg = format_long_args(fn_name, errorIdMsg, *a, limit=1000)
+        logger.error(msg, **kw)
+        return fullMsg
 
     def _log_info(self, *a, **kw):
         log_truncate(*a, **kw)
@@ -113,7 +131,7 @@ class BaseTestAsync(unittest.TestCase):
     def _log_debug(self, *a, **kw):
         fn_name = "{}:".format(self._id())
         # fn_name = sys._getframe(1).f_code.co_name
-        log_truncate(fn_name, *a, **kw)
+        log_truncate(fn_name, *a, limit=1000, **kw)
 
     def _id(self):
         return self._subtest.id() if self._subtest else self.id()
@@ -160,11 +178,11 @@ def format_long_args(*a, limit=200):
     return " ".join(str(i)[:limit] for i in a)
 
 
-def log_truncate(*a, **kw):
+def log_truncate(*a, limit=200, **kw):
     # return
-    # print(*a,**kw)
-    s = format_long_args(*a)
-    print(s, **kw)
+    # print(*a, **kw)
+    s = format_long_args(*a, limit=limit)
+    logger.info(s, **kw)
 
 
 def log_truncate_timestamp(*a, **kw):
@@ -354,3 +372,15 @@ def get_conn_info(key):
     if token is not None:
         conn_info.set_(token=token, space_id=space_id, server=server)
     return conn_info
+
+
+def random_id(N, punctuation=None):
+    return "".join(
+        random.choices(
+            string.ascii_uppercase
+            + string.ascii_lowercase
+            + string.digits
+            + (string.punctuation if punctuation else ""),
+            k=N,
+        )
+    )

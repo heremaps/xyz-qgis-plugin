@@ -19,7 +19,7 @@ from test.utils import (
     AllErrorsDuringTest,
     slow_test,
 )
-from XYZHubConnector.xyz_qgis.network import NetManager
+from XYZHubConnector.xyz_qgis.network.network import NetManager
 from XYZHubConnector.xyz_qgis.loader import LoadLayerController, ManualInterrupt
 
 from qgis.core import QgsProject
@@ -148,7 +148,8 @@ class TestReLoader(TestLoader):
                 timer.stop()
                 lst_layer.append(loader.layer)
 
-            # with self.assertRaises(AllErrorsDuringTest, msg="stopping loader should emit error") as cm:
+            # with self.assertRaises(
+            # AllErrorsDuringTest, msg="stopping loader should emit error") as cm:
             #     self._wait_async()
             # lst_err = cm.exception.args[0]
             # self.assertIsInstance(lst_err[0], ManualInterrupt)

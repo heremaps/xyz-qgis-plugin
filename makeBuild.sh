@@ -37,9 +37,14 @@ fi
 (
 cd build
 if $( echo $ver | grep -q alpha ); then
-  sed -i "" -e "s/name=.*/name=HERE Maps for QGIS alpha/" \
+  sed -i"" -e "s/name=.*/\0 alpha/" \
     -e "s/version=.*/version=$ver/" \
     ./$folder/metadata.txt
 fi
+if [ "$folderSuffix" ]; then
+  sed -i"" -e "s/name=.*/\0 $folderSuffix/" \
+    ./$folder/metadata.txt
+fi
+
 python ../zip_dir.py $folder QGIS-XYZ-Plugin-$ver.zip
 )

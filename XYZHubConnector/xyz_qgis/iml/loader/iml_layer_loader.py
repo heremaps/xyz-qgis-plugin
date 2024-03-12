@@ -25,7 +25,7 @@ from ...common.signal import make_fun_args
 
 
 class IMLAuthExtension:
-    MAX_RETRY_COUNT = 1
+    MAX_RETRY_COUNT = 2
 
     def __init__(self, network, *a, **kw):
         # setup retry with reauth
@@ -51,6 +51,7 @@ class IMLAuthExtension:
         else:
             e = chain_err
         if isinstance(e, NetworkError):  # retry only when network error, not timeout
+            # print(e, self._retry_cnt)
             response = e.get_response()
             status = response.get_status()
             reply = response.get_reply()
@@ -97,8 +98,8 @@ class IMLTileLayerLoader(IMLAuthExtension, TileLayerLoader):
         self._refresh_loader(self.network, self)
         super()._start(**kw)
 
-    def post_render(self, *a, **kw):
-        super().post_render(*a, **kw)
+    def _post_render(self):
+        super()._post_render()
         self._save_conn_info_to_layer(self)
 
 
@@ -118,8 +119,8 @@ class IMLLayerLoader(IMLAuthExtension, LoadLayerController):
         self._refresh_loader(self.network, self)
         super()._start(**kw)
 
-    def post_render(self, *a, **kw):
-        super().post_render(*a, **kw)
+    def _post_render(self):
+        super()._post_render()
         self._save_conn_info_to_layer(self)
 
     def _retry_with_auth(self, reply):

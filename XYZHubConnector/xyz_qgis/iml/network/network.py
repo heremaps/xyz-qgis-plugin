@@ -11,9 +11,12 @@
 import time
 import base64
 import json
+from typing import Dict
 
-from .login_webengine import PlatformUserAuthentication, PlatformAuthLoginView
+from .login_webengine import PlatformUserAuthentication
 from .net_handler import IMLNetworkHandler
+from .platform_server import PlatformServer
+from ...common.crypter import decrypt_text
 from ...models import SpaceConnectionInfo
 from ...network.network import NetManager
 from ...network.net_utils import (
@@ -31,42 +34,37 @@ print_qgis = make_print_qgis("iml.network")
 class IMLNetworkManager(NetManager):
     TIMEOUT_COUNT = 10000
 
-    API_PRD_URL = "https://interactive.data.api.platform.here.com/interactive/v1"
-    API_SIT_URL = "https://interactive-dev-eu-west-1.api-gateway.sit.ls.hereapi.com/interactive/v1"
-    API_KOREA_URL = "https://ap-northeast-2.interactive.data.api.platform.here.com/interactive/v1"
-    API_CONFIG_PRD_URL = "https://config.data.api.platform.here.com/config/v1"
-    API_CONFIG_SIT_URL = "https://config.data.api.platform.sit.here.com/config/v1"
-    API_OAUTH_PRD_URL = "https://account.api.here.com/oauth2/token"
-    API_OAUTH_SIT_URL = "https://stg.account.api.here.com/oauth2/token"
-    API_AUTH_PRD_URL = "https://account.api.here.com/authorization/v1.1"
-    API_AUTH_SIT_URL = "https://stg.account.api.here.com/authorization/v1.1"
-
     API_GROUP_INTERACTIVE = "interactive"
     API_GROUP_CONFIG = "config"
-    API_GROUP_OAUTH = "oauth"
     API_GROUP_AUTH = "auth"
+    API_GROUP_OAUTH = "oauth"
 
     API_SIT = "SIT"
     API_PRD = "PRD"
     API_KOREA = "KOREA"
+    API_CHINA = "CHINA"
 
     API_URL = {
         API_GROUP_INTERACTIVE: {
-            API_KOREA: API_KOREA_URL,
-            API_PRD: API_PRD_URL,
-            API_SIT: API_SIT_URL,
+            API_PRD: PlatformServer.API_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_SIT_URL),
+            API_KOREA: decrypt_text(PlatformServer.API_KOREA_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_CHINA_URL),
         },
         API_GROUP_CONFIG: {
-            API_PRD: API_CONFIG_PRD_URL,
-            API_SIT: API_CONFIG_SIT_URL,
-        },
-        API_GROUP_OAUTH: {
-            API_PRD: API_OAUTH_PRD_URL,
-            API_SIT: API_OAUTH_SIT_URL,
+            API_PRD: PlatformServer.API_CONFIG_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_CONFIG_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_CONFIG_CHINA_URL),
         },
         API_GROUP_AUTH: {
-            API_PRD: API_AUTH_PRD_URL,
-            API_SIT: API_AUTH_SIT_URL,
+            API_PRD: PlatformServer.API_AUTH_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_AUTH_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_AUTH_CHINA_URL),
+        },
+        API_GROUP_OAUTH: {
+            API_PRD: PlatformServer.API_OAUTH_PRD_URL,
+            API_SIT: decrypt_text(PlatformServer.API_OAUTH_SIT_URL),
+            API_CHINA: decrypt_text(PlatformServer.API_OAUTH_CHINA_URL),
         },
     }
 
@@ -171,8 +169,7 @@ class IMLNetworkManager(NetManager):
     def __init__(self, parent):
         super().__init__(parent)
         self.user_auth_module = PlatformUserAuthentication(self.network)
-        self.platform_auth = PlatformAuthLoginView()
-        self._connected_conn_info: dict[str, SpaceConnectionInfo] = dict()
+        self._connected_conn_info: Dict[str, SpaceConnectionInfo] = dict()
         self.load_all_connected_conn_info_from_settings()
 
     def _get_api_url(self, server: str, api_group):
@@ -335,10 +332,10 @@ class IMLNetworkManager(NetManager):
         return conn_info
 
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):
-        conn_info = self.platform_auth.apply_token(conn_info)
+        conn_info = self.user_auth_module.apply_token(conn_info)
         if not conn_info.has_token():
             try:
-                self.platform_auth.open_login_view(conn_info, cb_login_view_closed=callback)
+                self.user_auth_module.open_login_dialog(conn_info, cb_login_view_closed=callback)
             except Exception as e:
                 if callback:
                     callback()
@@ -359,6 +356,7 @@ class IMLNetworkManager(NetManager):
             PlatformSettings.remove_connected_conn_info(conn_info.get_server())
         if conn_info.is_user_login():
             self.user_auth_module.reset_auth(conn_info)
+        conn_info.unmark_protected()
 
     def get_connected_conn_info(self, server):
         return self._connected_conn_info.get(server)

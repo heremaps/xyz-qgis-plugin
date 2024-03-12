@@ -64,7 +64,7 @@ class XYZLayer(object):
         conn_info,
         meta,
         tags="",
-        unique: str = None,
+        iid: str = None,
         loader_params: dict = None,
         group_name="XYZ Layer",
         ext="gpkg",
@@ -74,7 +74,7 @@ class XYZLayer(object):
         self.conn_info = conn_info
         self.meta = meta
         self.tags = tags
-        self.unique = str(unique or int(time.time() * 10))
+        self.iid = str(iid or int(time.time() * 1000))
         self.loader_params = loader_params or dict()
 
         self._base_group_name = group_name
@@ -93,7 +93,7 @@ class XYZLayer(object):
         meta = get_customProperty_str(qnode, QProps.LAYER_META)
         conn_info = get_customProperty_str(qnode, QProps.CONN_INFO)
         tags = get_customProperty_str(qnode, QProps.TAGS)
-        unique = get_customProperty_str(qnode, QProps.UNIQUE_ID)
+        iid = get_customProperty_str(qnode, QProps.UNIQUE_ID)
         loader_params = get_customProperty_str(qnode, QProps.LOADER_PARAMS)
         meta = load_json_default(meta, default=dict())
         conn_info = load_json_default(conn_info, default=dict())
@@ -102,7 +102,7 @@ class XYZLayer(object):
 
         name = qnode.name()
         obj = cls(
-            conn_info, meta, tags=tags, unique=unique, loader_params=loader_params, group_name=name
+            conn_info, meta, tags=tags, iid=iid, loader_params=loader_params, group_name=name
         )
         obj.qgroups["main"] = qnode
         obj._update_group_name(qnode)
@@ -173,7 +173,7 @@ class XYZLayer(object):
         qnode.setCustomProperty(
             QProps.CONN_INFO, json.dumps(self.conn_info.to_project_dict(), ensure_ascii=False)
         )
-        qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_id())
+        qnode.setCustomProperty(QProps.UNIQUE_ID, self.get_iid())
         self._save_params_to_node(qnode)
 
     def _save_meta_vlayer(self, vlayer):
@@ -236,7 +236,7 @@ class XYZLayer(object):
             pass
 
     def destroy(self):
-        self.qgroups.pop("main", None)
+        # self.qgroups.pop("main", None) # handle destroy gracefully
 
         # Delete vlayer in case a it is moved out of the group
         # thus will not be implicitly deleted
@@ -400,14 +400,14 @@ class XYZLayer(object):
         returns file name of the sqlite db corresponds to xyz layer
         """
         tags = self.tags.replace(",", "_") if len(self.tags) else ""
-        return "{id}_{tags}_{unique}".format(
+        return "{id}_{tags}_{iid}".format(
             id=self.meta.get("id", ""),
             tags=tags,
-            unique=self.unique,
+            iid=self.iid,
         )
 
-    def get_id(self):
-        return self.unique
+    def get_iid(self):
+        return self.iid
 
     def get_map_fields(self):
         """returns reference to existing mutable map_fields"""

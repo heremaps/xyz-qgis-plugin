@@ -31,7 +31,7 @@ from ..iml.loader import (
 from ..models.loading_mode import API_TYPES
 
 from ..common.signal import make_print_qgis
-from ..network import NetManager
+from ..network.network import NetManager
 
 print_qgis = make_print_qgis("controller_manager")
 
@@ -154,7 +154,7 @@ class LayerControllerManager(ControllerManager):
     def make_register_xyz_layer_cb(self, con, ptr):
         def _register_xyz_layer():
             # assert con.layer is not None
-            self._layer_ptr[con.layer.get_id()] = ptr
+            self._layer_ptr[con.layer.get_iid()] = ptr
 
         return _register_xyz_layer
 

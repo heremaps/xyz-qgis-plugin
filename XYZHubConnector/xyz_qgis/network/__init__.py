@@ -7,5 +7,3 @@
 # License-Filename: LICENSE
 #
 ###############################################################################
-
-from .network import NetManager

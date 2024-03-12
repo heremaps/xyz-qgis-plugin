@@ -14,6 +14,7 @@ import time
 import shutil
 import gzip
 import sysconfig
+from typing import List
 
 from qgis.PyQt.uic import loadUiType
 from . import config
@@ -49,7 +50,9 @@ def add_qml_import_path(qml_engine):
     # Setup for the MAC OS X platform:
     # return
     if platform.system() == "Darwin" or os.name == "mac":
-        install_qml_dependencies()
+        install_qml_dependencies(
+            isolated=False
+        )  # non-isolated to avoid errors: icu data, sip, qml
         qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "qml"))
         qml_engine.addImportPath(os.path.join(get_qml_import_base_path(), "bin"))
     elif platform.system() == "Linux" or os.name == "posix":
@@ -126,6 +129,29 @@ def read_properties_file(filepath, separator="=", commentcharacter="#") -> dict:
     return credentials_properties
 
 
+def _confirm_with_dialog(package: str, extra_packages: List[str] = []) -> bool:
+    from qgis.PyQt.QtWidgets import QMessageBox
+
+    message = (
+        "The following Python packages are required to use the plugin"
+        f" {config.PLUGIN_NAME}:\n\n"
+    )
+    message += "\n".join([package, *extra_packages])
+    message += "\n\nWould you like to install them now? After installation please restart QGIS."
+
+    reply = QMessageBox.question(
+        None,
+        "Missing Dependencies",
+        message,
+        QMessageBox.Yes | QMessageBox.No,
+        QMessageBox.No,
+    )
+
+    if reply == QMessageBox.Yes:
+        return True
+    return False
+
+
 def install_package(
     package, module_name="", package_version="", target_path="", extra_packages=[]
 ):
@@ -140,10 +166,11 @@ def install_package(
         base_module_name = module_name.split(".")[0]
         base_module = importlib.import_module(base_module_name)
         importlib.reload(base_module)
+        importlib.import_module(module_name)
 
     try:
-        # _reload(module_name)
-        # importlib.import_module(module_name)
+
+        _reload(module_name)  # require for PyQt5
 
         installed_version = importlib.metadata.version(package)
         print(package, installed_version)
@@ -153,7 +180,10 @@ def install_package(
         print(repr(e))
         do_install = True
     if do_install:
-        py_exec = os.path.join(sysconfig.get_path("scripts"), "python3")
+        do_install = _confirm_with_dialog(package, extra_packages)
+
+    if do_install:
+        pip_exec = os.path.join(sysconfig.get_path("scripts"), "pip3")
         args = (
             [
                 "install",
@@ -169,31 +199,55 @@ def install_package(
             + extra_packages
             + (["-t", target_path] if target_path else [])
         )
+        py_exec = os.path.join(sysconfig.get_path("scripts"), "..", "python3")
+        py_args = ["-m", "pip", *args]
 
         with open(config.PYTHON_LOG_FILE, "w") as f:
             pass
-        import pip
 
-        ret = pip.main(args)
+        installed = False
+        ret = 0
+        try:
+            cmd = f'"{pip_exec}" {" ".join(args)}'
+            # cmd = f'"{py_exec}" {" ".join(py_args)}'
+            # print(cmd); cmd += " && pause || pause" # debug
+            # print(cmd); cmd += "; read -n 1" # debug
+            ret = os.system(cmd)
+            print(ret)
+            if ret == 0:
+                installed = True
+        except Exception as e:
+            print(e)
+        if not installed:
+            try:
+                import subprocess
 
-        # import subprocess
-        #
-        # ret = subprocess.run([py_exec, "-m", "pip"] + args).returncode
+                ret = subprocess.check_call([pip_exec, *args])
+                # ret = subprocess.check_call([py_exec, *py_args])
+                print(ret)
 
-        print(ret)
+            except Exception as e:
+                print(e)
+
         if ret > 0:
             with open(config.PYTHON_LOG_FILE, "r") as f:
                 txt = f.read()
             raise Exception(txt)
 
+        # _reload(module_name)
 
-def install_qml_dependencies():
+
+def install_qml_dependencies(isolated=True):
     package_version = config.get_plugin_setting("PyQtWebEngine_version")
     # install_package(
     #     "PyQtWebEngine", "PyQt5.QtWebEngine", package_version, config.EXTERNAL_LIB_DIR
     # )  # , "5.15.2")
     install_package(
-        "PyQtWebEngine", "PyQt5.QtWebEngine", package_version, extra_packages=["PyQt5-Qt5"]
+        "PyQtWebEngine",
+        "PyQt5.QtWebEngine",  # "PyQt5.QtWebEngineWidgets"
+        package_version,
+        config.EXTERNAL_LIB_DIR if isolated else "",
+        extra_packages=["PyQt5-Qt5"],
     )
 
 
@@ -212,3 +266,7 @@ def get_qml_import_base_path():
 
     print(lib_path)
     return lib_path
+
+
+def is_here_system():
+    return config.is_here_system()

@@ -122,6 +122,7 @@ class SpaceUX(TokenWithServerUX):
         if obj is None:
             return
         lst_conn_info = list()
+        print(obj)
         for meta in obj:
             conn_info = SpaceConnectionInfo(self.conn_info)
             conn_info.set_(**meta)

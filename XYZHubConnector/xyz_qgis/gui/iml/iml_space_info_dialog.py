@@ -13,7 +13,7 @@ import json
 from qgis.PyQt.QtWidgets import QDialog, QInputDialog
 
 from .. import get_ui_class
-from ...iml.network import IMLNetworkManager
+from ...iml.network.network import IMLNetworkManager
 
 LAYER_TYPES = [
     "interactivemap",

@@ -29,7 +29,8 @@ class SpaceConnectionInfo(object):
     PLATFORM_SIT = "PLATFORM_SIT"
     PLATFORM_PRD = "PLATFORM_PRD"
     PLATFORM_KOREA = "PLATFORM_KOREA"
-    PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT, PLATFORM_KOREA]
+    PLATFORM_CHINA = "PLATFORM_CHINA"
+    PLATFORM_SERVERS = [PLATFORM_PRD, PLATFORM_SIT, PLATFORM_KOREA, PLATFORM_CHINA]
     PLATFORM_AUTH_KEYS = ["user_login", "realm", "here_credentials"]
     PLATFORM_KEYS = ["server"] + PLATFORM_AUTH_KEYS
     PLATFORM_DEFAULT_USER_LOGIN = "email"
@@ -37,6 +38,7 @@ class SpaceConnectionInfo(object):
         PLATFORM_PRD: "HERE Platform",
         PLATFORM_SIT: "HERE Platform SIT",
         PLATFORM_KOREA: "HERE Platform Korea",
+        PLATFORM_CHINA: "HERE Platform China",
     }
 
     def __init__(self, conn_info=None):
@@ -128,10 +130,13 @@ class SpaceConnectionInfo(object):
         self.platform_server_name(self.get_server())
 
     def is_livemap(self):
-        packages = self.get_("packages", list())
-        check_pkg = any(p for p in packages if self.LIVEMAP in p)
-        check_cid = self.get_("cid") == self.LIVEMAP_CID
-        return check_pkg or check_cid
+        if self.is_platform_server():
+            return True
+        else:
+            packages = self.get_("packages", list())
+            check_pkg = any(p for p in packages if self.LIVEMAP in p)
+            check_cid = self.get_("cid") == self.LIVEMAP_CID
+            return check_pkg or check_cid
 
     def is_platform_server(self):
         return (self.get_("server") or "").strip().upper() in self.PLATFORM_SERVERS
@@ -179,6 +184,9 @@ class SpaceConnectionInfo(object):
 
     def mark_protected(self):
         self._is_protected = True
+
+    def unmark_protected(self):
+        self._is_protected = False
 
     def is_protected(self):
         """Returns True if the connection auth should not be overriden by default connected auth"""
