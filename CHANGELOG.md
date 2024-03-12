@@ -4,11 +4,11 @@
 
 #### Bug Fixes
 
-* Updated Platform IML servers
+* Updated HERE Platform IML servers
 * Set single layering mode as default
 * Improved authorization
 * Improved stability
-* Deprecated Datahub servers
+* Deprecated HERE Data Hub servers
 * Fixed OpenGL outdated driver error
 * Show confirm dialog before installing dependencies
 

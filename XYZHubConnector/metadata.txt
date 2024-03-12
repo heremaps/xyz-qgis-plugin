@@ -45,11 +45,11 @@ deprecated=False
 changelog=Version 1.9.9 (2024-03-12)
 
     🐛 FIXES 🐛
-    * Updated Platform IML servers
+    * Updated HERE Platform IML servers
     * Set single layering mode as default
     * Improved authorization
     * Improved stability
-    * Deprecated Datahub servers
+    * Deprecated HERE Data Hub servers
     * Fixed OpenGL outdated driver error
     * Show confirm dialog before installing dependencies
 
