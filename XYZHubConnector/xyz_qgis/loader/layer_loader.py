@@ -76,7 +76,7 @@ class LoadLayerController(BaseLoader):
         self.n_parallel = 1
         self.status = self.LOADING
 
-        self.fixed_keys = ["tags", "filters", "selection"]
+        self.fixed_keys = ["tags", "filters", "selection", "context"]
         self.layer = layer
         self.max_feat: int = None
         self.kw: dict = None
@@ -314,7 +314,7 @@ class LoadLayerController(BaseLoader):
 class TileLayerLoader(LoadLayerController):
     def __init__(self, network: NetManager, *a, layer: XYZLayer = None, **kw):
         super().__init__(network, *a, **kw)
-        self.fixed_keys = ["tags", "limit", "tile_schema", "filters", "selection"]
+        self.fixed_keys = ["tags", "limit", "tile_schema", "filters", "selection", "context"]
         self.params_queue = queue.SimpleQueue(key="tile_id")  # dont have retry logic
         self.layer = layer
         self.total_params = 0

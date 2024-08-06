@@ -42,6 +42,7 @@ class ConnectUX(SpaceUX):
         self.lineEdit_tags = None
         self.comboBox_similarity_threshold = None
         self.filter_dialog = None
+        self.comboBox_context = None
 
     def config(self, *a):
         # super().config(*a)
@@ -115,6 +116,14 @@ class ConnectUX(SpaceUX):
         self.lineEdit_selection.setToolTip("Load only the selected properties of features")
         self.btn_filter.setToolTip("Query features by property")
 
+        for text, data in [
+            ("default", "default"),
+            ("extension", "extension"),
+            ("super", "super"),
+        ]:
+            self.comboBox_context.addItem(text, data)
+        self.comboBox_context.setCurrentIndex(0)
+
     def _get_loading_mode(self) -> str:
         for mode, box in zip(
             LOADING_MODES,
@@ -144,6 +153,7 @@ class ConnectUX(SpaceUX):
             "loading_mode",
             "selection",
             "filters",
+            "context",
         ]
         val = [
             strip_list_string(self.lineEdit_tags.text().strip()),
@@ -154,8 +164,9 @@ class ConnectUX(SpaceUX):
             self._get_loading_mode(),
             strip_list_string(self.lineEdit_selection.text().strip()),
             self._get_filters(),
+            self.comboBox_context.currentData(),
         ]
-        fn = [str, int, int, int, str, str, str, list]
+        fn = [str, int, int, int, str, str, str, list, str]
         return dict(
             (k, f(v)) for k, v, f in zip(key, val, fn) if v is not None and len(str(v)) > 0
         )
