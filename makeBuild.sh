@@ -36,15 +36,16 @@ fi
 
 (
 cd build
-if $( echo $ver | grep -q alpha ); then
-  sed -i"" -e "s/name=.*/\0 alpha/" \
-    -e "s/version=.*/version=$ver/" \
+
+if [ "$ver" ]; then
+  sed --in-place="" -e "s/version=.*/version=$ver/" \
     ./$folder/metadata.txt
 fi
 if [ "$folderSuffix" ]; then
-  sed -i"" -e "s/name=.*/\0 $folderSuffix/" \
+  sed --in-place="" -e "s/\(name=.*\)/\1 $folderSuffix/" \
     ./$folder/metadata.txt
 fi
 
 python ../zip_dir.py $folder QGIS-XYZ-Plugin-$ver.zip
+echo "Building completed: QGIS-XYZ-Plugin-$ver.zip"
 )
