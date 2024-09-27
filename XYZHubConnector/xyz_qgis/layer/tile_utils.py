@@ -28,16 +28,19 @@ def tileXYToQuadKey(levelOfDetail, column, row):
 
 # hth GeoTools.ts
 def coord_to_percent_bing_reversed(coord, level):
-    longitude, latitude = coord
-    sinLatitude = math.sin((latitude * math.pi) / 180)
-    if abs(sinLatitude) == 1:
-        return coord_to_percent_bing_reversed([longitude, latitude + 1e-6], level)
+    try:
+        longitude, latitude = coord
+        sinLatitude = math.sin((latitude * math.pi) / 180)
+        if abs(sinLatitude) == 1:
+            return coord_to_percent_bing_reversed([longitude, latitude + 1e-6], level)
 
-    x_percent = max(0, min(1, ((longitude + 180) / 360)))
-    y_percent = max(
-        0, min(1, (0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi)))
-    )
-    return [y_percent, x_percent]
+        x_percent = max(0, min(1, ((longitude + 180) / 360)))
+        y_percent = max(
+            0, min(1, (0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi)))
+        )
+        return [y_percent, x_percent]
+    except Exception as e:
+        raise Exception("coord: {}. Original exception: {}".format(coord, repr(e)))
 
 
 # https://developer.here.com/documentation/map-tile/common/map_tile/topics/mercator-projection.html
