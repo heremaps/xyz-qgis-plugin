@@ -14,5 +14,5 @@ config = Config()
 
 
 def override_config(ext_config):
-    global config
+    global config  # noqa
     config.set_config(ext_config)
