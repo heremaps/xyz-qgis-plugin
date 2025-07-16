@@ -6,12 +6,17 @@ on:
       - '*'
     tags:
       - '*'
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Override plugin version for branch, default is short commit hash'
+        required: false
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v3
     
@@ -20,24 +25,25 @@ jobs:
       with:
         python-version: '3.9'
 
-    - name: Set outputs
-      id: vars
-      run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
     - name: Build plugin zip artifact
       id: build
       run: |
+        # makeBuild
+        # USAGE: ./makeBuild.sh $VERSION $folder_suffix
+        VERSION="${{ inputs.version }}"
         if [ "$GITHUB_REF_TYPE" == "branch" ]; then
-          VERSION=${{ steps.vars.outputs.sha_short }}
-          FOLDER_SUFFIX=DEV
+          sha_short=$(git rev-parse --short HEAD)
+          VERSION=${VERSION:-"$sha_short"}
+          folder_suffix=DEV
           echo "file_name=xyz-qgis-plugin-DEV" >> $GITHUB_OUTPUT
         else
           VERSION=$GITHUB_REF_NAME
           echo "file_name=xyz-qgis-plugin" >> $GITHUB_OUTPUT
         fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "plugin_name=QGIS-XYZ-Plugin-$VERSION" >> $GITHUB_OUTPUT
         chmod +x ./makeBuild.sh
-        ./makeBuild.sh $VERSION $FOLDER_SUFFIX
+        ./makeBuild.sh $VERSION $folder_suffix
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
