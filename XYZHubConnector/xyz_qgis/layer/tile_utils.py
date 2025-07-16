@@ -31,7 +31,7 @@ def coord_to_percent_bing_reversed(coord, level):
     try:
         longitude, latitude = coord
         sinLatitude = math.sin((latitude * math.pi) / 180)
-        if abs(sinLatitude) == 1:
+        if abs(sinLatitude) == 1.0:
             return coord_to_percent_bing_reversed([longitude, latitude + 1e-6], level)
 
         x_percent = max(0, min(1, ((longitude + 180) / 360)))
