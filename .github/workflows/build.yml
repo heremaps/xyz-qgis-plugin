@@ -1,0 +1,33 @@
+name: Build plugin
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Set outputs
+      id: vars
+      run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Build plugin zip artifact
+      id: build
+      run: |
+        VERSION=${{ steps.vars.outputs.sha_short }}
+        chmod +x ./makeBuild.sh
+        ./makeBuild.sh $VERSION DEV
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: xyz-qgis-plugin-DEV
+        path: build/*.zip
