@@ -663,6 +663,22 @@
             </layout>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_16">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Context</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBox_context"/>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1109,6 +1125,7 @@
   <tabstop>lineEdit_limit</tabstop>
   <tabstop>lineEdit_max_feat</tabstop>
   <tabstop>comboBox_similarity_threshold</tabstop>
+  <tabstop>comboBox_context</tabstop>
   <tabstop>radioButton_loading_live</tabstop>
   <tabstop>radioButton_loading_tile</tabstop>
   <tabstop>radioButton_loading_single</tabstop>
