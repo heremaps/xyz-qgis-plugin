@@ -1,5 +1,17 @@
 # Changelog 
 
+## Version 1.9.10 (2025-07-17)
+
+#### Bug Fixes
+
+* Updated map tiles URL, avoid rate limit issue in deprecated endpoint
+* Attempt to fix "ValueError: math domain error" during tile loading
+
+#### Improvements
+
+* Supported delta layer via `context` parameter in IML request
+* Improved Github Actions for test, build and release
+
 ## Version 1.9.9 (2024-03-12)
 
 #### Bug Fixes
