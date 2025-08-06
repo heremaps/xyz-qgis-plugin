@@ -1020,6 +1020,8 @@ class XYZHubConnector(object):
         is_parent_root = not parent.parent()
         lst = parent.children()
         for i in range(i0, i1 + 1):
+            if not i < len(lst):
+                continue
             qnode = lst[i]
             if is_parent_root and is_xyz_supported_node(qnode):
                 xlayer_id = QProps.get_iid(qnode)
