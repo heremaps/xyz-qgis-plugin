@@ -1004,7 +1004,7 @@ class XYZHubConnector(object):
         self.show_success_msgbar("Import XYZ Layer", "%s XYZ Layer imported" % cnt, dt=2)
 
     def cb_qnode_visibility_changed(self, qnode):
-        if qnode.isVisible():
+        if hasattr(qnode, "isVisible") and qnode.isVisible():
             # reload visible layers
             for vlayer in qnode.checkedLayers():
                 if is_xyz_supported_layer(vlayer):
