@@ -38,11 +38,11 @@ fi
 cd build
 
 if [ "$ver" ]; then
-  sed --in-place="" -e "s/version=.*/version=$ver/" \
+  sed -i="" -e "s/version=.*/version=$ver/" \
     ./$folder/metadata.txt
 fi
 if [ "$folderSuffix" ]; then
-  sed --in-place="" -e "s/\(name=.*\)/\1 $folderSuffix/" \
+  sed -i="" -e "s/\(name=.*\)/\1 $folderSuffix/" \
     ./$folder/metadata.txt
 fi
 
