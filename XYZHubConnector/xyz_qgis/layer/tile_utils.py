@@ -30,7 +30,7 @@ def tileXYToQuadKey(levelOfDetail, column, row):
 def coord_to_percent_bing_reversed(coord, level):
     try:
         longitude, latitude = coord
-        sinLatitude = math.sin((latitude * math.pi) / 180)
+        sinLatitude = math.sin((latitude / 180) * math.pi)  # avoid math domain error
         if abs(sinLatitude) == 1.0:
             return coord_to_percent_bing_reversed([longitude, latitude + 1e-6], level)
 
