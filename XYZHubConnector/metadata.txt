@@ -10,12 +10,12 @@
 [general]
 name=HERE Maps for QGIS
 qgisMinimumVersion=3.0
-description=Connect QGIS to Interactive Map Layers in the HERE Platform (https://platform.here.com) and your personal spaces in HERE Data Hub.
+description=Time for an upgrade. Level up to the new HERE QGIS Plugin <a href="https://plugins.qgis.org/plugins/here_qgis_plugin/">https://plugins.qgis.org/plugins/here_qgis_plugin/</a>. Connect QGIS to Interactive Map Layers in the HERE Platform and your personal spaces in HERE Data Hub.
 version=1.9.10
 author=HERE Europe B.V.
 email=huyminh.nguyen@here.com
 
-about=HERE Maps for QGIS is a QGIS plugin which can be used to visualize, edit and analyze data from Interactive Map Layer inside the HERE Platform (https://platform.here.com) and from HERE Data Hub spaces directly on a map.
+about=Time for an upgrade. Level up to the new HERE QGIS Plugin <a href="https://plugins.qgis.org/plugins/here_qgis_plugin/">https://plugins.qgis.org/plugins/here_qgis_plugin/</a>. HERE Maps for QGIS is a QGIS plugin which can be used to visualize, edit and analyze data from Interactive Map Layer inside the HERE Platform and from HERE Data Hub spaces directly on a map.
 
 
 
