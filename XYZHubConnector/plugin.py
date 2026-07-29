@@ -11,10 +11,9 @@
 from qgis.core import QgsProject, QgsApplication
 from qgis.core import Qgis, QgsMessageLog
 
-from qgis.PyQt.QtCore import QCoreApplication, Qt, QThreadPool
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QThreadPool, QUrl
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.PyQt.QtWidgets import QProgressBar
+from qgis.PyQt.QtWidgets import QAction, QProgressBar, QPushButton
 
 from . import config
 
@@ -112,9 +111,33 @@ class XYZHubConnector(object):
         self.iface = iface
         self.web_menu = "&{name}".format(name=config.PLUGIN_FULL_NAME)
         self.hasGuiInitialized = False
+        self.display_banner()
         self.init_modules()
         self.init_in_thread()
         self.obj = self
+
+    def display_banner(self):
+        url = "https://plugins.qgis.org/plugins/here_qgis_plugin/"
+        widget = self.iface.messageBar().createMessage(
+            config.TAG_PLUGIN,
+            (
+                "<b>Time for an upgrade. Level up to the new HERE QGIS Plugin. </b>"
+                f'<b><a href="{url}">{url}</a></b>'
+            ),
+        )
+        button = QPushButton(widget)
+        button.setText("Try HERE QGIS Plugin")
+        button.pressed.connect(lambda *a: self.open_url(url))
+        widget.layout().addWidget(button)
+        self.iface.messageBar().pushWidget(widget, Qgis.Warning)
+
+    def open_url(self, url: str):
+        try:
+            from qgis.PyQt.QtGui import QDesktopServices
+
+            QDesktopServices.openUrl(QUrl(url))
+        except:  # nosec
+            pass
 
     def init_in_thread(self):
         self.pool = QThreadPool()
