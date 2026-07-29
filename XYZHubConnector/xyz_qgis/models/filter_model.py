@@ -14,7 +14,7 @@ from .token_model import EditableItemModel
 
 class FilterModel(EditableItemModel):
     INFO_KEYS = ["name", "operator", "values"]
-    TOKEN_KEY = "name"
+    TOKEN_KEY = "name"  # nosec
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)

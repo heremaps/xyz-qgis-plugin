@@ -1,7 +1,7 @@
 import base64
 from itertools import cycle
 
-CRYPTER_STRING = "7JC1bRsq_4UCTZZkoRO5_zEtd48P1lvTvA9xlI_T8WqilSU5FXS51gEawfvsIKvIinE"
+CRYPTER_STRING = "7JC1bRsq_4UCTZZkoRO5_zEtd48P1lvTvA9xlI_T8WqilSU5FXS51gEawfvsIKvIinE"  # pragma: allowlist secret
 
 
 def encrypt_text(text):

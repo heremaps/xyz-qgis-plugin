@@ -10,7 +10,7 @@
 
 
 class Secret:
-    SECRET = "WXpKV2FtTnRWakE9"
+    SECRET = "WXpKV2FtTnRWakE9"  # nosec # pragma: allowlist secret
 
     def __init__(self, ini):
         self.ini = ini

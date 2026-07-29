@@ -138,9 +138,9 @@ class PlatformUserAuthentication:
         "%25252Fplatform.here.com%25252F%2522%257D%26nonce"
         "%3D1628073704030%26prompt%3D&sign-in-screen-config=password"
     )
-    ENDPOINT_ACCESS_TOKEN = "/api/portal/accessToken"
-    ENDPOINT_TOKEN_EXCHANGE = "/api/portal/authTokenExchange"
-    ENDPOINT_SCOPED_TOKEN = "/api/portal/scopedTokenExchange"
+    ENDPOINT_ACCESS_TOKEN = "/api/portal/accessToken"  # nosec
+    ENDPOINT_TOKEN_EXCHANGE = "/api/portal/authTokenExchange"  # nosec
+    ENDPOINT_SCOPED_TOKEN = "/api/portal/scopedTokenExchange"  # nosec
 
     REGEX_REALM = re.compile("realmID=([^&]*)")
 

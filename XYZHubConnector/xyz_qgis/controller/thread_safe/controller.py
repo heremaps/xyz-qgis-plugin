@@ -110,7 +110,7 @@ class LoopController(ChainController):
             lst_fun: list of AsyncFun
         """
         for f in lst_fun:
-            assert isinstance(f, AsyncFun)
+            assert isinstance(f, AsyncFun)  # nosec
         self.lst_fun = list(lst_fun)
         for idx, (fun, fun2) in enumerate(zip(self.lst_fun, self.lst_fun[1:])):
             fun.signal.results.connect(fun2.call, Qt.QueuedConnection)

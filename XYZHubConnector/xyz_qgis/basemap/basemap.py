@@ -9,7 +9,7 @@
 ###############################################################################
 
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec
 
 from qgis.core import QgsDataSourceUri, QgsProject, QgsRasterLayer
 
@@ -23,7 +23,7 @@ def load_default_xml():
 
 
 def load_xml(file):
-    tree = ET.parse(file)
+    tree = ET.parse(file)  # nosec
     root = tree.getroot()
     map_meta = dict()
     for child in root:

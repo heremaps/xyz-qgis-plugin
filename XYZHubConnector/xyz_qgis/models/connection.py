@@ -111,7 +111,7 @@ class SpaceConnectionInfo(object):
         d = self.to_dict()
         if self.get_("user_login"):
             d["user_login"] = self.get_default_user_email()
-            d["token"] = ""
+            d["token"] = ""  # nosec
         for ex in self.EXCLUDE_PROJECT_KEYS:
             d.pop(ex, "")
         return d

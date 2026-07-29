@@ -64,7 +64,7 @@ def make_config_parser():
 
 class EditableItemModel(QStandardItemModel):
     INFO_KEYS = []
-    TOKEN_KEY = ""
+    TOKEN_KEY = ""  # nosec
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -315,7 +315,7 @@ class TokenModel(WritableItemModel, UsedToken):
 
     INFO_KEYS = ["name", "token"]
     SERIALIZE_KEYS = ["token", "name"]
-    TOKEN_KEY = "token"
+    TOKEN_KEY = "token"  # nosec
 
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
         super().__init__(ini, parser, parent)
@@ -350,7 +350,7 @@ class TokenModel(WritableItemModel, UsedToken):
 class ServerModel(WritableItemModel, UsedToken):
     INFO_KEYS = ["name", "server"]
     SERIALIZE_KEYS = ["server", "name"]
-    TOKEN_KEY = "server"
+    TOKEN_KEY = "server"  # nosec
     DEPRECATED_SERVERS = set(datahub_servers.API_URL.values())
 
     def __init__(self, ini, parser: configparser.ConfigParser = None, parent=None):
@@ -430,7 +430,7 @@ class ServerTokenConfig:
 
 
 class ComboBoxProxyModel(QIdentityProxyModel):
-    def __init__(
+    def __init__(  # nosec
         self, token_key="token", named_token="{name}", nonamed_token="<noname token> {token}"
     ):
         super().__init__()
