@@ -38,17 +38,24 @@ jobs:
         else
           VERSION=${VERSION:-"$GITHUB_REF_NAME"}
         fi
-        echo "file_name=xyz-qgis-plugin-$VERSION" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "plugin_name=QGIS-XYZ-Plugin-$VERSION" >> $GITHUB_OUTPUT
+        echo "old_file_name=xyz-qgis-plugin-$VERSION" >> $GITHUB_OUTPUT
+        echo "old_zip_name=QGIS-XYZ-Plugin-$VERSION" >> $GITHUB_OUTPUT
         chmod +x ./makeBuild.sh
         ./makeBuild.sh $VERSION $folder_suffix
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: ${{ steps.build.outputs.file_name }}
-        path: build/*.zip
+        name: QGIS-XYZ-Plugin-${{ steps.build.outputs.version }}.zip
+        path: build/XYZHubConnector-${{ steps.build.outputs.version }}.zip
+        archive: false
+    - name: Upload artifacts DEV
+      uses: actions/upload-artifact@v7
+      with:
+        name: QGIS-XYZ-Plugin-DEV${{ steps.build.outputs.version }}.zip
+        path: build/XYZHubConnector_DEV-${{ steps.build.outputs.version }}.zip
+        archive: false
 
     - name: Release
       uses: softprops/action-gh-release@v2
