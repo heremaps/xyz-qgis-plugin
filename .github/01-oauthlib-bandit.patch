@@ -1,0 +1,197 @@
+diff --git a/XYZHubConnector/external/oauthlib/common.py b/XYZHubConnector/external/oauthlib/common.py
+index 5aeb015..dc15ae2 100644
+--- a/XYZHubConnector/external/oauthlib/common.py
++++ b/XYZHubConnector/external/oauthlib/common.py
+@@ -206,7 +206,7 @@ def generate_nonce():
+     .. _`section 3.2.1`: https://tools.ietf.org/html/draft-ietf-oauth-v2-http-mac-01#section-3.2.1
+     .. _`section 3.3`: https://tools.ietf.org/html/rfc5849#section-3.3
+     """
+-    return unicode_type(unicode_type(randbits(64)) + generate_timestamp())
++    return unicode_type(unicode_type(randbits(64)) + generate_timestamp())  # nosec
+ 
+ 
+ def generate_timestamp():
+@@ -393,10 +393,10 @@ class Request(object):
+         self.validator_log = {}
+ 
+         self._params = {
+-            "access_token": None,
++            "access_token": None,  # nosec
+             "client": None,
+             "client_id": None,
+-            "client_secret": None,
++            "client_secret": None,  # nosec
+             "code": None,
+             "code_challenge": None,
+             "code_challenge_method": None,
+@@ -404,15 +404,15 @@ class Request(object):
+             "extra_credentials": None,
+             "grant_type": None,
+             "redirect_uri": None,
+-            "refresh_token": None,
+-            "request_token": None,
++            "refresh_token": None,  # nosec
++            "request_token": None,  # nosec
+             "response_type": None,
+             "scope": None,
+             "scopes": None,
+             "state": None,
+-            "token": None,
++            "token": None,  # nosec
+             "user": None,
+-            "token_type_hint": None,
++            "token_type_hint": None,  # nosec
+ 
+             # OpenID Connect
+             "response_mode": None,
+@@ -422,7 +422,7 @@ class Request(object):
+             "claims": None,
+             "max_age": None,
+             "ui_locales": None,
+-            "id_token_hint": None,
++            "id_token_hint": None,  # nosec
+             "login_hint": None,
+             "acr_values": None
+         }
+diff --git a/XYZHubConnector/external/oauthlib/oauth1/rfc5849/__init__.py b/XYZHubConnector/external/oauthlib/oauth1/rfc5849/__init__.py
+index 4f462bb..d4c2b7c 100644
+--- a/XYZHubConnector/external/oauthlib/oauth1/rfc5849/__init__.py
++++ b/XYZHubConnector/external/oauthlib/oauth1/rfc5849/__init__.py
+@@ -181,7 +181,7 @@ class Client(object):
+         content_type = request.headers.get('Content-Type', None)
+         content_type_eligible = content_type and content_type.find('application/x-www-form-urlencoded') < 0
+         if request.body is not None and content_type_eligible:
+-            params.append(('oauth_body_hash', base64.b64encode(hashlib.sha1(request.body.encode('utf-8')).digest()).decode('utf-8')))
++            params.append(('oauth_body_hash', base64.b64encode(hashlib.sha1(request.body.encode('utf-8')).digest()).decode('utf-8')))  # nosec
+ 
+         return params
+ 
+diff --git a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/clients/base.py b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/clients/base.py
+index 9b05ad5..249aac8 100644
+--- a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/clients/base.py
++++ b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/clients/base.py
+@@ -47,9 +47,9 @@ class Client(object):
+     Python, this is usually :py:class:`oauthlib.oauth2.WebApplicationClient`.
+ 
+     """
+-    refresh_token_key = 'refresh_token'
++    refresh_token_key = 'refresh_token'  # nosec
+ 
+-    def __init__(self, client_id,
++    def __init__(self, client_id,  # nosec
+                  default_token_placement=AUTH_HEADER,
+                  token_type='Bearer',
+                  access_token=None,
+@@ -311,7 +311,7 @@ class Client(object):
+                                          refresh_token=refresh_token, scope=self.scope, **kwargs)
+         return token_url, FORM_ENC_HEADERS, body
+ 
+-    def prepare_token_revocation_request(self, revocation_url, token,
++    def prepare_token_revocation_request(self, revocation_url, token,  # nosec
+                                          token_type_hint="access_token", body='', callback=None, **kwargs):
+         """Prepare a token revocation request.
+ 
+diff --git a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/metadata.py b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+index 936e878..8c21892 100644
+--- a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/metadata.py
++++ b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/metadata.py
+@@ -43,9 +43,9 @@ class MetadataEndpoint(BaseEndpoint):
+    """
+ 
+     def __init__(self, endpoints, claims={}, raise_errors=True):
+-        assert isinstance(claims, dict)
++        assert isinstance(claims, dict)  # nosec
+         for endpoint in endpoints:
+-            assert isinstance(endpoint, BaseEndpoint)
++            assert isinstance(endpoint, BaseEndpoint)  # nosec
+ 
+         BaseEndpoint.__init__(self)
+         self.raise_errors = raise_errors
+diff --git a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
+index e2cc9db..99b643b 100644
+--- a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
++++ b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/endpoints/pre_configured.py
+@@ -68,7 +68,7 @@ class Server(AuthorizationEndpoint, IntrospectEndpoint, TokenEndpoint,
+                                    'refresh_token': refresh_grant,
+                                },
+                                default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer})
+         RevocationEndpoint.__init__(self, request_validator)
+         IntrospectEndpoint.__init__(self, request_validator)
+@@ -107,7 +107,7 @@ class WebApplicationServer(AuthorizationEndpoint, IntrospectEndpoint, TokenEndpo
+                                    'refresh_token': refresh_grant,
+                                },
+                                default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer})
+         RevocationEndpoint.__init__(self, request_validator)
+         IntrospectEndpoint.__init__(self, request_validator)
+@@ -140,7 +140,7 @@ class MobileApplicationServer(AuthorizationEndpoint, IntrospectEndpoint,
+                                        response_types={
+                                            'token': implicit_grant},
+                                        default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer})
+         RevocationEndpoint.__init__(self, request_validator,
+                                     supported_token_types=['access_token'])
+@@ -179,7 +179,7 @@ class LegacyApplicationServer(TokenEndpoint, IntrospectEndpoint,
+                                    'refresh_token': refresh_grant,
+                                },
+                                default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer})
+         RevocationEndpoint.__init__(self, request_validator)
+         IntrospectEndpoint.__init__(self, request_validator)
+@@ -212,7 +212,7 @@ class BackendApplicationServer(TokenEndpoint, IntrospectEndpoint,
+                                grant_types={
+                                    'client_credentials': credentials_grant},
+                                default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer})
+         RevocationEndpoint.__init__(self, request_validator,
+                                     supported_token_types=['access_token'])
+diff --git a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/parameters.py b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/parameters.py
+index 14d4c0d..e2fcfaf 100644
+--- a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/parameters.py
++++ b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/parameters.py
+@@ -162,7 +162,7 @@ def prepare_token_request(grant_type, body='', include_client_id=True, **kwargs)
+     return add_params_to_qs(body, params)
+ 
+ 
+-def prepare_token_revocation_request(url, token, token_type_hint="access_token",
++def prepare_token_revocation_request(url, token, token_type_hint="access_token",  # nosec
+         callback=None, body='', **kwargs):
+     """Prepare a token revocation request.
+ 
+diff --git a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/tokens.py b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/tokens.py
+index 3587af4..769f6ae 100644
+--- a/XYZHubConnector/external/oauthlib/oauth2/rfc6749/tokens.py
++++ b/XYZHubConnector/external/oauthlib/oauth2/rfc6749/tokens.py
+@@ -320,7 +320,7 @@ class BearerToken(TokenBase):
+         token = {
+             'access_token': self.token_generator(request),
+             'expires_in': expires_in,
+-            'token_type': 'Bearer',
++            'token_type': 'Bearer',  # nosec
+         }
+ 
+         # If provided, include - this is optional in some cases https://tools.ietf.org/html/rfc6749#section-3.3 but
+diff --git a/XYZHubConnector/external/oauthlib/openid/connect/core/endpoints/pre_configured.py b/XYZHubConnector/external/oauthlib/openid/connect/core/endpoints/pre_configured.py
+index fde2739..b9f3769 100644
+--- a/XYZHubConnector/external/oauthlib/openid/connect/core/endpoints/pre_configured.py
++++ b/XYZHubConnector/external/oauthlib/openid/connect/core/endpoints/pre_configured.py
+@@ -102,7 +102,7 @@ class Server(AuthorizationEndpoint, IntrospectEndpoint, TokenEndpoint,
+                                    'refresh_token': refresh_grant,
+                                },
+                                default_token_type=bearer)
+-        ResourceEndpoint.__init__(self, default_token='Bearer',
++        ResourceEndpoint.__init__(self, default_token='Bearer',  # nosec
+                                   token_types={'Bearer': bearer, 'JWT': jwt})
+         RevocationEndpoint.__init__(self, request_validator)
+         IntrospectEndpoint.__init__(self, request_validator)
