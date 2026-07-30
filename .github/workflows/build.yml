@@ -31,13 +31,13 @@ jobs:
         # makeBuild
         # USAGE: ./makeBuild.sh $VERSION $folder_suffix
         VERSION="${{ inputs.version }}"
-        if [ "$GITHUB_REF_TYPE" == "branch" ]; then
+        if [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_EVENT_NAME" == "push" ]]; then
           sha_short=$(git rev-parse --short HEAD)
           VERSION=${VERSION:-"$sha_short"}
           folder_suffix=DEV
           echo "file_name=xyz-qgis-plugin-DEV" >> $GITHUB_OUTPUT
         else
-          VERSION=$GITHUB_REF_NAME
+          VERSION=${VERSION:-"$GITHUB_REF_NAME"}
           echo "file_name=xyz-qgis-plugin" >> $GITHUB_OUTPUT
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
