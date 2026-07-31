@@ -34,11 +34,10 @@ def get_bounding_box(canvas: QgsMapCanvas, crs="EPSG:4326"):
         # geom_extent = layer.extent()
         # source_crs = layer.crs()
         pass
-    geom_extent = QgsGeometry.fromRect(geom_extent)
     dest_crs = QgsCoordinateReferenceSystem(crs)
     crs_transform = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
-    geom_extent.transform(crs_transform)
-    return geom_extent.boundingBox()
+    rect = QgsGeometry.fromRect(crs_transform.transform(geom_extent))
+    return rect.boundingBox()
 
 
 def extent_to_rect(extent):

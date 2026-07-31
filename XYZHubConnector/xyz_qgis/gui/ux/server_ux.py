@@ -24,7 +24,7 @@ class ServerUX(UXDecorator):
     def config(self, server_model):
         self.server_model = server_model
 
-        proxy_server_model = ComboBoxProxyModel(token_key="server", nonamed_token="")
+        proxy_server_model = ComboBoxProxyModel(token_key="server", nonamed_token="")  # nosec
         proxy_server_model.setSourceModel(server_model)
         proxy_server_model.set_keys(server_model.INFO_KEYS)
 

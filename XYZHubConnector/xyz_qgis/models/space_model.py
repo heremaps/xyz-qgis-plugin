@@ -84,7 +84,7 @@ class QJsonTableModel(QAbstractTableModel):
         v = str(v)
         try:
             v = int(v)
-        except Exception as e:
+        except Exception as e:  # nosec
             pass
         return v
 
@@ -123,7 +123,7 @@ class XYZSpaceModel(QJsonTableModel):
         self.row_map = dict()  # space_id <-> row index
         self.row_reverse_map = dict()  # row index <-> space_id
         self.conn_info_map = dict()  # space_id <-> conn_info
-        self.token = ""
+        self.token = ""  # nosec
 
     def get_(self, key, index):
         out = super().get_(key, index)

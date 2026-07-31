@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 1.9.12 (2026-07-30)
+
+⚡️ IMPROVEMENTS ⚡️
+* Message to get the new HERE QGIS Plugin
+* Improve stability
+
+🐛 FIXES 🐛
+* Prevent math domain error in coordinates utilities
+
+## Version 1.9.11 (2025-11-06)
+
+⚡️ IMPROVEMENTS ⚡️
+* Improve stability
+
 ## Version 1.9.10 (2025-07-17)
 
 🐛 FIXES 🐛

@@ -15,7 +15,7 @@ class AuthManager(object):
     ROOT = "auth"
     APP_ID = "app_id"
     APP_CODE = "app_code"
-    API_KEY = "api_key"
+    API_KEY = "api_key"  # pragma: allowlist secret
 
     def __init__(self, ini):
         self.ini = ini

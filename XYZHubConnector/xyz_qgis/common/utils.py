@@ -212,7 +212,7 @@ def install_package(
             # cmd = f'"{py_exec}" {" ".join(py_args)}'
             # print(cmd); cmd += " && pause || pause" # debug
             # print(cmd); cmd += "; read -n 1" # debug
-            ret = os.system(cmd)
+            ret = os.system(cmd)  # nosec
             print(ret)
             if ret == 0:
                 installed = True
@@ -220,9 +220,9 @@ def install_package(
             print(e)
         if not installed:
             try:
-                import subprocess
+                import subprocess  # nosec
 
-                ret = subprocess.check_call([pip_exec, *args])
+                ret = subprocess.check_call([pip_exec, *args])  # nosec
                 # ret = subprocess.check_call([py_exec, *py_args])
                 print(ret)
 

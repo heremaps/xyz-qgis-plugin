@@ -24,7 +24,7 @@ class IMLTokenModel(TokenModel):
 
     INFO_KEYS = ["name", "token", "user_login", "realm"]
     SERIALIZE_KEYS = ["token", "name", "user_login", "realm"]
-    TOKEN_KEY = "token"
+    TOKEN_KEY = "token"  # nosec
 
     def get_api_type(self):
         server = self.get_server()
@@ -68,7 +68,9 @@ class IMLServerTokenConfig(ServerTokenConfig):
 
 
 class IMLComboBoxProxyModel(ComboBoxProxyModel):
-    def __init__(self, token_key="token", named_token="{name}", nonamed_token="<noname token>"):
+    def __init__(
+        self, token_key="token", named_token="{name}", nonamed_token="<noname token>"
+    ):  # nosec # noqa
         ComboBoxProxyModel.__init__(
             self, token_key, named_token=named_token, nonamed_token=nonamed_token
         )

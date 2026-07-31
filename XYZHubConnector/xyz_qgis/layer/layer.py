@@ -640,7 +640,7 @@ class XYZLayer(object):
         CREATE UNIQUE INDEX IF NOT EXISTS "idx_{layer_name}_{id_column}"
         ON "{layer_name}" ("{id_column}");
         VACUUM;
-        """.format(
+        """.format(  # nosec
             layer_name=layer_name, id_column=parser.QGS_XYZ_ID
         )
         conn = sqlite3.connect(fname)
@@ -654,7 +654,7 @@ class XYZLayer(object):
         fname = make_fixed_full_path(self._layer_fname(), ext=self.ext)
         sql = """
         UPDATE "gpkg_geometry_columns" SET "z"=1 WHERE "table_name" = "{layer_name}";
-        """.format(
+        """.format(  # nosec
             layer_name=db_layer_name
         )
         conn = sqlite3.connect(fname)

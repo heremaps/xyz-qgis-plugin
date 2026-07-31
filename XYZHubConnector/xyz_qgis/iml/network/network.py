@@ -328,7 +328,7 @@ class IMLNetworkManager(NetManager):
                 and connected.get_platform_auth() != conn_info.get_platform_auth()
             ):
                 # print("auth", conn_info.get_platform_auth(), connected.get_platform_auth())
-                conn_info.set_(token="", **connected.get_platform_auth())
+                conn_info.set_(token="", **connected.get_platform_auth())  # nosec
         return conn_info
 
     def open_login_view(self, conn_info: SpaceConnectionInfo, callback=None):

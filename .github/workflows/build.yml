@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v7
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
         python-version: '3.9'
 
@@ -31,25 +31,31 @@ jobs:
         # makeBuild
         # USAGE: ./makeBuild.sh $VERSION $folder_suffix
         VERSION="${{ inputs.version }}"
-        if [ "$GITHUB_REF_TYPE" == "branch" ]; then
+        if [[ "$GITHUB_REF_TYPE" == "branch" && "$GITHUB_EVENT_NAME" == "push" ]]; then
           sha_short=$(git rev-parse --short HEAD)
-          VERSION=${VERSION:-"$sha_short"}
+          VERSION=$sha_short
           folder_suffix=DEV
-          echo "file_name=xyz-qgis-plugin-DEV" >> $GITHUB_OUTPUT
         else
-          VERSION=$GITHUB_REF_NAME
-          echo "file_name=xyz-qgis-plugin" >> $GITHUB_OUTPUT
+          VERSION=${VERSION:-"$GITHUB_REF_NAME"}
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "plugin_name=QGIS-XYZ-Plugin-$VERSION" >> $GITHUB_OUTPUT
+        echo "old_file_name=xyz-qgis-plugin-$VERSION" >> $GITHUB_OUTPUT
+        echo "old_zip_name=QGIS-XYZ-Plugin-$VERSION" >> $GITHUB_OUTPUT
         chmod +x ./makeBuild.sh
         ./makeBuild.sh $VERSION $folder_suffix
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: ${{ steps.build.outputs.file_name }}
-        path: build/*.zip
+        name: QGIS-XYZ-Plugin-${{ steps.build.outputs.version }}.zip
+        path: build/XYZHubConnector-${{ steps.build.outputs.version }}.zip
+        archive: false
+    - name: Upload artifacts DEV
+      uses: actions/upload-artifact@v7
+      with:
+        name: QGIS-XYZ-Plugin-DEV${{ steps.build.outputs.version }}.zip
+        path: build/XYZHubConnector_DEV-${{ steps.build.outputs.version }}.zip
+        archive: false
 
     - name: Release
       uses: softprops/action-gh-release@v2

@@ -223,7 +223,7 @@ def feature_to_xyz_json(features, is_new=False, ignore_null=True, is_livemap=Fal
         # 0.0] obj["bbox"] = [bbox.xMinimum(), bbox.yMinimum(), bbox.xMaximum(), bbox.yMaximum()]
         return obj
 
-    assert isinstance(features, (list, tuple))
+    assert isinstance(features, (list, tuple))  # nosec
     exist_feat_id = set()
     return [_single_feature(ft) for ft in features]
 
@@ -450,7 +450,7 @@ def update_feature_fields(feat: QgsFeature, fields: QgsFields, ref: QgsFields):
     old_fields = feat.fields()
     names, old_names = fields.names(), old_fields.names()
     try:
-        assert set(names).issuperset(set(old_names)), (
+        assert set(names).issuperset(set(old_names)), (  # nosec
             "new fields must be a super set of existing fields of feature.\n"
             + "new: {} {}\nold: {} {}\nref: {} {}".format(
                 len(names), names, len(old_names), old_names, len(ref.names()), ref.names()

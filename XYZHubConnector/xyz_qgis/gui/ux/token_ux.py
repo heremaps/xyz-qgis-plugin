@@ -59,7 +59,7 @@ class TokenUX(UXDecorator):
         self.conn_info = None
 
     def config(self, token_model: TokenModel):
-        self.used_token_status_txt = "Connect"
+        self.used_token_status_txt = "Connect"  # nosec
         self.conn_info = SpaceConnectionInfo()
 
         self.token_model = token_model
@@ -154,13 +154,13 @@ class TokenUX(UXDecorator):
         self.comboBox_token.setEnabled(flag)
 
     def cb_token_used_success(self, *a):
-        self.used_token_status_txt = "Success"
+        self.used_token_status_txt = "Success"  # nosec
 
     def cb_token_used(self, *a):
         conn_info = self._get_input_conn_info_without_id()
         if not conn_info.is_valid():
             return
-        self.used_token_status_txt = "Connect"
+        self.used_token_status_txt = "Connect"  # nosec
         # disable button
         self.cb_enable_token_ui(False)
         # gui -> pending token

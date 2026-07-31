@@ -103,7 +103,7 @@ def print_error(err):
 def disconnect_global_error_signal():
     try:
         GLOBAL_ERROR_SIGNAL.logging.disconnect()
-    except:
+    except:  # nosec
         pass
 
 

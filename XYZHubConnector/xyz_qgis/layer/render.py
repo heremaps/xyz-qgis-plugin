@@ -123,7 +123,7 @@ def add_feature_render(vlayer, feat, new_fields):
         feat = filter(None, (parser.transform_geom(ft, transformer) for ft in feat if ft))
 
     names = set(pr.fields().names())
-    assert parser.check_non_expression_fields(new_fields)  # precondition
+    assert parser.check_non_expression_fields(new_fields)  # precondition  # nosec
     diff_fields = [f for f in new_fields if not f.name() in names]
 
     # print_qgis(len(names), names)

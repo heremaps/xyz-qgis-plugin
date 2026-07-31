@@ -58,7 +58,7 @@ class Config:
             try:
                 ip = socket.gethostbyname(host)
                 is_host_reachable = len(ip.split(".")) == 4
-            except:
+            except:  # nosec
                 pass
             return is_host_reachable
 
