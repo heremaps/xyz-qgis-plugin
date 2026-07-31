@@ -1,5 +1,10 @@
 # HERE Maps for QGIS Plugin
 
+> [!NOTE]  
+> This plugin and code repository are now in limited maintenance and receive no active development.  
+> For new features and enhancements, please refer to the new [HERE QGIS Plugin](https://plugins.qgis.org/plugins/here_qgis_plugin/) and its [code repository](https://github.com/heremaps/here-qgis-python).
+
+
 
 HERE Maps for QGIS is a [QGIS](https://www.qgis.org) plugin which can be used to visualize, edit and analyze data from [Interactive Map Layers](https://www.here.com/docs/bundle/data-api-developer-guide/page/rest/layers.html#interactive-map-layers) (IML) on [HERE Platform](https://platform.here.com/) and from [xyz-hub](https://github.com/heremaps/xyz-hub) spaces directly on a map.
 
